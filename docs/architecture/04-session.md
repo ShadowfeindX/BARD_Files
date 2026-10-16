@@ -28,13 +28,16 @@ request(cmd) ──► OperationHost
                    3. engine.decide(state, cmd, rng, ids)
                          ├─ Rejected → reply `rejected`
                          └─ Accepted(events)
-                   4. assign seq, StoreActor.append (await durable write)
-                   5. state = fold(evolve, events)
+                   4. assign seq; next = fold(evolve, events); narrate events
+                      StoreActor.append(events + text lines + head snapshot of next), one durable write
+                   5. state = next
                    6. for each participant: filter by visibility → send `events`
                    7. RelayActor mirrors (if network-hosted)
 ```
 
 - Step 4 happens before step 6: an event is never broadcast before it is stored on the GM device.
+- **Text log and head snapshot (Proposed).** Step 4 writes, in the same durable batch as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. A crash can therefore never leave events without text, or a log whose end state is unknown. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
+- **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
 - **Authorization** lives here, not in the engine: "only the GM may `RequireCheck`", "a player may only `RequestAction` for an alias they control", "anonymous accounts cannot host". The engine stays about rules; the session is about people.
 
@@ -64,11 +67,22 @@ abstract interface class Link {
   Future<void> close();
 }
 
-abstract interface class EventStore {       // persistence choice is Open (R)
-  Future<void> append(OperationId op, List<StoredEvent> events);
+abstract interface class EventStore {       // persistence choice is Open (R); text/head parts Proposed
+  Future<void> append(OperationId op, List<StoredEvent> events,
+      List<TextLogLine> text, Snapshot head);                         // one durable write
   Stream<StoredEvent> read(OperationId op, {int fromSeq = 1});
   Future<void> putSnapshot(OperationId op, Snapshot snapshot);
   Future<Snapshot?> latestSnapshot(OperationId op);
+  Future<Snapshot?> headSnapshot(OperationId op);                     // state at last seq
+  Stream<TextLogLine> readText(OperationId op, {int fromSeq = 1});
+}
+
+/// One narrated log line (Proposed). Text is rendered per perspective at play
+/// time, so the archive can show each viewer exactly what they saw.
+final class TextLogLine {
+  final int seq;
+  final DateTime time;
+  final Map<Audience, String> variants;  // gm, public, redacted, alias:<id>
 }
 
 abstract interface class Clock { DateTime now(); }

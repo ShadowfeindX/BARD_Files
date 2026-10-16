@@ -8,6 +8,7 @@ The engine is the game. It is pure Dart, imports only the Dart SDK, performs no 
 - Turn **commands** into **events** (`decide`), and **events** into **state** (`evolve`).
 - Roll dice through an injected, seeded RNG and record every die in the resulting event.
 - Expose **read models**: pure functions that answer UI questions ("what is this agent's Evasion?") from state.
+- Provide the **event narrator** (Proposed): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the operation's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)).
 
 Not its job: networking, persistence, accounts, ordering of messages, who is allowed to send what (that is `session`), or presentation.
 

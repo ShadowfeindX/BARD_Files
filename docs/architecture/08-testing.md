@@ -28,6 +28,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 - Fixture pairs per step (N in, N+1 out), including "needs decision" cases.
 - Newest step only: output loads and folds in the current engine.
+- Archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (widget test).
 
 ## Apps
 

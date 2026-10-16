@@ -67,10 +67,14 @@ These are choices this spec makes that R has not ruled on.
 | P5 | Engine-owned PRNG instead of `dart:math` `Random` | [01-engine.md](01-engine.md#rng) |
 | P6 | Hand-written JSON codecs (no codegen) | [03-protocol.md](03-protocol.md#envelope-proposed) |
 | P7 | Actors as single-threaded mailbox objects, not isolates | [04-session.md](04-session.md#coarse-actors-fixed-structure-proposed-shape) |
-| P8 | Migrator works on frozen JSON schemas; old logs archived read-only, new log starts with `OperationMigrated` | [05-migrator.md](05-migrator.md) |
+| P8 | Migrator works on frozen JSON schemas. (Partly ruled: archive-only logs are now R's ruling, below; the frozen-schema approach is still a proposal.) | [05-migrator.md](05-migrator.md) |
 | P9 | Badge sign-in via Cloud Run minting a Firebase custom token | [06-accounts-backend.md](06-accounts-backend.md#badges-fixed-concept-proposed-mechanism) |
 | P10 | Firestore data model and three Firebase environments | [06-accounts-backend.md](06-accounts-backend.md#firestore-data-model-proposed) |
 | P11 | Deprecation record (`since`, `replacedBy`, `removeIn`, `note`) for engine schema and pack entries; warnings only within a major; `replacedBy` feeds the next migrator step | [01-engine.md](01-engine.md#deprecation-proposed-mechanism), [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs) |
+| P12 | Text log written during play by an engine event narrator, one variant per perspective, in the same durable write as the events, plus a head snapshot per batch; `textlog` protocol message; archive viewer and in-log placement; genesis `archives` list; new op id with seq restart; per-audience Firestore storage | [01-engine.md](01-engine.md#responsibilities), [04-session.md](04-session.md#the-operation-loop-gm-canonical-fixed), [05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r), [06-accounts-backend.md](06-accounts-backend.md#firestore-data-model-proposed) |
+| P13 | Migration confirmation: separate warning screen; tick "cannot be recovered" and type the operation name | [05-migrator.md](05-migrator.md#gm-workflow) |
+
+Ruled by R since the first draft: archived logs are frozen, not converted; a plain-text rendering is kept beside them for the in-game log and an archive viewer; the new log starts at `OperationMigrated`; the GM must explicitly confirm the unrecoverable loss.
 
 ## Open items for R
 

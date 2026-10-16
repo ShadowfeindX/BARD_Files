@@ -42,6 +42,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | `rejected` | GM → client | The GM engine (or GM) rejected a request. References the request id. |
 | `events` | GM → clients | One or more events with consecutive `seq`, already filtered for the recipient. |
 | `resync` | client → GM | "I have up to seq N" after a gap or reconnect. |
+| `textlog` | GM → client | Proposed. Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
 | `presence` | both | Online/away/typing; never part of the event log. |
 | `ping` / `pong` | both | Liveness. |
 

@@ -62,6 +62,7 @@ campaigns/{campaignId}/transfers/{id}         alias transfer requests
 operations/{opId}                             campaignId, gm uid, engine version, packRef, status, lastSeq
 operations/{opId}/events/{batchId}            batched events (seq range), written by GM only
 operations/{opId}/snapshots/{seq}_{chunk}     chunked snapshots, written by GM only
+operations/{opId}/textlog/{audience}_{batchId}  narrated text lines for one audience (gm, public, alias), written by GM only
 operations/{opId}/requests/{requestId}        player requests, written by the requesting alias's owner
 operations/{opId}/signaling/{peerId}          WebRTC offer/answer/candidates (P2P mode only)
 packs/{packId}/versions/{version}             manifest + storage refs; immutable once published
@@ -70,7 +71,9 @@ news/{postId}                                 information dissemination
 ```
 
 - Events are batched because a Firestore document is limited to 1 MiB [V-7].
-- Security rules: only the operation's GM uid writes `events` and `snapshots`; a request's `from` alias must belong to `request.auth.uid`; library `verification` is writable only by an admin custom claim [V-9]. Rules have a cap on `get()`/`exists()` lookups per request (10 for single-document requests) [V-7], so rules read at most the operation document plus one alias document.
+- **Per-audience storage (Proposed).** The GM writes event batches and text-log batches already filtered per audience, one document per audience per batch, tagged with an `audience` field. Read rules allow the GM everything, members `public`, and an alias owner only that alias's audience, so GM-only events and text are never stored where a player's account can read them.
+- **Archived operations (Proposed).** A migrated N-major operation keeps its document and id with `status: archived`; its frozen events and text log stay in its subcollections. The N+1 operation is a new document whose genesis event lists the archives.
+- Security rules: only the operation's GM uid writes `events`, `snapshots` and `textlog`; a request's `from` alias must belong to `request.auth.uid`; library `verification` is writable only by an admin custom claim [V-9]. Rules have a cap on `get()`/`exists()` lookups per request (10 for single-document requests) [V-7], so rules read at most the operation document plus one alias document.
 - Firestore resolves multiple offline changes to the same document as last-write-wins [V-6]. The design avoids depending on that: each event batch, request and snapshot chunk is its own new document, and only the GM writes the log.
 
 ## Relay

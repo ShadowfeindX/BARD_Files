@@ -46,7 +46,7 @@ Initial feature areas (Proposed grouping, content to be set by R):
 | World | scenes, NPCs, reveal/hide | revealed handouts and scenes |
 | Phone | all phone threads, reply as NPC | own phone |
 | Library | campaign content, import from library | read-only |
-| Filing | operation log, export | own visible log |
+| Filing | operation log, export, archive viewer for pre-migration text (Proposed) | own visible log, archive viewer limited to own perspective (Proposed) |
 
 ## Shared UI kit (Proposed `packages/ui_kit`)
 
