@@ -4,7 +4,7 @@
 
 | App | Platforms (Fixed scope) | Who | Role |
 |---|---|---|---|
-| `apps/bard` | all Flutter targets; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience |
+| `apps/bard` | all Flutter targets; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is a lightweight client without full parity (see below) |
 | `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins operations the main app hosts |
 | `apps/server` | Cloud Run (Dart) | none directly | Relay, event-batch persistence, badge sign-in, storing published pack files (validated on the client), library verification flag writes |
 
@@ -57,7 +57,12 @@ Theme (the "Top Secret" dossier look), typography, the dice-breakdown widget, pe
 - No `dart:io` imports in shared code; platform-specific services use conditional imports keyed on `dart.library.io` / `dart.library.js_interop` [V-12].
 - No `Platform.isX` checks in shared code; they throw on the web [V-12].
 - Hosting capabilities differ by platform (a web GM cannot host LAN, see [04-session.md](04-session.md#play-modes)). The UI asks the session which transports are available instead of checking the platform itself.
+
 - Desktop backend access depends on the open concern in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
+
+### Web build role (ruled by R)
+
+The web build is a lightweight client that reaches people who have not yet decided to install the app. It does not aim for feature parity with native builds. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Whether the web build may host as GM at all is open (item W1 in [09-open-decisions.md](09-open-decisions.md#open-items-for-r)). Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so the answer to W1 is a configuration change, not a restructure.
 
 ## The app shell never affects outcomes (Fixed)
 

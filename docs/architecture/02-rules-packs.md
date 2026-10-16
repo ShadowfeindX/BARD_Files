@@ -60,6 +60,46 @@ core/                           pack id
 - `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override.
 - `contentHash` is computed by tooling, not written by hand, and is what an operation pins.
 
+### Deprecation in packs
+
+Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecation-proposed-mechanism) for three things. In a pack's own records, `since` and `removeIn` are **pack** versions, since packs version independently of the engine.
+
+1. **Engine-deprecated keys.** When the engine deprecates a pack key (for example a field of `skills.json`), packs that still use it load normally and the validator reports a warning naming the replacement and the engine major that removes it.
+2. **Pack-deprecated entries.** A pack author marks one of their own entries as going away:
+
+   ```json
+   {
+     "id": "example_old_skill",
+     "deprecated": {
+       "since": "1.5.0",
+       "replacedBy": "skill:example_new_skill",
+       "removeIn": 2,
+       "note": "Illustrative placeholder, not a real rules change."
+     }
+   }
+   ```
+
+   Here `since` 1.5.0 and `removeIn` 2 refer to the pack's version. Within a pack major the entry keeps working; removing it is a pack major bump. GMs see the warning in the pack-update summary before they choose to apply the update.
+3. **Pack-deprecated fields.** A pack author can deprecate a single field on one of their own objects with an optional `deprecatedFields` map, keyed by field name, using the same record:
+
+   ```json
+   {
+     "id": "example_item",
+     "oldField": 3,
+     "newField": 3,
+     "deprecatedFields": {
+       "oldField": {
+         "since": "1.6.0",
+         "replacedBy": "newField",
+         "removeIn": 2,
+         "note": "Illustrative placeholder, not a real rules change."
+       }
+     }
+   }
+   ```
+
+   Only fields the engine allows the pack to define can be deprecated this way. The validator warns on each, exactly as for entries.
+
 ## Loading and validation
 
 1. Read manifest, check `engineApi`.

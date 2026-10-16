@@ -14,7 +14,7 @@ These come from R and are not reopened here.
 | Area | Decision |
 |---|---|
 | Stack | Flutter / Dart only. |
-| Targets | All Flutter targets. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. |
+| Targets | All Flutter targets. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight client for people who have not installed the app, without full feature parity; a web GM cannot host LAN play. |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
 | Repository | Monorepo of packages (`engine`, `protocol`, `session`, `migrator`) shared by the main app, the companion app and any server. |
 | Engine purity | The engine has no Flutter, Firebase or UI imports. |
@@ -31,7 +31,7 @@ These come from R and are not reopened here.
 
 ## Still open (R decides)
 
-State management, routing, persistence, networking/sync. See [09-open-decisions.md](09-open-decisions.md). This spec keeps every one of them behind an interface so the choice does not leak into the engine, protocol or migrator.
+State management, routing, persistence, networking/sync, and whether GMs may host on the web build (W1). See [09-open-decisions.md](09-open-decisions.md). This spec keeps every one of them behind an interface so the choice does not leak into the engine, protocol or migrator.
 
 ## System at a glance
 

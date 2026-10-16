@@ -162,6 +162,59 @@ The engine can represent each variant below, but the **values** must be ruled on
 - A change that alters the meaning of existing data is a new major and goes through the migrator.
 - Each major's serialized schema is written down in `packages/engine/schema/` (Proposed) as documentation and as the input the migrator's frozen copy is taken from.
 
+### Compatibility decoding within a major (Fixed: allowed, additive-only)
+
+R ruled that compatibility decoding within a major is allowed. Engine 1.6 must read anything engine 1.0–1.5 wrote: events, snapshots, packs. This is compatibility *within* one schema family, so it does not conflict with "zero compat code across majors".
+
+- **Additive-only.** A minor may add optional fields (with a default used when absent), new event/command types, new components, new systems. It may never remove a field, change a field's type or meaning, or make an optional field required.
+- **Decoders are tolerant of the past, strict about the future.** A decoder fills defaults for fields an older minor did not write. It rejects types from a *newer* minor it does not know (the version negotiation in [03-protocol.md](03-protocol.md#version-negotiation) prevents that case in normal play).
+- **Old data is never rewritten.** Events stay as they were written; decoding upgrades them in memory only.
+
+### Deprecation (Proposed mechanism)
+
+R asked for a way to signal that something still works now but will change later. A new field may be intended to replace an old one that still does its job. Deprecation marks the old one so engine developers, pack authors and GMs see it coming, without breaking anything in the current major.
+
+**What can be deprecated:** a component field, a whole component, a command or event type, a pack file key, or a pack entry (a skill, item, condition, table row).
+
+**Deprecation record** (same shape everywhere; values below are placeholders):
+
+```json
+{
+  "since": "1.4.0",
+  "replacedBy": "example_component.newField",
+  "removeIn": 2,
+  "note": "Illustrative placeholder, not a real rules change."
+}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `since` | yes | Version that introduced the deprecation, in the **scope that declares it**: an engine version for engine schema items, a pack version for pack items. |
+| `removeIn` | yes | Integer major (same scope) where the item may disappear. Always a future major. |
+| `note` | yes | Human-readable reason and what to do instead. |
+| `replacedBy` | no | Reference to the successor, when one exists. Entries use `kind:id` (`skill:example_new_skill`); fields use `owner.field` (`example_component.newField` for engine schema, `skills.newField` for a pack file key). |
+
+**In engine code:** deprecated Dart members carry the built-in `@Deprecated('message')` annotation, which makes the analyzer report every use [V-20]. The message repeats the record (`since`, replacement, removal major). The schema docs in `packages/engine/schema/` carry the same record so non-Dart readers see it.
+
+**Old and new side by side.** While both exist within a major:
+
+1. Decoders accept either. If both are present, the new one wins.
+2. The engine writes the new one. Since version negotiation refuses clients older than the log requires, nobody needs the old one written.
+3. Read models expose only the new one. One adapter function per deprecated item maps old → new at decode time, kept next to the decoder and deleted at the next major.
+
+**At the next major:** deprecated items are removed. The migrator step for that major uses each `replacedBy` as the default mapping, so a deprecation written today becomes tomorrow's migration rule ([05-migrator.md](05-migrator.md)).
+
+**Who sees what:**
+
+| Audience | How they find out |
+|---|---|
+| Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` |
+| Pack authors (D, GMs) | The pack validator reports each deprecated key or entry as a **warning**, never an error, with the note and removal major |
+| GMs running operations | The pack-update summary and the operation's settings screen list deprecations that affect the pinned pack |
+| Players | Nothing; deprecation never changes play |
+
+Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs).
+
 ## Public API surface (Proposed)
 
 ```dart

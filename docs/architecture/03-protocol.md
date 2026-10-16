@@ -78,6 +78,8 @@ On `hello`:
 3. **Engine minor/patch**: the client must be at least the version the operation's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
 4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the operation.
 
+Decoding is compatible within a major (Fixed): a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
+
 ## Snapshots
 
 A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. Snapshots are a cache: the event log stays the source of truth.

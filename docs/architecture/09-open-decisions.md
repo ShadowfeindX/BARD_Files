@@ -70,12 +70,20 @@ These are choices this spec makes that R has not ruled on.
 | P8 | Migrator works on frozen JSON schemas; old logs archived read-only, new log starts with `OperationMigrated` | [05-migrator.md](05-migrator.md) |
 | P9 | Badge sign-in via Cloud Run minting a Firebase custom token | [06-accounts-backend.md](06-accounts-backend.md#badges-fixed-concept-proposed-mechanism) |
 | P10 | Firestore data model and three Firebase environments | [06-accounts-backend.md](06-accounts-backend.md#firestore-data-model-proposed) |
+| P11 | Deprecation record (`since`, `replacedBy`, `removeIn`, `note`) for engine schema and pack entries; warnings only within a major; `replacedBy` feeds the next migrator step | [01-engine.md](01-engine.md#deprecation-proposed-mechanism), [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs) |
+
+## Open items for R
+
+| # | Item | Context |
+|---|---|---|
+| W1 | **Disallow GM hosting on the web build entirely?** Not decided. | R noted a web GM loses control over engine version, pack choice and modifying their own games, which most GMs want. If disallowed, the web build is player-only (join, play, phone) and every hosting mode lives in native builds. If allowed, web hosting is limited to the relay and P2P. The session already exposes available hosting modes per platform, so either answer is a configuration of the app, not a structural change. No recommendation: this is a product call for R. |
 
 ## Concerns raised
 
 Each is raised once, per CLAUDE.md §2. R's answer stands.
 
-1. **Firebase on desktop vs "all Flutter targets".** FlutterFire Firestore/Auth: beta on macOS and Windows; Windows is development-only, not for production; Linux is not listed [V-10]. Options: (a) desktop uses a Cloud Run gateway (HTTPS + WebSocket) for accounts, relay and packs, behind the same `BackendGateway` interface; (b) desktop ships with LAN/P2P/offline only and no cloud features; (c) defer desktop builds. **Recommendation: (a)**, which aligns with the Cloud Run relay recommendation in decision 4.2. **Web GM cannot host LAN.** Browsers have no `dart:io` sockets [V-12]. A web GM can host only through the relay or P2P. Recommendation: accept, and have the UI show only the hosting modes the platform supports.
+1. **Firebase on desktop vs "all Flutter targets".** FlutterFire Firestore/Auth: beta on macOS and Windows; Windows is development-only, not for production; Linux is not listed [V-10]. Options: (a) desktop uses a Cloud Run gateway (HTTPS + WebSocket) for accounts, relay and packs, behind the same `BackendGateway` interface; (b) desktop ships with LAN/P2P/offline only and no cloud features; (c) defer desktop builds. **Recommendation: (a)**, which aligns with the Cloud Run relay recommendation in decision 4.
+2. **Web GM cannot host LAN. Ruled by R: accepted.** Browsers have no `dart:io` sockets [V-12]. R also set the web build's role: a lightweight client for people who have not installed the app yet, without full feature parity with native builds. See open item W1 above.
 3. **Rulebook inconsistencies** (proficiency bonus, derived-stat operators, the top category glyph, disorder table layout, occult check attribute). Listed in [01-engine.md](01-engine.md#rulebook-gaps-found-while-writing-this). The engine supports all variants; the core pack needs R/D rulings before it is authored.
 4. **Alias transfer approval.** R specified that moving an alias needs GM approval. Unspecified: the destination GM, the source GM, or both. Recommendation: destination GM approves; the source campaign is notified, and an alias in a running operation cannot move until that operation ends.
 5. **Library verification workflow.** Who may verify items, and whether verification can be revoked, is not specified. Recommendation: an admin custom claim held by R and D only, revocable, with the verifier and date recorded on the item.

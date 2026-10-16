@@ -90,7 +90,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | Network-hosted | relay | yes | Backend relays and persists the log. Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted operations resume relaying when online. |
 
-**Constraint found:** a browser cannot run a socket server, because `dart:io` is not available on the web [V-12]. A GM using the web build therefore cannot host LAN play; on the web the GM hosts through the relay or P2P. Native builds can host anything. This is listed in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
+**Web build (ruled by R):** a browser cannot run a socket server, because `dart:io` is not available on the web [V-12], so a GM on the web build cannot host LAN play. R accepted this. The web build is a lightweight client for people who have not installed the app yet and does not have full feature parity with native builds. Whether GM hosting is allowed on the web at all (relay/P2P only) or disallowed entirely is still open for R (item W1 in [09-open-decisions.md](09-open-decisions.md#open-items-for-r)). Native builds can host every mode.
 
 ## Reconnection and GM continuity
 

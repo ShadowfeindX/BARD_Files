@@ -2,7 +2,7 @@
 
 ## Purpose (Fixed)
 
-Move one operation's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code. There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
+Move one operation's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
 
 ## Why the migrator never imports the engine
 

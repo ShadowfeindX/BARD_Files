@@ -23,6 +23,7 @@ Every Dart, Flutter, Firebase or package claim in this spec, the tool used to ch
 | V-17 | WebRTC does not define signaling (apps build it) and relies on ICE with STUN, and TURN relays when direct connection fails. | Developer Knowledge | `web.dev/articles/webrtc-infrastructure`, `web.dev/articles/webrtc-basics` |
 | V-18 | pub.dev latest versions and descriptions: `drift` 2.35.2 (has `web` and `wasm` libraries; `drift_dev` 2.35.1 is its build_runner code generator), `sembast` 3.9.0, `sembast_web` 2.4.6+1 ("on top of IndexedDB"), `hive_ce` 2.22.0 (with `hive_ce_generator`), `web_socket_channel` 3.0.3 ("cross-platform WebSocketChannel API", publisher tools.dart.dev), `flutter_webrtc` 1.6.2+hotfix.4 ("iOS/Android/Desktop/Web"), `bonsoir` 7.1.5 ("Zeroconf… based on Apple Bonjour and Android NSD"). Per-platform support matrices were **not** verified and must be checked before adoption. | Dart MCP `pub_dev_search` | pub.dev |
 | V-19 | Firebase's security checklist recommends separate development, staging and production projects and the Local Emulator Suite for development. | Developer Knowledge | `firebase.google.com/support/guides/security-checklist` |
+| V-20 | Dart's built-in `@Deprecated` annotation marks a declaration as deprecated with a message explaining the replacement and potential removal; the Dart analyzer reports uses of `@Deprecated` / `@deprecated` members (diagnostic `deprecated_member_use`). | Developer Knowledge | `dart.dev/language/metadata`, `dart.dev/tools/diagnostics` |
 
 ## Not verified (stated as design or deferred)
 
