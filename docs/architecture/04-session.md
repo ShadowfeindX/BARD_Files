@@ -14,7 +14,7 @@ Actors are **not** isolates: isolates are not supported on Flutter web [V-13], a
 | `OperationParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
 | `ConnectionActor` | both ends, one per link | One transport link: framing, ping, backoff, hands decoded messages to its owner |
 | `StoreActor` | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
-| `RelayActor` | GM device, network-hosted only | Mirrors the GM's log to the backend and receives requests from it |
+| `RelayActor` | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` | each device | Which operations exist locally, opening/closing them, routing messages to the right actor |
 
 Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `OperationHost` is reopened from the store (log + latest snapshot), which is always safe because state is a fold of the log.
@@ -101,7 +101,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | In person, phones | LAN (or in-process + LAN) | none | GM device hosts; companion phones join on the local network. |
 | LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
 | P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. |
-| Network-hosted | relay | yes | Backend relays and persists the log. Players can join without reaching the GM directly. |
+| Network-hosted | relay | yes | Realtime Database relays and persists the log ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted operations resume relaying when online. |
 
 **Web build (ruled by R):** a browser cannot run a socket server, because `dart:io` is not available on the web [V-12], so a GM on the web build cannot host LAN play. R accepted this. The web build is a lightweight client for people who have not installed the app yet and does not have full feature parity with native builds. Whether GM hosting is allowed on the web at all (relay/P2P only) or disallowed entirely is still open for R (item W1 in [09-open-decisions.md](09-open-decisions.md#open-items-for-r)). Native builds can host every mode.

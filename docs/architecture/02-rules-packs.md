@@ -110,7 +110,7 @@ Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecat
 
 The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed) lets D check a pack without running the app.
 
-The server does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
+Backend code (Cloud Functions) does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
 ## Operations pin packs
 
@@ -128,7 +128,7 @@ The server does not run the validator (it never imports the engine; see [00-over
 | Campaign / private | a GM | the GM's account (and local cache) | no |
 
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
-- The **public library** is a government-style archive showing only items with `verification: verified` (Fixed). Verification is a backend-side flag set by an authorised reviewer, never by the submitting client. The review workflow (who verifies, how) is not specified by R yet and is noted in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
+- The **public library** is a government-style archive showing only items with `verification: verified` (Fixed). Verification is set by a reviewer holding a moderator custom claim, who moves the item from pending to public under database rules, never by the submitting client ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-proposed)). The review workflow (who verifies, how) is not specified by R yet and is noted in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
 - Library items are copied into a GM's pack when used, with provenance (`source: library/<id>@<version>`), so a library edit never changes a running campaign behind the GM's back.
 
 ## Distribution

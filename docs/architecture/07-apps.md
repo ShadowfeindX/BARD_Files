@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `apps/bard` | all Flutter targets; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is a lightweight client without full parity (see below) |
 | `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins operations the main app hosts |
-| `apps/server` | Cloud Run (Dart) | none directly | Relay, event-batch persistence, badge sign-in, storing published pack files (validated on the client), library verification flag writes |
+| `apps/functions` | Firebase, HTTPS-only Dart Cloud Functions (experimental) | none directly | Badge login, role claims, payment webhook, store receipt validation, push, pack publishing helper (Proposed list). No relay: Realtime Database is the relay |
 
 Both Flutter apps use the same `session`, `engine` and `protocol` packages, so a companion phone and a tablet are equal participants in an operation. The companion app is a different **UI**, not a different client.
 
@@ -58,7 +58,7 @@ Theme (the "Top Secret" dossier look), typography, the dice-breakdown widget, pe
 - No `Platform.isX` checks in shared code; they throw on the web [V-12].
 - Hosting capabilities differ by platform (a web GM cannot host LAN, see [04-session.md](04-session.md#play-modes)). The UI asks the session which transports are available instead of checking the platform itself.
 
-- Desktop backend access depends on the open concern in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
+- Desktop builds reach Firebase through `firebase_dart`: probed on Windows and Linux (Linux required in v1); macOS unproven ([06-accounts-backend.md](06-accounts-backend.md#stack-fixed-adopted-by-r)). Push notifications are in-app only on Windows and Linux.
 
 ### Web build role (ruled by R)
 

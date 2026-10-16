@@ -14,8 +14,8 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [03-protocol.md](03-protocol.md) | Wire format shared by every client and server: envelopes, messages, versioning, visibility |
 | [04-session.md](04-session.md) | The runtime layer: actors, the GM-canonical operation loop, play modes, reconnection, in-game phone |
 | [05-migrator.md](05-migrator.md) | Moving an operation from engine major N to N+1 |
-| [06-accounts-backend.md](06-accounts-backend.md) | Agents, aliases, anonymous accounts, badges, and the Firebase / Cloud Run backend |
-| [07-apps.md](07-apps.md) | Main app, companion app and server: UI layering, perspectives, platforms |
+| [06-accounts-backend.md](06-accounts-backend.md) | Agents, aliases, anonymous accounts, badges, and the Firebase backend (`firebase_dart`, Realtime Database, Dart Cloud Functions) |
+| [07-apps.md](07-apps.md) | Main app, companion app and Cloud Functions: UI layering, perspectives, platforms |
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
 | [09-open-decisions.md](09-open-decisions.md) | **Decisions R still has to make**, with options and recommendations, plus concerns raised |
 | [verification.md](verification.md) | Every Dart / Flutter / Firebase claim in this spec and the source it was checked against |
@@ -25,6 +25,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 - **Fixed** marks a decision R has already made. It is recorded, not argued.
 - **Open (R)** marks a decision only R can make. See [09-open-decisions.md](09-open-decisions.md).
 - **Proposed** marks a design choice made in this spec that R has not yet approved. Each one is listed in [09-open-decisions.md](09-open-decisions.md#proposed-design-choices-needing-approval).
+- **[U]** marks a claim from the backend investigation that is still unverified.
 - **[V-n]** points to a verified claim in [verification.md](verification.md). Any Dart, Flutter or Firebase statement without a tag is a design statement, not a claim about the toolkit.
 - Rulebook references cite the canonical PDF (`BARD Core Rulebook.pdf`) by section number.
 

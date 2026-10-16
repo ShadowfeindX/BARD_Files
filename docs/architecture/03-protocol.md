@@ -87,7 +87,7 @@ A snapshot is `OperationState` at a given `seq`, serialized with the engine's sc
 
 ## Size
 
-Firestore caps a document at 1 MiB [V-7]. When the backend relay is Firestore, the session batches events into documents well under that limit and stores snapshots in chunks. Other transports have no such cap but use the same batching for simplicity.
+The session batches events so each relay write is one small Realtime Database node per audience. RTDB's documented limit of about 1,000 writes per second per database [V-25] is far above what a table produces. Other transports use the same batching for simplicity.
 
 ## Testing
 

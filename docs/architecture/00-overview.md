@@ -14,7 +14,7 @@ These come from R and are not reopened here.
 | Area | Decision |
 |---|---|
 | Stack | Flutter / Dart only. |
-| Targets | All Flutter targets. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight client for people who have not installed the app, without full feature parity; a web GM cannot host LAN play. |
+| Targets | All Flutter targets; v1 requires Linux (R), and platforms other than Windows and Linux are pending backend probes. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight client for people who have not installed the app, without full feature parity; a web GM cannot host LAN play. |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
 | Repository | Monorepo of packages (`engine`, `protocol`, `session`, `migrator`) shared by the main app, the companion app and any server. |
 | Engine purity | The engine has no Flutter, Firebase or UI imports. |
@@ -25,7 +25,7 @@ These come from R and are not reopened here.
 | Updates | Engine updates apply to operations automatically by default; pack updates apply manually by default. GMs get a toggle for each. |
 | Cross-major | Migrator only. Each engine major knows only its own schema. A separate migrator transforms an operation's state and pack from N to N+1, run by the GM, who reviews the result. No frozen prior engine, no old web build. Old event logs are frozen, not converted, with a plain-text log kept beside them; the GM explicitly confirms the unrecoverable loss. |
 | Accounts | Agent (player account) with many aliases; each alias locked to one campaign at a time (moving needs GM approval). Anonymous accounts can join any session, have exactly one alias, cannot GM, host or create content. Badges are an optional scannable login. |
-| Backend | Firebase first (Auth, Firestore, Hosting). Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Dart server code targets Cloud Run. |
+| Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Adopted stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for live game data (Firestore out of the v1 client), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental, accepted). Cloud Run only for long-lived connections. Linux is required in v1. See [06-accounts-backend.md](06-accounts-backend.md#stack-fixed-adopted-by-r). |
 | Content | GMs create NPCs, items, skills, techniques. D publishes default content (cloud-hosted). The public library shows only verified items. Typst document templating comes later. |
 | Immersion | In-game phone messaging forwarded to the GM; per-perspective (player vs GM) panels. |
 
@@ -50,7 +50,7 @@ State management, routing, persistence, networking/sync, and whether GMs may hos
      └───────────────┘
                      │ (network-hosted only)
               ┌──────▼───────┐
-              │ Backend      │  Firebase Auth / Firestore / Hosting, Cloud Run (Dart)
+              │ Backend      │  Firebase Auth / Realtime Database / Storage / Hosting, Dart Cloud Functions
               │ relay+persist│  never runs game rules
               └──────────────┘
 ```
@@ -78,7 +78,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
   companion/                  phone Flutter app (player-first)
-  server/                     Dart server for Cloud Run (relay, badges, pack publishing)
+  functions/                  HTTPS-only Dart Cloud Functions (badge login, role claims, payments, push)
 /docs/                        developer guide, this spec
 /reference/                   read-only copies of reference material (see CLAUDE.md §6)
 ```
@@ -91,8 +91,8 @@ Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden a
 
 ```
 apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core
-apps/server               ──► protocol, server-side Firebase admin library*   (never the engine)
-backend                   ──► session (interfaces), protocol, Firebase plugins
+apps/functions            ──► protocol, firebase_functions, firebase_admin_sdk*   (never the engine)
+backend                   ──► session (interfaces), protocol, firebase_dart, FlutterFire (only where needed)
 session                   ──► protocol, engine
 protocol                  ──► engine              (codecs for engine commands/events)
 engine                    ──► (Dart SDK only)
@@ -103,15 +103,15 @@ dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
 
-\* Dart's server docs point to a Firebase Admin SDK package for server-side access to Firebase [V-11]. It is a new dependency and needs R's approval (CLAUDE.md §6).
+\* `firebase_admin_sdk` 0.5.6 supports Auth (custom tokens, custom claims) and Messaging but **not** Realtime Database [V-24]. It is still pending R's approval (CLAUDE.md §6), as is `firebase_functions`, the Dart Functions package named in Dart's server docs [V-11]. `firebase_dart` is part of the stack R adopted.
 
-`apps/server` relays frames, persists event batches and pack files, and issues badge sign-ins. It does not validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
+`apps/functions` mints badge sign-ins, sets role claims, receives payment webhooks and sends push. It does not relay (Realtime Database is the relay), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
 Why these rules:
 
 - **engine imports nothing** so it runs identically on every target, in tests, and on a server. No `dart:io`, because `dart:io` is unavailable on the web [V-12].
 - **migrator imports nothing project-internal under `dependencies`** (tests may use the current engine; see the exception above) because a pub workspace has a single resolution and Dart does not allow two versions of the same package in one resolution [V-1]. It therefore cannot import engine N and engine N+1 together. It works on JSON with its own frozen schema descriptions instead (see [05-migrator.md](05-migrator.md)).
-- **server never imports the engine** so the backend can relay and persist but structurally cannot adjudicate rules.
+- **functions never import the engine, directly or transitively.** `protocol` depends on `engine` for codecs, so `apps/functions` may use only the engine-free parts of `protocol` (envelope, message types) or a split-out envelope library; the CI dependency check verifies the transitive graph. Backend code therefore cannot adjudicate rules.
 - **session never imports Flutter** so the same operation loop runs in the apps, a CLI, and tests. Platform-specific transports and stores are injected.
 
 New pub dependencies in any package go to R first (CLAUDE.md §6). This spec names candidate packages only inside the open decisions.
@@ -123,7 +123,7 @@ Follows the Flutter architecture guide: a UI layer of views and view models, a d
 ```
 View (widgets) ─► ViewModel ─► Repositories ─► Services
                       │             │              ├─ session (operation actors)
-                      │             │              ├─ backend adapters (Firebase, Cloud Run)
+                      │             │              ├─ backend adapters (firebase_dart, FlutterFire, LAN)
                       │             │              └─ local stores
                       └── reads engine read-models (pure functions over state)
 ```

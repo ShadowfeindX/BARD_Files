@@ -39,7 +39,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 ## Backend
 
 - Security-rules tests and `backend` adapter tests against the Firebase Local Emulator Suite [V-19].
-- `apps/server` tests with the shared protocol fixtures.
+- `apps/functions` tests with the shared protocol fixtures; Realtime Database rules tests in the emulator.
 
 ## Continuous integration (Proposed)
 
