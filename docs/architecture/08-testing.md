@@ -45,5 +45,5 @@ Every package is testable on its own, with in-memory implementations of everythi
 1. `dart format` check, failing on unformatted files (style rule in CLAUDE.md §8).
 2. `flutter analyze` for the whole workspace.
 3. Tests per package.
-4. Dependency-rule check: fail if any `pubspec.yaml` imports a package its layer may not ([00-overview.md](00-overview.md#dependency-rules)).
+4. Dependency-rule check: fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)).
 5. Pack validation of `content_core`.

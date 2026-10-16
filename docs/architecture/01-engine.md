@@ -14,10 +14,13 @@ Not its job: networking, persistence, accounts, ordering of messages, who is all
 ## Core loop
 
 ```
-decide : (State, Command, RulesPack, Rng) → Decision        // Accepted(List<Event>) | Rejected(reason)
-evolve : (State, Event, RulesPack)        → State           // no RNG, no failure path
-replay : (State0, List<Event>, RulesPack) → State           // fold of evolve
+Engine(rulesPack)                                   // the pack is bound once, at construction
+decide : (State, Command, Rng, IdSource) → Decision // Accepted(List<Event>) | Rejected(reason)
+evolve : (State, Event)                  → State    // no RNG, no IDs, no failure path
+replay : (State0, List<Event>)           → State    // fold of evolve
 ```
+
+These are the same signatures as the [public API](#public-api-surface-proposed) below. `IdSource` supplies new entity IDs during `decide` only.
 
 - `decide` is the only function that may consume randomness. It runs **only on the GM's engine** during an operation (and on any device in solo/offline prep).
 - `evolve` is total and deterministic. Every client runs it. Because events carry resolved results (dice faces, totals, outcomes), replaying a log never re-rolls and history never changes.

@@ -36,7 +36,7 @@ Local storage for: event logs, snapshots, cached packs, account cache, settings.
 | A. `sembast` 3.9.0 + `sembast_web` 2.4.6+1 (IndexedDB) [V-18] | Pure-Dart NoSQL document store; append-only JSON logs map directly onto it; no code generation | Querying is basic; large logs need care with snapshots (already designed in) |
 | B. `drift` 2.35.2 (SQLite, has web/wasm backends) [V-18] | Relational queries, migrations, mature | Uses code generation (`drift_dev` with build_runner) [V-18], which CLAUDE.md §10 requires documenting; web setup more involved |
 | C. `hive_ce` 2.22.0 [V-18] | Simple key-value boxes, fast | Typed adapters usually generated; less natural for ordered logs |
-| D. Firestore offline cache only | No extra package | Off by default on web, Windows dev-only, Linux unsupported [V-6][V-10]; last-write-wins semantics [V-6]; ties offline play to Firebase |
+| D. Firestore offline cache only | No extra package | Off by default on web, beta on macOS and Windows, Windows dev-only, Linux not listed [V-6][V-10]; last-write-wins semantics [V-6]; ties offline play to Firebase |
 
 **Recommendation: A**, behind `EventStore` and a small `KeyValueStore` for settings. The data is append-only JSON with lookups by operation and seq, which is what a document store does well, and it avoids code generation. If the account/library side later needs relational queries, B can be added for that data alone without touching the event store.
 
@@ -48,9 +48,9 @@ The sync model is fixed by the authority decision (one ordered GM log; see [04-s
 |---|---|---|---|
 | In-process | none needed | Same-device play, tests | — |
 | LAN | WebSocket over `dart:io` on the host + `web_socket_channel` 3.0.3 on clients [V-18]; discovery with `bonsoir` 7.1.5 (Zeroconf) [V-18] | No internet needed; companion phones at the table | Host must be native (no `dart:io` on web) [V-12]; discovery plugin platform coverage to verify |
-| Backend relay: Firestore | FlutterFire `cloud_firestore` | No server to run; persistence included | Not production-ready on Windows, not on Linux [V-10]; listener latency; document size batching [V-7] |
+| Backend relay: Firestore | FlutterFire `cloud_firestore` | No server to run; persistence included | Beta on macOS and Windows, not for production on Windows, not on Linux [V-10]; listener latency; document size batching [V-7] |
 | Backend relay: Cloud Run WebSocket | `apps/server` in Dart [V-11] | Works from every platform incl. desktop; low latency; reuses `protocol` | A service to deploy and pay for |
-| P2P | `flutter_webrtc` 1.6.2 (data channels) [V-18] | Direct links, no relay cost | Needs signaling plus STUN/TURN for NAT traversal [V-17]; most complex to debug |
+| P2P | `flutter_webrtc` 1.6.2+hotfix.4 (data channels) [V-18] | Direct links, no relay cost | Needs signaling plus STUN/TURN for NAT traversal [V-17]; most complex to debug |
 
 **Recommendation:** build in this order: in-process → LAN → Cloud Run WebSocket relay (persisting batches to Firestore) → P2P. Cloud Run as the relay, instead of Firestore listeners, gives one network path that also serves the desktop builds that cannot use FlutterFire in production (concern 1 below). Firestore stays the persistence and account store where FlutterFire is supported. P2P comes last because it needs the most infrastructure and is the hardest for R and D to maintain.
 
@@ -75,8 +75,7 @@ These are choices this spec makes that R has not ruled on.
 
 Each is raised once, per CLAUDE.md §2. R's answer stands.
 
-1. **Firebase on desktop vs "all Flutter targets".** FlutterFire Firestore/Auth: Windows is development-only, not for production; Linux is not listed [V-10]. Options: (a) desktop uses a Cloud Run gateway (HTTPS + WebSocket) for accounts, relay and packs, behind the same `BackendGateway` interface; (b) desktop ships with LAN/P2P/offline only and no cloud features; (c) defer desktop builds. **Recommendation: (a)**, which aligns with the Cloud Run relay recommendation in decision 4. Note: [V-10] comes from Google's synthesized answer over Firebase docs; re-confirm against the FlutterFire platform table before relying on it.
-2. **Web GM cannot host LAN.** Browsers have no `dart:io` sockets [V-12]. A web GM can host only through the relay or P2P. Recommendation: accept, and have the UI show only the hosting modes the platform supports.
+1. **Firebase on desktop vs "all Flutter targets".** FlutterFire Firestore/Auth: beta on macOS and Windows; Windows is development-only, not for production; Linux is not listed [V-10]. Options: (a) desktop uses a Cloud Run gateway (HTTPS + WebSocket) for accounts, relay and packs, behind the same `BackendGateway` interface; (b) desktop ships with LAN/P2P/offline only and no cloud features; (c) defer desktop builds. **Recommendation: (a)**, which aligns with the Cloud Run relay recommendation in decision 4.2. **Web GM cannot host LAN.** Browsers have no `dart:io` sockets [V-12]. A web GM can host only through the relay or P2P. Recommendation: accept, and have the UI show only the hosting modes the platform supports.
 3. **Rulebook inconsistencies** (proficiency bonus, derived-stat operators, the top category glyph, disorder table layout, occult check attribute). Listed in [01-engine.md](01-engine.md#rulebook-gaps-found-while-writing-this). The engine supports all variants; the core pack needs R/D rulings before it is authored.
 4. **Alias transfer approval.** R specified that moving an alias needs GM approval. Unspecified: the destination GM, the source GM, or both. Recommendation: destination GM approves; the source campaign is notified, and an alias in a running operation cannot move until that operation ends.
 5. **Library verification workflow.** Who may verify items, and whether verification can be revoked, is not specified. Recommendation: an admin custom claim held by R and D only, revocable, with the verifier and date recorded on the item.

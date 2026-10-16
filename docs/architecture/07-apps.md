@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `apps/bard` | all Flutter targets; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience |
 | `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins operations the main app hosts |
-| `apps/server` | Cloud Run (Dart) | none directly | Relay, badge sign-in, pack publishing, library verification hooks |
+| `apps/server` | Cloud Run (Dart) | none directly | Relay, event-batch persistence, badge sign-in, storing published pack files (validated on the client), library verification flag writes |
 
 Both Flutter apps use the same `session`, `engine` and `protocol` packages, so a companion phone and a tablet are equal participants in an operation. The companion app is a different **UI**, not a different client.
 

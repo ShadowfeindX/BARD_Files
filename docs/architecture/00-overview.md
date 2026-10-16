@@ -87,24 +87,31 @@ The four packages R named are `engine`, `protocol`, `session`, `migrator`. `cont
 
 ## Dependency rules
 
-Arrows mean "may import". Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`.
+Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`. `dev_dependencies` (test-only) follow the same table except for the single exception listed below it.
 
 ```
 apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core
-apps/server               ──► protocol            (relay never runs the engine)
+apps/server               ──► protocol, server-side Firebase admin library*   (never the engine)
 backend                   ──► session (interfaces), protocol, Firebase plugins
 session                   ──► protocol, engine
 protocol                  ──► engine              (codecs for engine commands/events)
 engine                    ──► (Dart SDK only)
 migrator                  ──► (Dart SDK only)     (works on serialized JSON, never imports engine)
 content_core              ──► (none; data only)
+
+dev_dependencies exception:
+migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
+
+\* Dart's server docs point to a Firebase Admin SDK package for server-side access to Firebase [V-11]. It is a new dependency and needs R's approval (CLAUDE.md §6).
+
+`apps/server` relays frames, persists event batches and pack files, and issues badge sign-ins. It does not validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
 Why these rules:
 
 - **engine imports nothing** so it runs identically on every target, in tests, and on a server. No `dart:io`, because `dart:io` is unavailable on the web [V-12].
-- **migrator imports nothing project-internal** because a pub workspace has a single resolution and Dart does not allow two versions of the same package in one resolution [V-1]. It therefore cannot import engine N and engine N+1 together. It works on JSON with its own frozen schema descriptions instead (see [05-migrator.md](05-migrator.md)).
-- **server imports only protocol** so the backend can relay and persist but structurally cannot adjudicate rules.
+- **migrator imports nothing project-internal under `dependencies`** (tests may use the current engine; see the exception above) because a pub workspace has a single resolution and Dart does not allow two versions of the same package in one resolution [V-1]. It therefore cannot import engine N and engine N+1 together. It works on JSON with its own frozen schema descriptions instead (see [05-migrator.md](05-migrator.md)).
+- **server never imports the engine** so the backend can relay and persist but structurally cannot adjudicate rules.
 - **session never imports Flutter** so the same operation loop runs in the apps, a CLI, and tests. Platform-specific transports and stores are injected.
 
 New pub dependencies in any package go to R first (CLAUDE.md §6). This spec names candidate packages only inside the open decisions.

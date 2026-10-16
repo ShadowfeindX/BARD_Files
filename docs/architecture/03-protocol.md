@@ -8,15 +8,25 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 
 ```json
 {
-  "p": 1,                         // protocol major
-  "e": "1.4.0",                   // sender's engine version
-  "op": "op_01J...",              // operation id
-  "seq": 1042,                    // GM-assigned sequence (events only)
-  "from": "alias_... | gm",       // logical sender
+  "p": 1,
+  "e": "1.4.0",
+  "op": "op_01J8Z3",
+  "seq": 1042,
+  "from": "gm",
   "type": "events",
-  "body": { ... }
+  "body": {}
 }
 ```
+
+| Field | Meaning |
+|---|---|
+| `p` | protocol major |
+| `e` | sender's engine version |
+| `op` | operation id |
+| `seq` | GM-assigned sequence (events only) |
+| `from` | logical sender: an alias id or `gm` |
+| `type` | message type (table below) |
+| `body` | message-specific payload |
 
 - Encoding is JSON via `dart:convert` (no extra dependency). A binary codec can be added later behind the same `Codec` interface if size ever matters.
 - Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` (Proposed), consistent with CLAUDE.md §10's "no hidden code generation without a doc entry". If R prefers generated serializers, that is a new dependency and goes to R.

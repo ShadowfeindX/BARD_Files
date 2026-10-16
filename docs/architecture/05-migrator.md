@@ -53,4 +53,4 @@ N → N+2 runs N → N+1 then N+1 → N+2. Each step is tested on its own. A ste
 
 ## Testing
 
-Fixture pairs per step: realistic N snapshots and packs in, expected N+1 out. For the newest step only, an integration test (in a test-only dev dependency on the current engine, which is N+1) checks that the output loads and folds. See [08-testing.md](08-testing.md#migrator).
+Fixture pairs per step: realistic N snapshots and packs in, expected N+1 out. For the newest step only, an integration test checks that the output loads and folds in the current engine (which is N+1). That test is the one allowed `dev_dependencies` exception: `migrator` may depend on `engine` for tests only, never under `dependencies` (see [00-overview.md](00-overview.md#dependency-rules)). Library code in `migrator` stays Dart-SDK-only. See [08-testing.md](08-testing.md#migrator).

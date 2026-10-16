@@ -68,7 +68,9 @@ core/                           pack id
 4. Cross-validate references (a skill that names an attribute that does not exist, an item referencing an unknown damage category).
 5. Produce an immutable `RulesPack` and its `contentHash`.
 
-The validator is part of the engine package so the app, the server and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed) lets D check a pack without running the app.
+The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed) lets D check a pack without running the app.
+
+The server does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
 ## Operations pin packs
 
