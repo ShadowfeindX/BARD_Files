@@ -103,7 +103,7 @@ dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
 
-\* `firebase_admin_sdk` 0.5.6 supports Auth (custom tokens, custom claims) and Messaging but **not** Realtime Database [V-24]. It is still pending R's approval (CLAUDE.md §6), as is `firebase_functions`, the Dart Functions package named in Dart's server docs [V-11]. `firebase_dart` is part of the stack R adopted.
+\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are **approved by R** (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the stack R adopted.
 
 `apps/functions` mints badge sign-ins, sets role claims, receives payment webhooks and sends push. It does not relay (Realtime Database is the relay), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 

@@ -85,7 +85,7 @@ A badge is a printable/scannable code (for example a QR on a physical agent badg
 
 A signed-in account works offline from a local cache. The app keeps its own local record (profile, aliases, campaigns, packs by content hash, operation logs) in the local store chosen in [09-open-decisions.md](09-open-decisions.md#3-persistence).
 
-`firebase_dart` persists query results, not pending writes [V-27]. The session therefore owns an **outbox**: requests made offline are stored locally and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). A write queued with `goOffline` was delivered on `goOnline` in the probe [V-21]; whether a queued SDK write survives an **app restart** is **unproven** (probe 8.1), which is why the design relies on its own outbox.
+`firebase_dart` persists query results, not pending writes, per the investigation [V-27][U]. The session therefore owns an **outbox**: requests made offline are stored locally and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). A write queued with `goOffline` was delivered on `goOnline` in the probe [V-21]; whether a queued SDK write survives an **app restart** is **unproven** (probe 8.1), which is why the design relies on its own outbox.
 
 Auth tokens are stored at the path given to `firebase_dart` setup, in plaintext unless the app encrypts them [U]. Open item in [09-open-decisions.md](09-open-decisions.md#open-items-for-r).
 
@@ -142,11 +142,11 @@ Dart Cloud Functions are experimental and may change without notice. They requir
 
 ### Firebase Admin and RTDB
 
-`firebase_admin_sdk` 0.5.6 supports Auth (`createCustomToken`, `setCustomUserClaims`) and Messaging, but **not** Realtime Database [V-24]. So functions cannot write RTDB through it. Default: such writes are made by clients under rules (the GM client writes `members`, moderators move library items). Alternatives, both open: RTDB REST writes with a service-account OAuth token (probe 8.1b), or a Node function (R). The Firebase Admin dependency itself still needs R's approval (CLAUDE.md §6).
+`firebase_admin_sdk` 0.5.6 (approved by R, as is `firebase_functions` 0.8.0) provides Auth (`createCustomToken`, `setCustomUserClaims`), Messaging, Storage, App Check, Firestore, Functions and Security Rules libraries, but **no** Realtime Database library [V-24]. So functions cannot write RTDB through it. Proposed: its Storage admin library could serve the pack publishing helper. Default: such writes are made by clients under rules (the GM client writes `members`, moderators move library items). Alternatives, both open: RTDB REST writes with a service-account OAuth token (probe 8.1b), or a Node function (R).
 
 ## Push notifications
 
-`firebase_messaging` 17.0.0 lists neither Windows nor Linux [V-26]. On those platforms notifications are **in-app only**, via `/users/$uid/inbox`. Mobile and web push go through the push function.
+`firebase_messaging` 17.0.0 describes itself as delivering messages on Android and iOS, and the investigation found no Windows or Linux support [V-26][U]. On those platforms notifications are **in-app only**, via `/users/$uid/inbox`. Mobile and web push go through the push function.
 
 ## App Check
 
