@@ -2,7 +2,7 @@
 
 Status: **ruled by R (2026-10-20)**, from D's approved feature list "B.A.R.D. Supplemental Materials". This chapter records the decided parts. Items that depend on the operation/mission model (X0) wait for R's meeting with D and are not designed here. They are listed at the end. Nothing here is implemented yet.
 
-Where this chapter changes an earlier ruling, it says so under [Amendments to earlier chapters](#amendments-to-earlier-chapters). Those chapters are updated in a later change, after the probe-findings update to this spec lands. Design details R has not ruled on individually are marked **Proposed**. Question ids (Q6, Q24 and so on) trace to the working record `architecture/supplemental-features-reconciliation.md` in the project library.
+Where this chapter changes an earlier ruling, it says so under [Amendments to earlier chapters](#amendments-to-earlier-chapters). Those chapters are updated in a later change. Design details R has not ruled on individually are marked **Proposed**. Question ids (Q6, Q24 and so on) trace to the working record `architecture/supplemental-features-reconciliation.md` in the project library.
 
 ## Terminology (ruled, rename pending)
 
@@ -55,7 +55,7 @@ D's tiers, as given by R:
 
 "Data" means entries in the glossary, bestiary, item catalog and mission/operation library. A whole entry, or a section of one (a field or part of a description), can be locked behind a clearance level (D).
 
-- **Claim.** One custom claim holds the account's tier, set by the roles function ([06](06-accounts-backend.md#roles)). It replaces the spec's loose "tier" claim. Rules read it from `auth.token` [V-9]; claim-based rules over the desktop REST client are still unproven [V-32], and claim pickup after a change follows probe 8.4.
+- **Claim.** One custom claim holds the account's tier, set by the roles function ([06](06-accounts-backend.md#roles)). It replaces the spec's loose "tier" claim. Rules read it from `auth.token` [V-9]; a claim-based Firestore rule over the desktop REST client works once the token is force-refreshed [V-43], and a changed claim appears only on a forced `getIdToken(true)` [V-42].
 - **Per-tier lookup.** Access is not "clearance ≥ N". For example, a $5.99 user reads level-4 data, and only some tiers see summaries. The roles function and rules use a per-tier list of the **data levels** and **summary levels** each tier may read. Entry levels run 1-4.
 - **Gated sections are separate documents** (follows from [V-48]). Each gated section has a data document and a summary document, readable only by tiers granted that level.
 - **Summaries.** Every mission gets a summary; only some missions are redacted.
@@ -90,7 +90,7 @@ Scanning a public badge with the companion app opens the profile in the app. The
 
 ### Sign-in code
 
-- Short-lived and single-use (R). Proposed flow: the signed-in phone asks a function for a fresh code (for example valid for 60 seconds). The other device scans it and sends it to the badge-login function, which returns a custom token (the P9 mechanism, conditional on probe 8.3).
+- Short-lived and single-use (R). Proposed flow: the signed-in phone asks a function for a fresh code (for example valid for 60 seconds). The other device scans it and sends it to the badge-login function, which returns a custom token (the P9 mechanism; probe 8.3 met its condition [V-41]).
 - **Reverse flow, also supported:** the desktop or web client shows a one-time code, and the signed-in phone scans it and approves the sign-in. Many desktops have no camera, so this flow avoids needing one.
 - Neither code can create a sign-in without the backend.
 
@@ -178,7 +178,7 @@ These are applied to the named chapters in a later change:
 |---|---|
 | P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the RTDB draft's `/users/$uid/badges`, the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
 | 09-2 | Invite links use `bard://join/<op>?invite=<token>` with no `alias=`. Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
-| P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
+| P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, the [09](09-open-decisions.md) Targets row, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
 | 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim is assigned once moderators beyond R and D are chosen. |
 | 06 Account model | No player/handler type. The agent gains fictional profile fields, a badge number (string) and a sign-up date. Anonymous accounts have no profile or badge number. |
 | 02 Distribution | Gated lore above level 1 is not bundled. Packs and library items gain a `testing` / `released` status. |
