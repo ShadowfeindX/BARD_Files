@@ -49,7 +49,7 @@ Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED
 - surfaces `FAILED_PRECONDITION` as a missing-index error (a deploy problem, not a user error); every query the app runs has its composite index declared with the Firestore collection draft (P10c);
 - forces `getIdToken(true)` after a role change before relying on a claim (see [Roles](#roles)).
 
-**Pending:** natural token expiry and automatic refresh after about one hour (only forced refresh is tested so far). The probe was started in the cloud at 18:55Z on 2026-10-20 (about 65 min) and has not reported yet; see [verification.md](verification.md#probe-status).
+**Natural expiry** (Linux [V-45]): a stale ID token gets 401 from Firestore REST, and a plain `getIdToken()` after expiry returns a new working token by itself. So the REST client calls `getIdToken()` for **every request** and never caches the token string; on a 401 it may retry once with `getIdToken(true)` before surfacing a sign-in error (Proposed). Not tested: revoked sessions, disabled users, password change, refresh-token failure, Windows [V-45].
 
 **FS4 search.** Standard edition: structured queries (equality, range, array-contains on keyword and tag fields), with composite indexes where needed. No full-text search. Text search needs an Enterprise edition database; revisit Enterprise only if text search is needed later [V-36]. Standard bills per document read [V-36].
 
@@ -104,7 +104,7 @@ Rules:
 
 Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including R's manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run). 
 
-Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. A client that never gets the notice should pick up the claim at its next token refresh, about hourly; that natural refresh is still pending ([FS2](#firestore-fixed-fs1-fs2-fs4-fs5)).
+Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. A client that never gets the notice should pick up the claim when its token next refreshes, at most about an hour later, since an expired token is refreshed by `getIdToken()` [V-45] (that the refreshed token carries a new claim follows from the forced-refresh result [V-42] but was not tested on natural expiry).
 
 ## Badges (Fixed: P9, conditional on probe 8.3)
 
@@ -275,7 +275,7 @@ Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC. Fu
 |---|---|---|
 | done | FS2 Firestore REST write and `runQuery` under rules, Windows and Linux | Done [V-32] |
 | done | FS2 claim rules and composite index, Linux | Done [V-43] |
-| — | FS2 natural token expiry and auto-refresh | **Pending** (started, not reported yet) |
+| done | FS2 natural token expiry and auto-refresh, Linux | Done [V-45] |
 | done | 8.1b functions read/write RTDB over REST, callable by URL (FS3, B6) | Done [V-33] |
 | — | FS3 least IAM role for RTDB from functions | **Pending** (script ready; R runs it) |
 | done | B5 token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |

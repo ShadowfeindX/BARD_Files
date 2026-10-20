@@ -38,7 +38,7 @@ These come from R and are not reopened here. Items ruled on 2026-10-20 keep thei
 
 - **Pending D** (R wants the creative director's approval first): occult check attribute (C5/G6); "cast magic" and the rest of the occult system (F3); exact pack shape and details (P3; the JSON + manifest format is fixed); the physical-dice feature (concern 7); revisiting W1. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
 - **P10c, waiting on R's ruling:** the Realtime Database live-play tree and rules, drafted from probe 8.6 [V-38] with two weaknesses open ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play)). The Firestore collections are still to be drafted.
-- **Pending probes:** FS2 natural token expiry, FS3 least IAM role ([verification.md](verification.md#probe-status)).
+- **Pending probe:** FS3 least IAM role ([verification.md](verification.md#probe-status)).
 
 Every external choice stays behind an interface so it does not leak into the engine, protocol or migrator.
 
