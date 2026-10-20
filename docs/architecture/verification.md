@@ -82,7 +82,7 @@ Every backend probe so far, its result and where the evidence is. Paths are in t
 | FS3 least IAM role for RTDB from functions | Test project (R's gcloud) | Done by impersonation (run 3); not run from a deployed function | V-46 | `probes/fs3-iam-role/README.md`, `run-fs3-iam.sh` |
 | B5 token box encryption and secure store | Linux | Done | V-34, V-35 | `probes/b5-linux/NOTES.md`, `logs/` |
 | B5 token box encryption and secure store | Windows | Done | V-44 | `probes/b5-windows/RESULTS.md`, `logs/`; branch `probe/b5-windows` |
-| 8.6 RTDB live-play rules | Emulator (Linux) | Done; two weaknesses open for R | V-38 | `probes/rtdb-rules-8-6/` |
+| 8.6 RTDB live-play rules | Emulator (Linux) | Done; P10c ruled by R with three changes (see 06) | V-38 | `probes/rtdb-rules-8-6/` |
 | 8.5 anonymous upgrade | Linux, Windows | Done | V-39 | `probes/anon-upgrade-8-5/`; `probes/windows-8-5-8-1-8-3/` (branch `claude/project-thread-jkancw`) |
 | 8.3 real custom token | Linux, Windows | Done | V-41 | `probes/custom-token-claims-8-3-8-4/`; `probes/windows-8-5-8-1-8-3/p83/` |
 | 8.4 custom-claim pickup | Linux | Done (Windows not run) | V-42 | `probes/custom-token-claims-8-3-8-4/run-linux-8-4.log` |

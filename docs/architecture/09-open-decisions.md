@@ -63,6 +63,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | P9 | Badge sign-in via an HTTPS Dart function minting a custom token, conditional on probe 8.3 (condition met: a real custom token signs in on Windows and Linux [V-41]). PDF417 symbology; payload is only badge id + 256-bit secret, secret stored hashed. Service Account Token Creator on the runtime service account is a deploy-checklist item [V-33]. Badge packages not approved yet. | [06](06-accounts-backend.md) |
 | P10a | Backend port and adapters, plus a document-store capability for Firestore. | [06](06-accounts-backend.md) |
 | P10b | Three Firebase projects (dev, staging, prod); RTDB and Firestore rules tested in the Emulator Suite. | [06](06-accounts-backend.md), [08](08-testing.md) |
+| P10c (RTDB) | RTDB live-play tree and rules as drafted from probe 8.6 [V-38], with three changes: `meta` cannot be deleted; signaling is keyed by uid (`signaling/$uid/...`, written by that uid or the GM); `meta/locked` also freezes signaling (presence and inbox stay writable). The anonymous one-alias rule is in Firestore. Ruled by R 2026-10-20. | [06](06-accounts-backend.md#realtime-database-model-live-play) |
 | P14 | HTTPS-only Dart functions: badge login, roles, payment webhook and store receipts (placeholders until concern 6), push via `firebase_admin_sdk` Messaging, pack publishing helper, `archiveOperation`. In-app inbox on RTDB at `/inbox/$uid`. | [06](06-accounts-backend.md) |
 | B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions. All five ordered probes are done [V-38]–[V-42] (8.4 on Linux only), as are FS2 (natural expiry on Linux [V-45]), 8.1b and B5 (Linux and Windows), and the FS3 least IAM role [V-46]. Status: [verification.md](verification.md#probe-status). | [06](06-accounts-backend.md) |
 | B3 | Joins written by the GM client under RTDB rules; library verification under Firestore rules from the client; other admin-only RTDB writes through function REST. No Node function; the `firebase_admin` (appsup) lead is dropped. | [06](06-accounts-backend.md) |
@@ -89,7 +90,6 @@ R wants D's approval on these before they are designed in full. The proposals ar
 
 | Item | Waits on |
 |---|---|
-| P10c RTDB live-play tree and rules | **R's ruling.** Drafted from probe 8.6 (emulator, 116/116 checks [V-38]); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play). Open for R: (1) the GM can delete `meta` of an unlocked operation and anyone can then recreate it as GM (recommend a no-delete rule); (2) any member can overwrite any `signaling/$peer` (recommend keying by uid); (3) whether `meta/locked` also freezes signaling. The anonymous one-alias rule is in Firestore. |
 | P10c Firestore collections | Still to be drafted, now that FS2 has passed. |
 
 ## Deferred
