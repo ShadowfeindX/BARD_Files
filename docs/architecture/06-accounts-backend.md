@@ -49,7 +49,7 @@ Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED
 - surfaces `FAILED_PRECONDITION` as a missing-index error (a deploy problem, not a user error); every query the app runs has its composite index declared with the Firestore collection draft (P10c);
 - forces `getIdToken(true)` after a role change before relying on a claim (see [Roles](#roles)).
 
-**Natural expiry** (Linux [V-45]): a stale ID token gets 401 from Firestore REST, and a plain `getIdToken()` after expiry returns a new working token by itself. So the REST client calls `getIdToken()` for **every request** and never caches the token string; on a 401 it may retry once with `getIdToken(true)` before surfacing a sign-in error (Proposed). Not tested: revoked sessions, disabled users, password change, refresh-token failure, Windows [V-45].
+**Natural expiry** (Linux, `firebase_dart` 1.6.2, session restored from storage in a second process [V-45]): a stale ID token gets 401 from Firestore REST, and a plain `getIdToken()` after expiry returns a new working token by itself. Proposed: the REST client calls `getIdToken()` for **every request** and never caches the token string; on a 401 it retries once with `getIdToken(true)` before surfacing a sign-in error. Not tested: revoked sessions, disabled users, password change, refresh-token failure, Windows [V-45].
 
 **FS4 search.** Standard edition: structured queries (equality, range, array-contains on keyword and tag fields), with composite indexes where needed. No full-text search. Text search needs an Enterprise edition database; revisit Enterprise only if text search is needed later [V-36]. Standard bills per document read [V-36].
 
@@ -104,7 +104,7 @@ Rules:
 
 Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including R's manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run). 
 
-Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. A client that never gets the notice should pick up the claim when its token next refreshes, at most about an hour later, since an expired token is refreshed by `getIdToken()` [V-45] (that the refreshed token carries a new claim follows from the forced-refresh result [V-42] but was not tested on natural expiry).
+Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. Whether a client that never gets the notice picks up the claim when its token next refreshes on expiry is **untested**: V-45 shows the token refresh, not claims, and in V-42 the plain `getIdToken()` did not show the claim while the old token was still valid.
 
 ## Badges (Fixed: P9, conditional on probe 8.3)
 
