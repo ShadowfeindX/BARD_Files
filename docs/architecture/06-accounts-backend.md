@@ -18,7 +18,7 @@ R adopted the stack from the backend-split investigation (project library: `arch
 | Hosting | Firebase Hosting (web build) | — |
 | Cloud Run | No separate service planned | The earlier desktop Cloud Run gateway is dropped; Dart functions themselves deploy to Cloud Run [V-33] |
 
-Platform targets in v1 (R, 2026-10-20): **Windows and Linux desktop**, plus the web player build (W1). macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 (Linux only) [V-42]. Android was not probed.
+Platform targets in v1 (R, 2026-10-20): **Windows and Linux desktop**, plus the web player build (W1). macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42] and the FS2 claims/index follow-up [V-43] (Linux only). Android was not probed.
 
 ### Backend port and adapters (Fixed: P10a)
 
@@ -45,11 +45,11 @@ Ruled by R 2026-10-20. Firestore runs alongside RTDB (this answers B1 and revers
 
 **FS2 desktop client.** No Firestore SDK runs on desktop for us. `backend` contains a small hand-written Firestore REST client behind the backend port; it calls `getIdToken()` on `firebase_dart` for every request and sends the token as a Bearer header, and Security Rules authorize the request [V-36]. Web uses FlutterFire `cloud_firestore`. Probed on Windows and Linux [V-32]: PATCH write 200, `runQuery` with filter, `orderBy` and `limit` 200, rules enforced (403 on a denied path and with no token), `getIdToken(true)` refresh works, a bad token gives 401.
 
-Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED_PRECONDITION` ("The query requires an index") until the index is READY, then 200; a rule on a custom claim (`request.auth.token.role == 'gm'`) gives 403 without the claim and 200 once the claim is set and the token force-refreshed. So the REST client:
+Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED_PRECONDITION` ("The query requires an index") until the index is READY, then 200; a rule on a custom claim (`request.auth.token.role == 'gm'`) gives 403 without the claim and 200 once the claim is set and the token force-refreshed. So the REST client (Proposed, follows from FS2):
 - surfaces `FAILED_PRECONDITION` as a missing-index error (a deploy problem, not a user error); every query the app runs has its composite index declared with the Firestore collection draft (P10c);
 - forces `getIdToken(true)` after a role change before relying on a claim (see [Roles](#roles)).
 
-**Pending:** natural token expiry and automatic refresh after about one hour (only forced refresh is tested so far). The probe is running; see [verification.md](verification.md#probe-status).
+**Pending:** natural token expiry and automatic refresh after about one hour (only forced refresh is tested so far). The probe was started in the cloud at 18:55Z on 2026-10-20 (about 65 min) and has not reported yet; see [verification.md](verification.md#probe-status).
 
 **FS4 search.** Standard edition: structured queries (equality, range, array-contains on keyword and tag fields), with composite indexes where needed. No full-text search. Text search needs an Enterprise edition database; revisit Enterprise only if text search is needed later [V-36]. Standard bills per document read [V-36].
 
@@ -87,11 +87,11 @@ Rules:
   - An alias in a **running operation cannot move** until that operation ends.
   - The transfer request is a Firestore document under the destination campaign, approvable only by its GM (Firestore rules).
 - **Anonymous accounts** (Fixed): can join any session, have exactly one alias, cannot GM, host or create content. Anonymous sign-in works in `firebase_dart` on Windows and Linux [V-21].
-- **Upgrading an anonymous account** (probe 8.5, Windows and Linux [V-39]). `linkWithCredential` is an `UnimplementedError` stub in `firebase_dart` 1.6.2, and signing in with email after anonymous gives a **new** uid [V-21], so neither is used. Proposed upgrade path:
+- **Upgrading an anonymous account** (probe 8.5, Windows and Linux [V-39]). `linkWithCredential` is an `UnimplementedError` stub in `firebase_dart` 1.6.2 [V-39], and signing in with email after anonymous gives a **new** uid [V-21], so neither is used. Proposed upgrade path:
   - Call `updateEmail` then `updatePassword` on the signed-in `firebase_dart` user. This keeps the uid, clears `isAnonymous`, and later email sign-ins return the same uid [V-39].
   - Do **not** call the Identity Toolkit `accounts:update` REST endpoint out of band for this. It also keeps the uid, but it leaves `firebase_dart`'s stored session inconsistent (Linux: `reload()` fails with `user-token-expired`; Windows: `reload()` still reports anonymous) [V-39].
   - Map `EMAIL_EXISTS` and `WEAK_PASSWORD` to user-facing messages [V-39].
-  - After upgrading, force `getIdToken(true)` before any host, GM or content command: the token issued before the upgrade still says `sign_in_provider: anonymous`, which the rules refuse [V-39].
+  - After upgrading, force `getIdToken(true)` before any host, GM or content command: the token issued before the upgrade still says `sign_in_provider: anonymous` (decoded, not re-verified) [V-39], and the rules refuse anonymous tokens for those writes (shown in the emulator with hand-built tokens [V-38]).
   - The upgraded account has `email_verified: false` [V-39]; whether hosting needs a verified email is a design choice for R, not decided here.
 - Anonymous data does not survive clearing local storage or switching devices [V-8]; the UI says so before an anonymous player invests in a character.
 - Enforcement: the session refuses host/GM/content commands from anonymous agents, and rules in RTDB and Firestore refuse the corresponding writes using `auth.token.firebase.sign_in_provider` [V-9]. The RTDB rules prototype refuses `meta`, head and event writes from anonymous tokens in the emulator [V-38]; live tokens carry the values the rules check (`anonymous`, `password`, `custom`) [V-39][V-41]. Rules on the deployed database are not tested yet.
@@ -102,7 +102,7 @@ Rules:
 
 ## Roles
 
-Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. RTDB and Firestore rules read them from `auth.token` [V-9]. A client sees a new claim only after a **forced** refresh: in probe 8.4 `getIdToken(true)` showed the claim, while the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run). Firestore rules on a claim work over the REST client once the token is refreshed [V-43]; claims in RTDB rules are not tested yet.
+Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including R's manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run). 
 
 Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. A client that never gets the notice should pick up the claim at its next token refresh, about hourly; that natural refresh is still pending ([FS2](#firestore-fixed-fs1-fs2-fs4-fs5)).
 
@@ -133,7 +133,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 - After `FirebaseDart.setup` and **before any `FirebaseAuth` use**, `backend` opens the Hive box `firebase_auth` with `HiveAesCipher(key)`. That encrypts the box [V-34].
 - The key lives in the OS secure store via `flutter_secure_storage` 11.2.0. Linux: libsecret (Secret Service) [V-34]. **Windows: not Credential Manager**, but a JSON file of DPAPI-protected values at `%APPDATA%\<company>\<product>\flutter_secure_storage.dat` (`flutter_secure_storage_windows` 4.2.2), tied to the Windows user account [V-44]. The folder follows the app's Windows company and product names, so the Windows runner sets them deliberately before the first release; renaming them later orphans the key (key loss, below).
-- **Guard 1, key access and migration.** Reading or creating the key never fails silently: a wrong or missing key makes Hive truncate the box and sign the user out, on Linux and Windows alike [V-34][V-44], so a key failure is surfaced, not swallowed. **Key loss means no session:** the app shows that the user must sign in again and does not treat it as an error loop [V-44]. A plaintext-to-encrypted migration step handles boxes written before encryption: it reads the plaintext box before any encrypted open, then rewrites it encrypted. Opening an existing plaintext box with the cipher was not probed, so the migration is tested before release.
+- **Guard 1, key access and migration.** Reading or creating the key never fails silently: a wrong or missing key makes Hive truncate the box and sign the user out, on Linux and Windows alike [V-34][V-44], so a key failure is surfaced, not swallowed. **Key loss means no session** [V-44]. Requirement: the app shows that the user must sign in again and does not treat it as an error loop. A plaintext-to-encrypted migration step handles boxes written before encryption: it reads the plaintext box before any encrypted open, then rewrites it encrypted. Opening an existing plaintext box with the cipher was not probed, so the migration is tested before release.
 - **Guard 2, locked keyring.** On Linux a locked keyring with no prompter blocks the libsecret call forever and freezes the event loop [V-34], so key access runs under a timeout guard and reports instead of hanging. A missing Secret Service gives a clean error [V-34]. Windows showed no hang [V-44]; the guard stays on every platform.
 - **Dependency:** `hive` 2.2.3 is a direct dependency of `backend`, **pinned exactly**. It must be the same `hive` package `firebase_dart` uses (`hive` ^2.0.0, not `hive_ce`) [V-35].
 - **Known accepted risk:** `firebase_dart` depends on `hive`, which has had no release since 2.2.3 (2022-06-30) [V-35], and on `firebaseapis` 0.2.0, whose repository was archived on 2026-03-24 (per the backend investigation, project library `architecture/firebase-desktop-deep-dive.md`).
@@ -182,7 +182,7 @@ What probe 8.6 changed in the earlier draft:
 - **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
 - **Rules do not check `seq` order or gaps.** That stays the GM client's job; rules only require a numeric `seq`, create-only keys and a valid audience [V-38].
 - **The one-alias rule is not in RTDB.** It is in Firestore (Held with the Firestore collections); RTDB only checks that a member entry carries one `aliasId` [V-38].
-- **Lookups per evaluation** are at most 3 `root.child` reads, well under the documented limit of 10 (a static count, not a load test) [V-38].
+- **Lookups per evaluation** are at most 3 `root.child` reads, under the limit of 10 the probe write-up cites for RTDB rules [U] (a static count, not a load test) [V-38].
 
 **Open for R (not decided):**
 
@@ -275,7 +275,7 @@ Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC. Fu
 |---|---|---|
 | done | FS2 Firestore REST write and `runQuery` under rules, Windows and Linux | Done [V-32] |
 | done | FS2 claim rules and composite index, Linux | Done [V-43] |
-| — | FS2 natural token expiry and auto-refresh | **Pending** (running) |
+| — | FS2 natural token expiry and auto-refresh | **Pending** (started, not reported yet) |
 | done | 8.1b functions read/write RTDB over REST, callable by URL (FS3, B6) | Done [V-33] |
 | — | FS3 least IAM role for RTDB from functions | **Pending** (script ready; R runs it) |
 | done | B5 token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |

@@ -38,6 +38,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | P7 | Actors are single-threaded mailbox objects, not isolates. If UI lag appears it is solved another way. | [04](04-session.md) |
 | P12 | Text log narrated during play (after the GM confirms a consequence batch), one variant per perspective; `textlog` message; genesis `archives`; new op id with seq restart. Rolling autosave: native hosts write events, text and head snapshot to the local store every batch, followed by a commit marker in its own transaction; on open, everything after the last marker is discarded [V-31]. The head snapshot is mirrored to RTDB on a GM-configurable per-operation interval (proposed default 5 minutes, plus on pause, close and before migration); event and text batches go to RTDB every batch. No power-loss protection in v1 (accepted). | [01](01-engine.md), [04](04-session.md), [05](05-migrator.md), [06](06-accounts-backend.md) |
 | 09-4 | Transport build order: in-process, LAN, RTDB relay, P2P. Transport packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled. | [04](04-session.md) |
+| Targets | v1 targets (R, 2026-10-20): Windows and Linux desktop, plus the web player build. macOS and iOS are not in v1, and their pending checks are dropped. | [00](00-overview.md), [07](07-apps.md) |
 | W1 | Web build is player-only for now (no GM hosting). Revisit with D. | [04](04-session.md), [07](07-apps.md) |
 | P8 | Migrator works on frozen JSON-level schemas; steps are pure `(json, decisions) -> (json, report)`. | [05](05-migrator.md) |
 | P13 | Migration confirmation on a separate warning screen: tick "cannot be recovered" and type the operation name; a single tap never confirms. | [05](05-migrator.md) |
@@ -47,7 +48,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | # | Ruling | Where |
 |---|---|---|
 | 09-1 | State management: `signals_flutter` 7.1.0 (Dart Signals, publisher rodydavis.com) in apps and `ui_kit`, not the umbrella `signals` package [V-29]. | [07](07-apps.md) |
-| 09-2 | Routing: `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical join link `bard://join/<op>?alias=<id>`; https links later where supported. Verified live on Linux and Windows; macOS and the iOS verification files untested [V-30]. | [07](07-apps.md) |
+| 09-2 | Routing: `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical join link `bard://join/<op>?alias=<id>`; https links later where supported. Verified live on Linux and Windows [V-30]; macOS and iOS are not in v1. | [07](07-apps.md) |
 | 09-3 | Persistence: `sembast` 3.9.0 (+ `sembast_web` 2.4.6+1 for web player caches) behind `EventStore`, one database file per operation opened on demand plus a small account/cache database [V-31]. | [04](04-session.md), [07](07-apps.md) |
 
 ### Backend
@@ -63,7 +64,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | P10a | Backend port and adapters, plus a document-store capability for Firestore. | [06](06-accounts-backend.md) |
 | P10b | Three Firebase projects (dev, staging, prod); RTDB and Firestore rules tested in the Emulator Suite. | [06](06-accounts-backend.md), [08](08-testing.md) |
 | P14 | HTTPS-only Dart functions: badge login, roles, payment webhook and store receipts (placeholders until concern 6), push via `firebase_admin_sdk` Messaging, pack publishing helper, `archiveOperation`. In-app inbox on RTDB at `/inbox/$uid`. | [06](06-accounts-backend.md) |
-| B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions. All five ordered probes are done [V-38]–[V-42], as are FS2, 8.1b and B5 (Linux and Windows); FS2 natural expiry and the FS3 least IAM role are pending. Status: [verification.md](verification.md#probe-status). | [06](06-accounts-backend.md) |
+| B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions. All five ordered probes are done [V-38]–[V-42] (8.4 on Linux only), as are FS2, 8.1b and B5 (Linux and Windows); FS2 natural expiry and the FS3 least IAM role are pending. Status: [verification.md](verification.md#probe-status). | [06](06-accounts-backend.md) |
 | B3 | Joins written by the GM client under RTDB rules; library verification under Firestore rules from the client; other admin-only RTDB writes through function REST. No Node function; the `firebase_admin` (appsup) lead is dropped. | [06](06-accounts-backend.md) |
 | B4 | No App Check enforcement in v1 (enforcement would lock out desktop) [V-37]; protection from Auth and rules; App Check monitor-only on mobile and web; revisit if abuse appears. | [06](06-accounts-backend.md) |
 | B5 | Encrypt the `firebase_dart` Hive box `firebase_auth` with `HiveAesCipher` after setup and before any auth use; key in the OS secure store via `flutter_secure_storage` 11.2.0. Guards: key access never fails silently, plus a plaintext-to-encrypted migration; a timeout for a locked Linux keyring. `hive` 2.2.3 is a direct dependency of `backend`, pinned exactly [V-34][V-35]. Accepted risk: `firebase_dart` depends on unmaintained `hive` and archived `firebaseapis` 0.2.0. | [06](06-accounts-backend.md) |
@@ -97,7 +98,7 @@ R wants D's approval on these before they are designed in full. The proposals ar
 
 ## Still unproven
 
-- FS2: natural ID-token expiry and auto-refresh (about 1 hour). Probe running. (Composite-index queries and claim-based rules: done [V-43].)
+- FS2: natural ID-token expiry and auto-refresh (about 1 hour). Probe started, not reported yet. (Composite-index queries and claim-based rules: done [V-43].)
 - FS3: least IAM role for RTDB access from functions [V-33]. Probe script ready; R runs it.
 - 8.4 claim pickup on Windows (Linux done [V-42]).
 - RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).

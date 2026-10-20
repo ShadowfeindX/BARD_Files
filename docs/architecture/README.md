@@ -24,7 +24,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 
 - **Fixed** marks a decision R has already made. It is recorded, not argued.
 - **Pending D** marks an item R wants D's approval on before it is designed in full. See [09-open-decisions.md](09-open-decisions.md#pending-d).
-- **Held** marks an item waiting on a probe. See [09-open-decisions.md](09-open-decisions.md#held).
+- **Held** marks an item waiting on a probe or on R's ruling of a probe-based draft. See [09-open-decisions.md](09-open-decisions.md#held).
 - **Provisional** marks existing design text kept as a starting point for a Pending D item.
 - **Proposed** marks a design detail R has not ruled on individually. It is not load-bearing.
 - Item ids (P1, F2, FS3, B5, W1 and so on) trace each ruling to [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20).
