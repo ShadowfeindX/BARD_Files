@@ -245,7 +245,7 @@ Ruled by R 2026-10-20 (FS3), with the probe evidence in [V-33]. `firebase_admin_
 - **Firestore** writes (such as the archive) go through `firebase_admin_sdk`; a chunk of about 920 KiB was written and read back [V-33].
 - **RTDB** reads and writes from a function are the function's **own REST calls** using the runtime's **default credential**: no key files and no scope handling. The probe wrote and read RTDB this way [V-33].
 - **Scoping:** requests are admin (bypass rules) unless the call passes `auth_variable_override`, which switches the request to rules evaluation; the parameter is honored on REST [V-33]. Functions use it to stay scoped to rules where that is wanted. Whether an overridden uid is then allowed by a matching rule was not tested.
-- **Service accounts:** each function group runs as a **dedicated runtime service account** (least privilege), not the default compute account. The **least IAM role for RTDB is still untested** [V-33]. Desk research suggests `roles/firebasedatabase.viewer` and `.admin` cover instance management, not data, so the role is settled only by the live test, which is **pending** (script ready, R runs it; [verification.md](verification.md#probe-status)). Until then the role is an open item for the deploy checklist.
+- **Service accounts:** each function group runs as a **dedicated runtime service account** (least privilege), not the default compute account. **Least IAM role for RTDB** [V-46]: `roles/firebasedatabase.admin` is the narrowest predefined role tested that gives RTDB REST read and write; `roles/firebase.viewer` gives read only; `roles/firebase.admin` and `roles/editor` work but are broader. A custom role with only `firebasedatabase.instances.get` + `.update` is not enough, and the single permission that grants data access was not isolated. Proposed deploy checklist: a function group that writes RTDB gets `roles/firebasedatabase.admin`; one that only reads gets `roles/firebase.viewer`; a narrower custom role only if R wants a further bisect. After creating a service account and granting Token Creator, allow 60-90 s before minting tokens [V-46]. Tested by impersonating a fresh service account, not from a deployed function running as it.
 - **Custom tokens** need Service Account Token Creator on the runtime service account (see Badges).
 - **No Node function** (B3). Anything needing database, auth or scheduled triggers is designed out or done as a manual script.
 
@@ -277,7 +277,7 @@ Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC. Fu
 | done | FS2 claim rules and composite index, Linux | Done [V-43] |
 | done | FS2 natural token expiry and auto-refresh, Linux | Done [V-45] |
 | done | 8.1b functions read/write RTDB over REST, callable by URL (FS3, B6) | Done [V-33] |
-| — | FS3 least IAM role for RTDB from functions | **Pending** (script ready; R runs it) |
+| done | FS3 least IAM role for RTDB from functions | Done [V-46] |
 | done | B5 token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |
 | 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; P10c drafted above, two weaknesses open for R |
 | 2 | 8.5 anonymous upgrade, Windows and Linux | Done [V-39] |
