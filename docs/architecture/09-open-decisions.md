@@ -74,7 +74,7 @@ Ruled before this review and unchanged: archived logs are frozen, not converted;
 
 ## Pending D
 
-R wants D's approval on these before they are designed in full. The proposals are carried in a separate PR for R's meeting with D (Thursday 2026-10-22 at the earliest). Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
+R wants D's approval on these before they are designed in full. The proposals, with options and recommendations, are in [10-pending-d.md](10-pending-d.md) for R's meeting with D (Thursday 2026-10-22 at the earliest). Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
 
 | Item | What is undecided | Already fixed |
 |---|---|---|

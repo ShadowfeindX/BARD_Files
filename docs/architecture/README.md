@@ -18,6 +18,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [07-apps.md](07-apps.md) | Main app, companion app and Cloud Functions: UI layering, perspectives, platforms |
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
 | [09-open-decisions.md](09-open-decisions.md) | **Decisions record** of R's rulings, plus what is still pending D, held for a probe, or deferred |
+| [10-pending-d.md](10-pending-d.md) | Proposals waiting on D: occult attribute and system, pack shape, web hosting, physical dice |
 | [verification.md](verification.md) | Every Dart / Flutter / Firebase claim in this spec and the source it was checked against |
 
 ## Conventions in this spec
