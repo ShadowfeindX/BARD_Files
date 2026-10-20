@@ -55,7 +55,7 @@ D's tiers, as given by R:
 
 "Data" means entries in the glossary, bestiary, item catalog and mission/operation library. A whole entry, or a section of one (a field or part of a description), can be locked behind a clearance level (D).
 
-- **Claim.** One custom claim holds the account's tier, set by the roles function ([06](06-accounts-backend.md#roles)). It replaces the spec's loose "tier" claim. Rules read it from `auth.token` [V-9]; a claim-based Firestore rule over the desktop REST client works once the token is force-refreshed [V-43], and a changed claim appears only on a forced `getIdToken(true)` [V-42].
+- **Claim.** One custom claim holds the account's tier, set by the roles function ([06](06-accounts-backend.md#roles)). It replaces the spec's loose "tier" claim. Rules read it from `auth.token` [V-9]; on Linux, a claim-based Firestore rule over the desktop REST client works once the token is force-refreshed [V-43], and a changed claim appeared only on a forced `getIdToken(true)` [V-42]. Windows was not run, and pickup on a natural token refresh is untested.
 - **Per-tier lookup.** Access is not "clearance ≥ N". For example, a $5.99 user reads level-4 data, and only some tiers see summaries. The roles function and rules use a per-tier list of the **data levels** and **summary levels** each tier may read. Entry levels run 1-4.
 - **Gated sections are separate documents** (follows from [V-48]). Each gated section has a data document and a summary document, readable only by tiers granted that level.
 - **Summaries.** Every mission gets a summary; only some missions are redacted.
@@ -80,7 +80,7 @@ There are two separate codes (R, 2026-10-20). This replaces P9's single printed 
 
 ### Badge numbers
 
-- 16 digits, non-sequential, stored as a **zero-padded string**. Leading zeros matter, and 16-digit values exceed the 53 bits of integer precision `int` has on the web [V-14].
+- 16 digits, non-sequential, stored as a **zero-padded string**. Leading zeros matter, and values above 2^53 (about 9.0 × 10^15), which most 16-digit numbers are, exceed the integer precision `int` has on the web [V-14].
 - `0000000000000000` to `0000000000000099` are reserved and assigned by hand through the console. D's badge number is `0000000000000013`.
 - A function generates numbers using a seed stored in the cloud (R). Approved method: a **keyed permutation** of a counter over the valid range (100 to 9999999999999999), so generated numbers look non-sequential and never repeat each other. A create-only-if-absent document per number (`badgeNumbers/{n}`) is a backstop against clashing with hand-assigned numbers. The seed sits in an admin-only location.
 
@@ -121,7 +121,7 @@ The invite link is `bard://join/<op>?invite=<token>`. A Firestore invite documen
 - **Mission submissions.** Missions become a library kind, submitted through forms for the handler and the players (D's list). Every published mission gets a summary and a clearance level. What a published mission contains, and its id, depend on X0.
 - **Appearing in a published mission** is a per-player gameplay setting. Its default comes from the opt-in on the consent screen.
 - **Public operations.** Handlers can mark an operation public and virtual ("virtual" means played online, not in person). Public operations are listed to signed-in users, and players can request to join. Proposed: the request is a Firestore document under the operation's record, approved by its handler, like a transfer request (concern 4); once approved, the handler's client writes the membership under RTDB rules as today (B3).
-- **Readers.** Firestore search and listings are for signed-in readers, limited by clearance. Firestore rules can cap page size [V-49], which limits scraping costs given per-read billing (FS4) and no App Check enforcement (B4).
+- **Readers.** Firestore search and listings are for signed-in readers, limited by clearance. Firestore rules can cap page size [V-49], which limits scraping costs given per-document-read billing on the Standard edition [V-36] and no App Check enforcement (B4).
 
 ## Game manual
 
@@ -176,10 +176,12 @@ These are applied to the named chapters in a later change:
 
 | Ruling | Changes |
 |---|---|
-| P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the RTDB draft's `/users/$uid/badges`, the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
+| P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the badge records in the Firestore account-data draft (P10c), the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
 | 09-2 | Invite links use `bard://join/<op>?invite=<token>` with no `alias=`. Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
 | P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, the [09](09-open-decisions.md) Targets row, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
 | 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim is assigned once moderators beyond R and D are chosen. |
+| 06 Library | The pending → public queue and moderator approval extend from library content to missions, public operations, public profiles and profile images. The approvers are still R and D, who hold the library verification claim; a separate `moderator` claim (06 Roles) is assigned once more moderators are chosen. |
+| 09 | The rulings in this chapter get rows in the decisions record in the same later change. Until then, this chapter is their record. |
 | 06 Account model | No player/handler type. The agent gains fictional profile fields, a badge number (string) and a sign-up date. Anonymous accounts have no profile or badge number. |
 | 02 Distribution | Gated lore above level 1 is not bundled. Packs and library items gain a `testing` / `released` status. |
 | 01 Engine | A new command for the stat-gated broadcast, plus comparison nodes in condition expressions. Proposed `ContactRevealed` and `SiteRevealed` events. |
