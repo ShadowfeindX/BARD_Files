@@ -14,9 +14,11 @@
 
 If a new rule needs a new *kind* of thing, that is an engine change. If it needs a new *number, name or row*, that is a pack change. The app shell can do neither.
 
-## Pack structure (Proposed)
+## Pack structure
 
-A pack is a folder of JSON files plus a manifest. JSON is proposed because the Dart SDK reads it with no extra dependency and every editor understands it. (Format is listed for approval in [09-open-decisions.md](09-open-decisions.md#proposed-design-choices-needing-approval).)
+**Format (Fixed, P3).** A pack is a folder of JSON files plus a manifest, not YAML. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too. Ruled by R 2026-10-20 (P3).
+
+**Exact pack shape and details: Provisional, pending D.** The file list below is the current draft and may change after review with D. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). The example pack for D lives in the project library, not in this repository.
 
 ```
 core/                           pack id
@@ -25,14 +27,14 @@ core/                           pack id
   proficiency.json
   difficulty.json
   derived.json                  formulas (data-only expression trees)
-  skills.json                   skills with category and allowed uses (§5)
+  skills.json                   skills: name, description, category, attribute, proficiency (§5)
   conditions.json               condition/affliction templates (§4)
   disorders.json                disorder table (§4)
   sanity_events.json            sanity loss table (§4)
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  occult.json                   magic categories, sanity costs (§8)
+  occult.json                   magic categories, sanity costs (§8; provisional, pending D)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
   items/                        one file per item template
@@ -60,9 +62,34 @@ core/                           pack id
 - `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override.
 - `contentHash` is computed by tooling, not written by hand, and is what an operation pins.
 
-### Deprecation in packs
+### Skills (Fixed, F3 part 2)
 
-Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecation-proposed-mechanism) for three things. In a pack's own records, `since` and `removeIn` are **pack** versions, since packs version independently of the engine.
+A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). Whether "cast magic" becomes one roll kind, and the trimming of `OccultSystem`, is part of the occult system review: Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+
+### Named variables in pack formulas (Fixed)
+
+Pack formulas and dice expressions are data-only trees (P4). Besides the existing nodes they may use a variable node:
+
+```json
+{ "type": "var", "key": "newScore" }
+```
+
+It is a named number supplied by the engine at evaluation time. Approved placements (ruled by R 2026-10-20):
+
+| Placement | Expression |
+|---|---|
+| Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
+| Assistance bonus, in `difficulty.json` | 1d6 + `var(helperSkillBonus)` |
+
+The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.
+
+### Authoring annotations (Fixed)
+
+While authoring, pack files may carry annotation keys (`note`, `source`, `openItems`, `placeholder`, `gap`, and `*Note` keys). Tooling strips them before a pack ships. There is no reserved annotation key in the schema, so the validator's rule that an unknown key is an error stands for every shipped pack.
+
+### Deprecation in packs (fixed)
+
+Ruled by R 2026-10-20 (P11). Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecation-fixed) for three things. In a pack's own records, `since` and `removeIn` are **pack** versions, since packs version independently of the engine.
 
 1. **Engine-deprecated keys.** When the engine deprecates a pack key (for example a field of `skills.json`), packs that still use it load normally and the validator reports a warning naming the replacement and the engine major that removes it.
 2. **Pack-deprecated entries.** A pack author marks one of their own entries as going away:
@@ -126,15 +153,21 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 | Core | D (official) | cloud-hosted, bundled copy in apps | yes |
 | Library | any GM, submitted for review | cloud-hosted | only once verified |
 | Campaign / private | a GM | the GM's account (and local cache) | no |
+| Operation-scoped | a GM, for one session | pinned to that operation | no |
 
+- The **operation-scoped tier** (Fixed, F3 part 3) sits under Campaign and holds per-session GM content. It uses the same schema and the same validator as any pack, is pinned by the operation (`packRef`), and its use is logged like any other pack change.
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
-- The **public library** is a government-style archive showing only items with `verification: verified` (Fixed). Verification is set by a reviewer holding a moderator custom claim, who moves the item from pending to public under database rules, never by the submitting client ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-proposed)). The review workflow (who verifies, how) is not specified by R yet and is noted in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
-- Library items are copied into a GM's pack when used, with provenance (`source: library/<id>@<version>`), so a library edit never changes a running campaign behind the GM's back.
+- The **public library** is a government-style archive showing only items with `verification: verified` (Fixed).
+- **Who verifies (Fixed, concern 5).** At first only R and D hold the verification claim. It is set by the roles function; more auditors can be added later via the console.
+- **Revocable.** Verification can be revoked: the item goes back to pending, with a reason. Copies already in GMs' packs are unchanged.
+- **Record.** Each library item records the verifier, the date and the version verified.
+- **Where it lives.** The library lives in Firestore (FS1). Verification is written by the reviewer's client under Firestore rules, never by the submitting client (B3, FS1); a function can take it over later if the rules get awkward. See [06-accounts-backend.md](06-accounts-backend.md).
+- Library items are copied into a GM's pack when used, with provenance (for example `libraryRef: library/<id>@<version>`; the field name is provisional with the pack shape and must not reuse the stripped `source` annotation key), so a library edit never changes a running campaign behind the GM's back.
 
 ## Distribution
 
 - The core pack ships inside the apps (offline first) and is also published to the backend so newer versions can be fetched.
-- Pack files in the backend are immutable per version; a new version is a new upload.
+- Pack files live in Cloud Storage and the pack index lives in Firestore (FS1). Pack files are immutable per version; a new version is a new upload.
 - The local cache stores every pack version an operation references, so an offline device can always open its operations.
 
 ## Documents (Typst, later)

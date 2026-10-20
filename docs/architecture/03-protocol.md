@@ -1,10 +1,15 @@
 # 03. Protocol (`packages/protocol`)
 
-The protocol package defines every message that crosses a process or device boundary, and how it is encoded. It is pure Dart, depends only on `engine` (for command and event codecs), and knows nothing about sockets, Firebase or Flutter.
+Two packages define what crosses a process or device boundary (F4, option A, ruled by R 2026-10-20: no wire-format concerns in the engine):
+
+- **`protocol_envelope`** (SDK-only): the envelope, the message types and version negotiation. It does not depend on `engine`, so `apps/functions` can depend on it alone.
+- **`protocol`**: the engine command and event codecs. It depends on `protocol_envelope` and `engine`.
+
+Both are pure Dart and know nothing about sockets, Firebase or Flutter. The sections below on envelope, messages, ordering and version negotiation describe `protocol_envelope`; codecs for engine commands and events live in `protocol`.
 
 One protocol serves every transport: in-process, LAN, P2P, and backend relay. A transport only moves opaque frames.
 
-## Envelope (Proposed)
+## Envelope
 
 ```json
 {
@@ -29,7 +34,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | `body` | message-specific payload |
 
 - Encoding is JSON via `dart:convert` (no extra dependency). A binary codec can be added later behind the same `Codec` interface if size ever matters.
-- Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` (Proposed), consistent with CLAUDE.md §10's "no hidden code generation without a doc entry". If R prefers generated serializers, that is a new dependency and goes to R.
+- Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` with `dart:convert`, and there is no `build_runner` (Fixed, P6; ruled by R 2026-10-20), consistent with CLAUDE.md §10's "no hidden code generation".
 
 ## Messages
 
@@ -42,11 +47,13 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | `rejected` | GM → client | The GM engine (or GM) rejected a request. References the request id. |
 | `events` | GM → clients | One or more events with consecutive `seq`, already filtered for the recipient. |
 | `resync` | client → GM | "I have up to seq N" after a gap or reconnect. |
-| `textlog` | GM → client | Proposed. Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
+| `textlog` | GM → client | Fixed (P12). Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
 | `presence` | both | Online/away/typing; never part of the event log. |
 | `ping` / `pong` | both | Liveness. |
 
 There is no message by which a client sends an *event*. Only the GM produces events (Fixed authority model).
+
+A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is not built. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
 
 ## Ordering and delivery
 
@@ -83,11 +90,11 @@ Decoding is compatible within a major (Fixed): a client reads everything older m
 
 ## Snapshots
 
-A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. Snapshots are a cache: the event log stays the source of truth.
+A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived operation keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 
-The session batches events so each relay write is one small Realtime Database node per audience. RTDB's documented limit of about 1,000 writes per second per database [V-25] is far above what a table produces. Other transports use the same batching for simplicity.
+The session batches events so each relay write is one small Realtime Database node per audience. RTDB's documented guidance of about 1,000 writes per second per database (not a hard limit) [V-25] is far above what a table produces. Other transports use the same batching for simplicity.
 
 ## Testing
 

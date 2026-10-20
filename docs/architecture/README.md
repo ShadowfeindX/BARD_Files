@@ -1,6 +1,6 @@
 # Architecture specification
 
-Status: **draft for R's review**. Nothing here is implemented yet.
+Status: **reviewed by R (2026-10-20)**. Ruled items are the design; items waiting on D or on a probe are marked. Nothing here is implemented yet.
 
 This folder describes how the B.A.R.D. Files platform is built: what each package does, how they talk to each other, and which decisions are still open. It is written so R and D can maintain the system without Claude.
 
@@ -17,14 +17,17 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [06-accounts-backend.md](06-accounts-backend.md) | Agents, aliases, anonymous accounts, badges, and the Firebase backend (`firebase_dart`, Realtime Database, Dart Cloud Functions) |
 | [07-apps.md](07-apps.md) | Main app, companion app and Cloud Functions: UI layering, perspectives, platforms |
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
-| [09-open-decisions.md](09-open-decisions.md) | **Decisions R still has to make**, with options and recommendations, plus concerns raised |
+| [09-open-decisions.md](09-open-decisions.md) | **Decisions record** of R's rulings, plus what is still pending D, held for a probe, or deferred |
 | [verification.md](verification.md) | Every Dart / Flutter / Firebase claim in this spec and the source it was checked against |
 
 ## Conventions in this spec
 
 - **Fixed** marks a decision R has already made. It is recorded, not argued.
-- **Open (R)** marks a decision only R can make. See [09-open-decisions.md](09-open-decisions.md).
-- **Proposed** marks a design choice made in this spec that R has not yet approved. Each one is listed in [09-open-decisions.md](09-open-decisions.md#proposed-design-choices-needing-approval).
+- **Pending D** marks an item R wants D's approval on before it is designed in full. See [09-open-decisions.md](09-open-decisions.md#pending-d).
+- **Held** marks an item waiting on a probe. See [09-open-decisions.md](09-open-decisions.md#held).
+- **Provisional** marks existing design text kept as a starting point for a Pending D item.
+- **Proposed** marks a design detail R has not ruled on individually. It is not load-bearing.
+- Item ids (P1, F2, FS3, B5, W1 and so on) trace each ruling to [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20).
 - **[U]** marks a claim from the backend investigation that is still unverified.
 - **[V-n]** points to a verified claim in [verification.md](verification.md). Any Dart, Flutter or Firebase statement without a tag is a design statement, not a claim about the toolkit.
 - Rulebook references cite the canonical PDF (`BARD Core Rulebook.pdf`) by section number.

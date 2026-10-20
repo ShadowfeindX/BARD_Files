@@ -8,7 +8,7 @@ The engine is the game. It is pure Dart, imports only the Dart SDK, performs no 
 - Turn **commands** into **events** (`decide`), and **events** into **state** (`evolve`).
 - Roll dice through an injected, seeded RNG and record every die in the resulting event.
 - Expose **read models**: pure functions that answer UI questions ("what is this agent's Evasion?") from state.
-- Provide the **event narrator** (Proposed): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the operation's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)).
+- Provide the **event narrator** (Fixed, P12): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the operation's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Narration runs after the GM confirms a consequence batch (P12, amended by F2), never on held events.
 
 Not its job: networking, persistence, accounts, ordering of messages, who is allowed to send what (that is `session`), or presentation.
 
@@ -43,7 +43,7 @@ Components are immutable, typed value classes defined by the engine. Each has a 
 |---|---|---|
 | `Identity` | name, kind tag, owner alias (if any) | — |
 | `Attributes` | map of pack-declared attribute key → score | §3 |
-| `Skills` | map of pack-declared skill key → proficiency tier key | §3, §5 |
+| `Skills` | map of pack-declared skill key → proficiency tier key (a skill itself is defined by the pack, see below) | §3, §5 |
 | `Vitals` | current/max Health, current/max Sanity | §4 |
 | `Defense` | DR modifiers, reactions available this round | §7 |
 | `Conditions` | active conditions/afflictions with source and duration | §4 |
@@ -60,6 +60,7 @@ Rules for components:
 
 - A component never stores a value that can be derived. Health max, Sanity max, Evasion and Initiative bonus are **derived** by the engine from attributes using formulas the pack supplies (§3). They are read models, not stored fields, unless a permanent upgrade modifies them (stored as an explicit modifier, e.g. the §9 "Formidable" purchase).
 - Keys inside components (`STR`, `firearms`, `proficient`) are **pack values**. The engine validates them against the active pack.
+- A **skill** (F3) is defined by the pack with: name, description, category, attribute and proficiency. The category is one of five and is organizational only: it has no effect on rules. The engine does not model "allowed uses" for a skill (dropped from `skills.json`).
 
 ### State
 
@@ -86,7 +87,7 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 | `ConditionSystem` | applying, ticking and clearing conditions, afflictions, disorders (§4) |
 | `CombatSystem` | initiative, rounds, turn order, action economy (major/minor/reaction), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
-| `OccultSystem` | occult action checks, ritual time and participants, focus items, sanity cost (§8) |
+| `OccultSystem` | Provisional, pending D: occult action checks, ritual time and participants, focus items, sanity cost (§8). Whether "cast magic" is one roll kind, and how much of this system stays, is undecided. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). |
 | `InventorySystem` | items, equipment, transfer |
 | `MessagingSystem` | in-game phone messages (see [04-session.md](04-session.md#in-game-phone)) |
 | `GmSystem` | GM-only edits: spawn NPC, set value, reveal/hide, award XP, free-form narrative events |
@@ -97,20 +98,21 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 
 Both are sealed families in the engine. Each carries an `actor` (the alias or GM issuing it) and, for events, a `visibility`.
 
-Illustrative check flow (names fixed by R's decision; fields are Proposed):
+Illustrative check flow (names and fields are Proposed; the consequence step is gated by GM review per F2):
 
 ```
 Player:  RequestAction(actor, description, suggestedSkill?)        → ActionRequested
 GM:      RequireCheck(requestId, attribute, skill?, dc, modifiers) → CheckRequired
 GM:      ResolveCheck(checkId)                                      → CheckResolved
-GM:      OverrideResult(checkId, outcome, note)                     → ResultOverridden
-GM:      ApplyConsequence(...)                                      → DamageApplied | SanityLost | ConditionApplied ...
+GM:      ApplyConsequence(...)                                      → (held for GM review) → DamageApplied | SanityLost | ConditionApplied ...
 ```
 
 - The GM may skip the request step (GM-initiated checks), and may set "auto-resolve" so `RequireCheck` immediately rolls. That is a GM setting stored in operation meta, not a different rule.
 - `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, advantage pool and the kept result, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it.
-- `ResultOverridden` never edits `CheckResolved`. Read models report "overridden" and show both.
-- Consequences are separate events, so an override can change what follows without rewriting the past.
+- Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
+- Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
+- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `OperationHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-operation auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
+- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-operation GM setting that is off by default) is Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
@@ -121,38 +123,52 @@ The engine implements these **kinds** of mechanics from the rulebook. All number
 | Mechanic | Engine vocabulary | Values from pack |
 |---|---|---|
 | Skill check | `total = primary die + attribute + proficiency bonus + modifiers`, success if `total ≥ DC` (§2) | primary die size, which attribute, bonus per tier |
-| Proficiency tiers | tier key → bonus expression (fixed number or die) | tiers and their bonuses |
+| Proficiency tiers | tier key → bonus expression; the proficiency bonus is additional dice, Proficient +1d4 and Expert +1d6 (G16) | tiers and their bonus dice |
 | Difficulty categories | category key → DC | category table |
 | Exploding die | on max face of the primary die, roll again and add, chaining (§2) | which dice explode (rulebook: primary only) |
 | Luck advantage | roll N extra primary dice, keep the best total (§2) | N's source (rulebook: LCK) |
 | Partial success | within X of the DC (§2, §4) | X |
 | Fumble | total ≤ fraction of DC (§2) | fraction |
 | Opposed check | both sides roll, higher wins, ties to GM (§5, §7) | — |
-| Assistance | helpers roll a gate check, then add a bonus (§2, §8) | gate DC, bonus expression |
+| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is `1d6 + var(helperSkillBonus)` | gate DC, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
 | Damage | category → dice and minimum (§6), DR subtracts first (§7) | damage table, DR formula |
 | Sanity check | resist roll, outcome band → full/half/none/extra loss (§4) | bands, losses |
 | Range bands | band → penalty, weapon-category restrictions (§7) | bands, penalties |
 
-A **dice expression** is engine vocabulary: a small data structure (not a string parsed at runtime) such as `Dice(count: 1, sides: 6, explode: true)`, `Const(3)`, `Sum([...])`, `KeepHighest(pool, n)`. Packs write these in data form; the engine evaluates them with the RNG and returns both the value and the breakdown.
+A **dice expression** is engine vocabulary: a small data structure (not a string parsed at runtime) such as `Dice(count: 1, sides: 6, explode: true)`, `Const(3)`, `Sum([...])`, `KeepHighest(pool, n)`, `Var(key)`. Packs write these in data form; the engine evaluates them with the RNG and returns both the value and the breakdown.
 
-A **formula** is engine vocabulary too: a tiny data-only expression tree over attribute references, constants and `+ − × ÷ min max floor`. No scripting language, no `eval`. This keeps packs editable by D and safe to load from the cloud.
+A **formula** is engine vocabulary too: a tiny data-only expression tree over attribute references, constants, `var` nodes and `+ − × ÷ min max floor`. No scripting language, no `eval`. This keeps packs editable by D and safe to load from the cloud. (P4, approved by R: data-only expressions and formulas, no scripting. R's reason: a new mechanic usually arrives with other structural engine changes anyway.)
 
-### Rulebook gaps found while writing this
+**The `var` node** (approved by R 2026-10-20) is `{"type":"var","key":<name>}`: a named number the engine supplies at evaluation time, so a pack can refer to a value that exists only in the moment of the roll or purchase. The approved placements are:
 
-The engine can represent each variant below, but the **values** must be ruled on by R/D before the core pack is authored. Agents will not choose (CLAUDE.md §9).
+| Placement | Expression | `var` supplied by the engine |
+|---|---|---|
+| Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
+| Assistance bonus (`difficulty.json`) | `1d6 + var(helperSkillBonus)` | the helper's skill bonus |
 
-1. **Proficiency bonus.** §2 gives Proficient +1d4 / Expert +1d6; §3 character creation says Proficient +3 / Expert +5; §5 says "+3 or +5"; §9 lists "+1d4" and "+1d6". Both forms are expressible; which is canonical is a rules question.
-2. **Derived stat formulas.** In §3 the operator in "Health = ENDURANCE (END) ? LUCK (LCK)" and "Sanity = WISDOM (WIS) ? LUCK (LCK)" did not survive text extraction of the PDF. Needs reading from the rendered page or a ruling.
-3. **Top category.** A category above S (DC 25, damage, vehicles, threat classes) uses a glyph that does not extract as text. Its key/name needs confirming.
-4. **Disorder table (§4).** Roll numbers and rows are misaligned in the extracted text; needs confirming from the rendered page.
-5. **Occult check attribute.** §8 gives the Occult Action Check as `1d6 + (WIL/INT) + Proficiency` and casting as `1d6 + (WIS or INT) + Skill`. Both are expressible; the canonical attribute set needs a ruling.
+Any new `var` key or placement goes to R first.
 
-## RNG
+### Rulebook gaps and settled rulings
 
-- The GM engine receives an `Rng` interface. Production uses an engine-defined PRNG seeded per operation; tests use a scripted RNG that returns fixed faces.
-- **Proposed:** implement the PRNG inside the engine (a small, documented, published algorithm), instead of relying on `dart:math` `Random`. The `dart:math` docs offer an optional seed but promise nothing about the sequence across platforms or SDK versions [V-15]; an engine-owned algorithm makes a seed meaningful forever and on every target.
-- The implementation must use 32-bit chunk arithmetic, because on the web `int` is a 64-bit float with 53 bits of integer precision and bitwise operators truncate to 32 bits [V-14].
+The engine can represent each variant; the **values** come from the rulebook as ruled. Agents do not choose (CLAUDE.md §9). Settled by R (F1, 2026-10-20):
+
+1. **Proficiency bonus (settled, G16).** The bonus is additional dice: Proficient +1d4, Expert +1d6. The flat +3/+5 wording in §3 and §5 is not canonical.
+2. **Derived stats (settled).** Health = END × LCK. Sanity = WIS × LCK.
+3. **Top category (settled, G12).** The category above S is Cat-Ω. Its values (DC, damage, vehicle and threat-class values) are decided by the Handler, not fixed by the book.
+4. **Disorder table (settled).** §4 reads as a clean table of rolls 1 to 6.
+5. **Occult check attribute (open, Pending D).** §8 gives the Occult Action Check as `1d6 + (WIL/INT) + Proficiency` and casting as `1d6 + (WIS or INT) + Skill`; which attribute set is canonical (C5/G6) is not ruled. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+
+With the proficiency question ruled, the worked examples in §2 are unblocked as tests ([08-testing.md](08-testing.md#engine)).
+
+## RNG (fixed)
+
+Ruled by R 2026-10-20 (P5).
+
+- The GM engine receives an `Rng` interface and stays SDK-only. Production uses the pub package `xrandom` (0.7.2, revercode.com), class **`Xoshiro128pp`**, seeded per operation. It is wrapped by an adapter in `session` that implements the engine's `Rng`; the engine itself never imports `xrandom`. Tests use a scripted RNG that returns fixed faces.
+- Why not `dart:math` `Random`: its docs offer an optional seed but promise nothing about the sequence across platforms or SDK versions [V-15]. `xrandom` marks `Xoshiro128pp`, `Xorshift32` and `Xorshift128` as working on JS and tests its generators against C reference output in VM and Node.js modes, which addresses the web's 53-bit integer limits and 32-bit bitwise truncation [V-14][V-28].
+- Use the class `Xoshiro128pp` by name. The aliases `Xrandom`, `Drandom` and `Qrandom` are not used.
+- The version is pinned exactly (F5 standing rule: re-verify on pub.dev before it enters a pubspec). **Known-seed test vectors** run on native and on web [V-28], and fail the build if the sequence ever changes.
 - Every `CheckResolved` (and any other rolling event) records the draw counter range it used. With the seed (stored GM-side) any roll can be audited. Results are never recomputed from the seed in normal play.
 - The seed is GM-only data and is never sent to players.
 
@@ -171,7 +187,9 @@ R ruled that compatibility decoding within a major is allowed. Engine 1.6 must r
 - **Decoders are tolerant of the past, strict about the future.** A decoder fills defaults for fields an older minor did not write. It rejects types from a *newer* minor it does not know (the version negotiation in [03-protocol.md](03-protocol.md#version-negotiation) prevents that case in normal play).
 - **Old data is never rewritten.** Events stay as they were written; decoding upgrades them in memory only.
 
-### Deprecation (Proposed mechanism)
+### Deprecation (fixed)
+
+Ruled by R 2026-10-20 (P11): the deprecation record below (`since`, `replacedBy`, `removeIn`, `note`) is used for engine schema and pack entries.
 
 R asked for a way to signal that something still works now but will change later. A new field may be intended to replace an old one that still does its job. Deprecation marks the old one so engine developers, pack authors and GMs see it coming, without breaking anything in the current major.
 
@@ -214,7 +232,7 @@ R asked for a way to signal that something still works now but will change later
 | GMs running operations | The pack-update summary and the operation's settings screen list deprecations that affect the pinned pack |
 | Players | Nothing; deprecation never changes play |
 
-Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs).
+Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs-fixed).
 
 ## Public API surface (Proposed)
 
