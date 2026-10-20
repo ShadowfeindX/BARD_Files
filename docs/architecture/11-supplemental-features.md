@@ -33,7 +33,7 @@ The rest of this spec still uses "campaign" for the long-running game and "opera
 
 Only these fields are real data about the real person: **age**, **occupation** (optional), **content creator** (yes/no), **email**, **gender**, **feature feedback**, and **payment information**.
 
-- **Age** is stored as a bracket: under 12, 12-17, 18-25, 25-35, 35-45, 45-55, 55+. No birth date is stored. Open: ages 25, 35, 45 and 55 each fall in two brackets as written; R to confirm the boundaries.
+- **Age** is stored as a bracket: under 12, 12-17, 18-25, 26-35, 36-45, 46-55, 56+. No birth date is stored.
 - **Payment information is never stored in our Firestore.** The payment provider or app store holds it. Payments themselves stay deferred (concern 6).
 - **Email** stays in Firebase Auth and is never copied into a public profile.
 - **Proposed:** these fields live in owner-only documents and are never indexed for search.
@@ -117,7 +117,7 @@ The invite link is `bard://join/<op>?invite=<token>`. A Firestore invite documen
 ## Library and public content
 
 - **All public content is moderator-approved before it becomes available** (R). That covers mission submissions, public operation listings, public profiles and profile images. Proposed mechanism: a pending → public queue enforced by Firestore rules, like the library ([06](06-accounts-backend.md#library-fixed-concern-5-ruled-by-r-2026-10-20)); Dart functions deploy no Firestore triggers [V-23].
-- **Approvers.** R and D approve missions as well as content; concern 5 is unchanged. Open: who else moderates other public content, and what the `moderator` claim (06 Roles) may do. Until R rules, moderators are R and D.
+- **Moderators.** R and D are the only moderators, for missions and all other public content; concern 5 is unchanged. The `moderator` claim (06 Roles) is assigned once more moderators are chosen.
 - **Mission submissions.** Missions become a library kind, submitted through forms for the handler and the players (D's list). Every published mission gets a summary and a clearance level. What a published mission contains, and its id, depend on X0.
 - **Appearing in a published mission** is a per-player gameplay setting. Its default comes from the opt-in on the consent screen.
 - **Public operations.** Handlers can mark an operation public and virtual ("virtual" means played online, not in person). Public operations are listed to signed-in users, and players can request to join. Proposed: the request is a Firestore document under the operation's record, approved by its handler, like a transfer request (concern 4); once approved, the handler's client writes the membership under RTDB rules as today (B3).
@@ -179,7 +179,7 @@ These are applied to the named chapters in a later change:
 | P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the RTDB draft's `/users/$uid/badges`, the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
 | 09-2 | Invite links use `bard://join/<op>?invite=<token>` with no `alias=`. Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
 | P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
-| 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim's powers are still to be ruled. |
+| 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim is assigned once moderators beyond R and D are chosen. |
 | 06 Account model | No player/handler type. The agent gains fictional profile fields, a badge number (string) and a sign-up date. Anonymous accounts have no profile or badge number. |
 | 02 Distribution | Gated lore above level 1 is not bundled. Packs and library items gain a `testing` / `released` status. |
 | 01 Engine | A new command for the stat-gated broadcast, plus comparison nodes in condition expressions. Proposed `ContactRevealed` and `SiteRevealed` events. |
