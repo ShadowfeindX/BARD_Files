@@ -18,7 +18,7 @@ R adopted the stack from the backend-split investigation (project library: `arch
 | Hosting | Firebase Hosting (web build) | — |
 | Cloud Run | No separate service planned | The earlier desktop Cloud Run gateway is dropped; Dart functions themselves deploy to Cloud Run [V-33] |
 
-Platform targets: **Linux is required in v1** (R). `firebase_dart` was probed on Windows and on Linux (WSL2 Ubuntu) with identical results [V-21]. macOS, iOS, Android and web were not probed.
+Platform targets in v1 (R, 2026-10-20): **Windows and Linux desktop**, plus the web player build (W1). macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 (Linux only) [V-42]. Android was not probed.
 
 ### Backend port and adapters (Fixed: P10a)
 
@@ -26,7 +26,7 @@ Ruled by R 2026-10-20 (P10a). `session` talks to the backend only through a **ba
 
 | Adapter | Used on | Built on |
 |---|---|---|
-| `FirebaseDartAdapter` | Windows and Linux (probed); macOS and mobile expected but unproven | `firebase_dart` for Auth, RTDB, Storage; the hand-written Firestore REST client (below) for the document store |
+| `FirebaseDartAdapter` | Windows and Linux (probed) | `firebase_dart` for Auth, RTDB, Storage; the hand-written Firestore REST client (below) for the document store |
 | `FlutterFireAdapter` | where `firebase_dart` cannot run (web) | FlutterFire plugins, including `cloud_firestore` |
 | `LanAdapter` | LAN/in-person play with no backend | session transports |
 
@@ -45,11 +45,11 @@ Ruled by R 2026-10-20. Firestore runs alongside RTDB (this answers B1 and revers
 
 **FS2 desktop client.** No Firestore SDK runs on desktop for us. `backend` contains a small hand-written Firestore REST client behind the backend port; it calls `getIdToken()` on `firebase_dart` for every request and sends the token as a Bearer header, and Security Rules authorize the request [V-36]. Web uses FlutterFire `cloud_firestore`. Probed on Windows and Linux [V-32]: PATCH write 200, `runQuery` with filter, `orderBy` and `limit` 200, rules enforced (403 on a denied path and with no token), `getIdToken(true)` refresh works, a bad token gives 401.
 
-Not proven by that probe (carry as open items for the REST client):
-- natural token expiry and automatic refresh (only a forced refresh was tested);
-- queries that need composite indexes;
-- rules that depend on custom claims;
-- macOS, iOS, Android (the probe covered Windows and Linux).
+Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED_PRECONDITION` ("The query requires an index") until the index is READY, then 200; a rule on a custom claim (`request.auth.token.role == 'gm'`) gives 403 without the claim and 200 once the claim is set and the token force-refreshed. So the REST client:
+- surfaces `FAILED_PRECONDITION` as a missing-index error (a deploy problem, not a user error); every query the app runs has its composite index declared with the Firestore collection draft (P10c);
+- forces `getIdToken(true)` after a role change before relying on a claim (see [Roles](#roles)).
+
+**Pending:** natural token expiry and automatic refresh after about one hour (only forced refresh is tested so far). The probe is running; see [verification.md](verification.md#probe-status).
 
 **FS4 search.** Standard edition: structured queries (equality, range, array-contains on keyword and tag fields), with composite indexes where needed. No full-text search. Text search needs an Enterprise edition database; revisit Enterprise only if text search is needed later [V-36]. Standard bills per document read [V-36].
 
@@ -87,9 +87,14 @@ Rules:
   - An alias in a **running operation cannot move** until that operation ends.
   - The transfer request is a Firestore document under the destination campaign, approvable only by its GM (Firestore rules).
 - **Anonymous accounts** (Fixed): can join any session, have exactly one alias, cannot GM, host or create content. Anonymous sign-in works in `firebase_dart` on Windows and Linux [V-21].
-- **Upgrading an anonymous account:** `firebase_dart` has no `linkWithCredential` [U], and signing in with email after anonymous produced a **new** uid in the probe [V-21]. The proposed upgrade path is the Identity Toolkit `accounts:update` REST call (ID token + email + password), which should keep the uid. **Unproven** (probe 8.5, second in the probe order); listed in [09-open-decisions.md](09-open-decisions.md#still-unproven).
+- **Upgrading an anonymous account** (probe 8.5, Windows and Linux [V-39]). `linkWithCredential` is an `UnimplementedError` stub in `firebase_dart` 1.6.2, and signing in with email after anonymous gives a **new** uid [V-21], so neither is used. Proposed upgrade path:
+  - Call `updateEmail` then `updatePassword` on the signed-in `firebase_dart` user. This keeps the uid, clears `isAnonymous`, and later email sign-ins return the same uid [V-39].
+  - Do **not** call the Identity Toolkit `accounts:update` REST endpoint out of band for this. It also keeps the uid, but it leaves `firebase_dart`'s stored session inconsistent (Linux: `reload()` fails with `user-token-expired`; Windows: `reload()` still reports anonymous) [V-39].
+  - Map `EMAIL_EXISTS` and `WEAK_PASSWORD` to user-facing messages [V-39].
+  - After upgrading, force `getIdToken(true)` before any host, GM or content command: the token issued before the upgrade still says `sign_in_provider: anonymous`, which the rules refuse [V-39].
+  - The upgraded account has `email_verified: false` [V-39]; whether hosting needs a verified email is a design choice for R, not decided here.
 - Anonymous data does not survive clearing local storage or switching devices [V-8]; the UI says so before an anonymous player invests in a character.
-- Enforcement: the session refuses host/GM/content commands from anonymous agents, and rules in RTDB and Firestore refuse the corresponding writes using `auth.token.firebase.sign_in_provider` [V-9] (rules behaviour on real data unproven, probe 8.6).
+- Enforcement: the session refuses host/GM/content commands from anonymous agents, and rules in RTDB and Firestore refuse the corresponding writes using `auth.token.firebase.sign_in_provider` [V-9]. The RTDB rules prototype refuses `meta`, head and event writes from anonymous tokens in the emulator [V-38]; live tokens carry the values the rules check (`anonymous`, `password`, `custom`) [V-39][V-41]. Rules on the deployed database are not tested yet.
 - **One alias per anonymous account** is enforced in three places:
   1. **Backend.** The anonymous one-alias rule **moves to Firestore** (P10c): Proposed mechanism: an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. Held: the exact document path and rule wait on the Firestore collection draft (rule behaviour unproven until the Emulator Suite tests).
   2. **App.** The account repository hides "create alias" for anonymous agents once that alias exists and offers the upgrade instead.
@@ -97,16 +102,18 @@ Rules:
 
 ## Roles
 
-Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. RTDB and Firestore rules read them from `auth.token` [V-9]. A client sees new claims only after refreshing its ID token [U]; `getIdToken(true)` returned the same token in the probe, so claim pickup is **unproven** (probe 8.4, fourth in the probe order). The Firestore probe did not cover claim-based rules [V-32].
+Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. RTDB and Firestore rules read them from `auth.token` [V-9]. A client sees a new claim only after a **forced** refresh: in probe 8.4 `getIdToken(true)` showed the claim, while the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run). Firestore rules on a claim work over the REST client once the token is refreshed [V-43]; claims in RTDB rules are not tested yet.
+
+Design (Proposed): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (P14); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. A client that never gets the notice should pick up the claim at its next token refresh, about hourly; that natural refresh is still pending ([FS2](#firestore-fixed-fs1-fs2-fs4-fs5)).
 
 ## Badges (Fixed: P9, conditional on probe 8.3)
 
-Ruled by R 2026-10-20 (P9). A badge is a printable/scannable code on a physical agent badge that signs an agent in.
+Ruled by R 2026-10-20 (P9). A badge is a printable/scannable code on a physical agent badge that signs an agent in. The ruling was conditional on probe 8.3, which **passed** on Windows and Linux [V-41].
 
-- **Sign-in path:** scanning sends the badge credential to the **badge-login HTTPS Dart function**, which verifies it and returns a custom token minted with `firebase_admin_sdk` `createCustomToken` [V-24]; the app signs in with `signInWithCustomToken`. Firebase rules see `sign_in_provider == "custom"` [V-9]. This ruling is **conditional on probe 8.3** (a real custom token on Windows and Linux).
+- **Sign-in path:** scanning sends the badge credential to the **badge-login HTTPS Dart function**, which verifies it and returns a custom token minted with `firebase_admin_sdk` `createCustomToken` [V-24]; the app signs in with `signInWithCustomToken`. Firebase rules see `sign_in_provider == "custom"` [V-9][V-41]. Developer claims put in the token at minting survive a forced refresh [V-41].
 - **Symbology:** PDF417, not QR.
 - **Payload:** only the badge id and a 256-bit secret (about 70 ASCII characters). The secret is stored **hashed**; the badge is revocable and never carries a password.
-- **Evidence so far:** a malformed custom token is rejected with `invalid-custom-token` on Windows [V-21]. A real token minted in a deployed function (`createCustomToken`, no key file) signed in via `firebase_dart` on native Linux once the runtime service account held Service Account Token Creator [V-33]. The Windows sign-in with a real token and the badge flow end to end are still **unproven** (probe 8.3, third in the probe order).
+- **Evidence:** a malformed custom token is rejected with `invalid-custom-token` [V-21]. A token minted in a deployed function (`createCustomToken`, no key file) signed in via `firebase_dart` on Linux once the runtime service account held Service Account Token Creator [V-33]. A real custom token (minted with `gcloud iam service-accounts sign-jwt`) signed in on **Windows and Linux** [V-41]. The badge function and the flow end to end are not built yet.
 - **Deploy checklist:** grant **Service Account Token Creator** (`roles/iam.serviceAccountTokenCreator`) to the function's runtime service account on itself; without it `createCustomToken` fails with `iam.serviceAccounts.signBlob` denied [V-33].
 - **Packages not approved yet:** printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows/Linux beta, or USB 2D keyboard-wedge scanners). Each goes to R when badges are scheduled.
 - Badges are optional, per agent, listed and revocable from account settings.
@@ -116,59 +123,84 @@ Ruled by R 2026-10-20 (P9). A badge is a printable/scannable code on a physical 
 
 A signed-in account works offline from a local cache. The app keeps its own local record (profile, aliases, campaigns, packs by content hash, operation logs) in the local store (sembast, 09-3; see [04-session.md](04-session.md)).
 
-`firebase_dart` persists query results, not pending writes, per the investigation [V-27][U]. The session therefore owns an **outbox**: requests made offline are stored locally and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). A write queued with `goOffline` was delivered on `goOnline` in the probe [V-21]; whether a queued SDK write survives an **app restart** is **unproven** (probe 8.1, fifth in the probe order), which is why the design relies on its own outbox.
+`firebase_dart` does **not** keep pending writes across a restart. Probe 8.1 on Windows and Linux [V-40]: a write queued while offline is readable locally, but after the app exits or is killed and restarts, it is gone from the server and from the local cache. A write that reached the server before the restart is still in the local cache afterwards. Within one process, a write queued with `goOffline` is delivered on `goOnline` [V-21].
+
+So the session's **outbox is required**, not a precaution: requests made offline are stored in the local store (sembast) and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). The app never relies on the SDK's offline queue to carry a write past the end of the process.
 
 ### Auth token storage (Fixed: B5)
 
 Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh token and email in plaintext in the Hive box `firebase_auth`, and `FirebaseDart.setup` has no storage option [V-34]. The design:
 
 - After `FirebaseDart.setup` and **before any `FirebaseAuth` use**, `backend` opens the Hive box `firebase_auth` with `HiveAesCipher(key)`. That encrypts the box [V-34].
-- The key lives in the OS secure store via `flutter_secure_storage` 11.2.0 (Linux libsecret observed [V-34]; the Windows backend is not stated on its pub.dev page [U]).
-- **Guard 1, key access and migration.** Reading or creating the key never fails silently: a wrong or missing key makes Hive truncate the box and sign the user out [V-34], so a key failure is surfaced, not swallowed. A plaintext-to-encrypted migration step handles boxes written before encryption.
-- **Guard 2, locked keyring.** On Linux a locked keyring with no prompter blocks the libsecret call forever and freezes the event loop [V-34], so key access runs under a timeout guard and reports instead of hanging. A missing Secret Service gives a clean error [V-34].
+- The key lives in the OS secure store via `flutter_secure_storage` 11.2.0. Linux: libsecret (Secret Service) [V-34]. **Windows: not Credential Manager**, but a JSON file of DPAPI-protected values at `%APPDATA%\<company>\<product>\flutter_secure_storage.dat` (`flutter_secure_storage_windows` 4.2.2), tied to the Windows user account [V-44]. The folder follows the app's Windows company and product names, so the Windows runner sets them deliberately before the first release; renaming them later orphans the key (key loss, below).
+- **Guard 1, key access and migration.** Reading or creating the key never fails silently: a wrong or missing key makes Hive truncate the box and sign the user out, on Linux and Windows alike [V-34][V-44], so a key failure is surfaced, not swallowed. **Key loss means no session:** the app shows that the user must sign in again and does not treat it as an error loop [V-44]. A plaintext-to-encrypted migration step handles boxes written before encryption: it reads the plaintext box before any encrypted open, then rewrites it encrypted. Opening an existing plaintext box with the cipher was not probed, so the migration is tested before release.
+- **Guard 2, locked keyring.** On Linux a locked keyring with no prompter blocks the libsecret call forever and freezes the event loop [V-34], so key access runs under a timeout guard and reports instead of hanging. A missing Secret Service gives a clean error [V-34]. Windows showed no hang [V-44]; the guard stays on every platform.
 - **Dependency:** `hive` 2.2.3 is a direct dependency of `backend`, **pinned exactly**. It must be the same `hive` package `firebase_dart` uses (`hive` ^2.0.0, not `hive_ce`) [V-35].
 - **Known accepted risk:** `firebase_dart` depends on `hive`, which has had no release since 2.2.3 (2022-06-30) [V-35], and on `firebaseapis` 0.2.0, whose repository was archived on 2026-03-24 (per the backend investigation, project library `architecture/firebase-desktop-deep-dive.md`).
-- Not tested: KWallet (no Secret Service bridge); other platforms.
+- Not tested: KWallet (no Secret Service bridge).
 
 ## Realtime Database model (live play)
 
-**Held: waits on probe 8.6** (P10c). The RTDB live-play tree and its rules are not final until the RTDB rules prototype runs. Under FS1, RTDB keeps **live play only**; the tree below is the existing draft; entries marked → Firestore move there (paths to be drafted). Treat every line as Proposed.
+**P10c draft (Proposed, awaiting R's ruling).** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). Two weaknesses and one question are open for R (below). Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
 
 ```
-/users/$uid                              → Firestore (FS1): profile, kind, settings
-/users/$uid/alias                        → Firestore (FS1): anonymous accounts' single alias
-/users/$uid/aliases/$aliasId             → Firestore (FS1): full accounts' aliases
-/users/$uid/badges/$badgeId              → Firestore draft: hashed badge ref, created, revoked
-/inbox/$uid/$push                        in-app notifications (push substitute on Windows/Linux; P14)
-/campaigns/$campaignId                   → Firestore (FS1): gm uid, name, members, packRefs, settings
-/campaigns/$campaignId/transfers/$id     → Firestore (concern 4): alias transfer requests
-/operations/$op/meta                     campaignId, gm uid, engine version, packRef, status (active | archived), locked, lastSeq
-/operations/$op/members/$uid             written by the GM client after a join request
-/operations/$op/requests/$uid/$push      players write only under their own uid
-/operations/$op/events/$audience/$push   event batches per audience; GM uid only; append-only
-/operations/$op/textlog/$audience/$push  narrated text per audience; GM uid only; append-only
-/operations/$op/head                     head snapshot (state at last seq); GM uid only
-/operations/$op/phone/$push              phone messages; members write with from == auth.uid; read by GM and sender
-/operations/$op/signaling/$peer          WebRTC offer/answer/candidates (P2P mode only)
-/packs/$packId/$version                  → Firestore (FS1): pack index entry (content hash, Storage path)
-/archive/pending/$itemId                 → Firestore (FS1): library submissions
-/archive/public/$itemId                  → Firestore (FS1): verified library items
-/news/$postId                            → Firestore (FS1): information dissemination
+/operations/$op/meta                     gm uid, campaignId, engine version, packRef, status, locked, lastSeq
+/operations/$op/members/$uid             { aliasId, joinedAt }; written by the GM client only
+/operations/$op/requests/$uid/$push      { id, kind, from == $uid, ... }; the member writes own uid only, create-only
+/operations/$op/events/$audience/$push   { seq, body }; GM only; create-only; .indexOn seq
+/operations/$op/textlog/$audience/$push  { seq, text }; GM only; create-only; .indexOn seq
+/operations/$op/head                     head snapshot; GM only (read and write)
+/operations/$op/phone/$uid/$push         phone box per player: the player writes own box (from == $uid), the GM writes any box
+/operations/$op/signaling/$peer          WebRTC offer/answer/candidates (P2P mode only); members and GM
+/presence/$op/$uid                       own presence; members write own uid; members and GM read
+/inbox/$uid/$push                        in-app notifications (P14); owner reads and deletes; only functions write
 ```
 
-What the FS1 ruling changes in that draft (Fixed in direction, paths Held):
-- **Stays in RTDB:** active operation `events`, `textlog` while active, `requests`, `members`, `phone`, `signaling`, presence, `head` while active, and the inbox. The inbox is at `/inbox/$uid` (P14), so desktop listeners get live updates.
-- **Moves to Firestore:** `/campaigns` (including transfer requests, per concern 4), profiles, aliases, `/packs` index, `/archive/pending`, `/archive/public`, `/news`, and the archived form of every operation.
-- Badge records stay with the account data; where they live is decided in the Firestore draft.
+`$audience` is `gm`, `public` or `alias:<aliasId>`, checked by a `.validate` pattern [V-38].
+
+Who can do what (all shown in the emulator [V-38]):
+
+| Path | GM | Member (player) | Others |
+|---|---|---|---|
+| `meta` | creates it (non-anonymous, naming itself `gm`), edits until locked; `gm` cannot change | reads | — |
+| `members` | reads all, writes entries until locked | reads own entry only, cannot list | — |
+| `requests` | reads and clears | creates under own uid with `from == auth.uid`; cannot read others | — |
+| `events`, `textlog` | reads every audience; appends, never overwrites or deletes | reads `public` and `alias:<own aliasId>` only | — |
+| `head` | reads and writes until locked | — | — |
+| `phone` | reads every box, delivers into any box | reads and writes own box | — |
+| `signaling` | reads and writes | reads and writes (see open item 2) | — |
+| `presence/$op` | reads (writes own uid only if also a member) | reads; writes own uid | — |
+| `inbox/$uid` | — | owner reads and deletes | functions write (admin REST) |
+
+After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone; reads continue. Anonymous accounts can be members and write requests, and cannot create operations or write GM-only paths.
+
+What probe 8.6 changed in the earlier draft:
+
+- **Phone is per player box** (`phone/$uid/$push`), not one `phone/$push` list "read by GM and sender". A client cannot list a parent it has no read on, so a sender could never list their own thread in the old shape [V-38]. Phone messages remain engine events (`PhoneMessageSent`, see [04-session.md](04-session.md#in-game-phone)). How the box and those events relate (Proposed: the box carries the player's outgoing messages to the GM, and the events in the audience branches stay the record) is settled with the P10c ruling.
+- **The GM's read sits on each parent** (`members`, `requests`, `events`, `textlog`, `phone`). Read rules cascade downward, so child rules only handle players [V-38].
+- **Resync indexes:** `events/$audience` and `textlog/$audience` declare `.indexOn: ["seq"]`; `orderBy="seq"&startAt=N` and `limitToLast` then work for members. Catch-up by key needs no index (as in [V-33]). An unindexed `orderBy` is refused with 400 on REST [V-38].
+- **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
+- **Rules do not check `seq` order or gaps.** That stays the GM client's job; rules only require a numeric `seq`, create-only keys and a valid audience [V-38].
+- **The one-alias rule is not in RTDB.** It is in Firestore (Held with the Firestore collections); RTDB only checks that a member entry carries one `aliasId` [V-38].
+- **Lookups per evaluation** are at most 3 `root.child` reads, well under the documented limit of 10 (a static count, not a load test) [V-38].
+
+**Open for R (not decided):**
+
+1. **Deleting `meta`.** The GM can delete `meta` of an unlocked operation, and any full account can then recreate it naming itself GM [V-38]. Fix options: a no-delete rule on `meta` (status and lock are edited, never removed), or a tombstone. Recommendation: no-delete rule.
+2. **Signaling overwrite.** Any member can overwrite any `signaling/$peer`, including another player's offer [V-38]. Fix: key signaling by uid (`signaling/$uid/...`, written only by that uid or the GM). Only matters for P2P mode, which is built last (09-4).
+3. **Lock scope.** Presence, signaling and the inbox are not frozen by `meta/locked` [V-38]. Presence and the inbox should stay writable after archive; whether signaling is also locked is R's call.
+
+Not covered by the probe (carry to implementation): rules deployed to a real project with signed tokens, custom claims in RTDB rules, member removal, GM `meta` edits after archive, payload size limits, load, and `firebase_dart` listeners against these rules [V-38].
+
+Account data that the earlier draft kept in RTDB (`/users`, aliases, badges, `/campaigns` and transfers, `/packs`, `/archive/pending`, `/archive/public`, `/news`) is in Firestore under FS1 and concern 4; paths are drafted with the Firestore collections (Held).
 
 Notes on the live tree:
 
-- **Per-audience branches.** `$audience` is `gm`, `public` or `alias:<id>`. RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them. This replaces the earlier Firestore per-audience documents (P12).
+- **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them. This replaces the earlier Firestore per-audience documents (P12).
 - **Head snapshot (P12).** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-operation interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
-- **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules.
-- **Archiving.** The `archiveOperation` function (below) copies the frozen log to Firestore; the GM client then sets `meta/locked`, which rules check. Archived logs are chunked into a Firestore subcollection (FS5). Migrated operations get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)).
+- **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38].
+- **Archiving.** The `archiveOperation` function (below) copies the frozen log to Firestore; the GM client then sets `meta/locked`, which rules check [V-38]. Archived logs are chunked into a Firestore subcollection (FS5). Migrated operations get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)).
 - **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches.
-- **Rules are unproven** until the rules prototype runs (probe 8.6, first in the probe order).
 
 ## Library (Fixed: concern 5, ruled by R 2026-10-20)
 
@@ -213,7 +245,7 @@ Ruled by R 2026-10-20 (FS3), with the probe evidence in [V-33]. `firebase_admin_
 - **Firestore** writes (such as the archive) go through `firebase_admin_sdk`; a chunk of about 920 KiB was written and read back [V-33].
 - **RTDB** reads and writes from a function are the function's **own REST calls** using the runtime's **default credential**: no key files and no scope handling. The probe wrote and read RTDB this way [V-33].
 - **Scoping:** requests are admin (bypass rules) unless the call passes `auth_variable_override`, which switches the request to rules evaluation; the parameter is honored on REST [V-33]. Functions use it to stay scoped to rules where that is wanted. Whether an overridden uid is then allowed by a matching rule was not tested.
-- **Service accounts:** each function group runs as a **dedicated runtime service account** (least privilege), not the default compute account. The **least IAM role for RTDB is still untested** [V-33]; until it is, the role is an open item for the deploy checklist.
+- **Service accounts:** each function group runs as a **dedicated runtime service account** (least privilege), not the default compute account. The **least IAM role for RTDB is still untested** [V-33]. Desk research suggests `roles/firebasedatabase.viewer` and `.admin` cover instance management, not data, so the role is settled only by the live test, which is **pending** (script ready, R runs it; [verification.md](verification.md#probe-status)). Until then the role is an open item for the deploy checklist.
 - **Custom tokens** need Service Account Token Creator on the runtime service account (see Badges).
 - **No Node function** (B3). Anything needing database, auth or scheduled triggers is designed out or done as a manual script.
 
@@ -237,16 +269,19 @@ Ruled by R 2026-10-20 (P10b). Three Firebase projects: **dev, staging and prod**
 
 ## Probe order (Fixed: B2)
 
-Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC.
+Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC. Full status and evidence paths: [verification.md](verification.md#probe-status).
 
 | Order | Probe | Status |
 |---|---|---|
 | done | FS2 Firestore REST write and `runQuery` under rules, Windows and Linux | Done [V-32] |
+| done | FS2 claim rules and composite index, Linux | Done [V-43] |
+| — | FS2 natural token expiry and auto-refresh | **Pending** (running) |
 | done | 8.1b functions read/write RTDB over REST, callable by URL (FS3, B6) | Done [V-33] |
-| done | B5 token storage and secure store | Done [V-34][V-35] |
-| 1 | 8.6 RTDB rules prototype | Next; unblocks P10c |
-| 2 | 8.5 anonymous upgrade | Open |
-| 3 | 8.3 real custom token on Windows and Linux (Linux sign-in already succeeded [V-33]) | Open |
-| 4 | 8.4 custom-claim pickup | Open |
-| 5 | 8.1 queued write across app restart | Open |
-| later | 8.1c, 8.7, Storage via `firebase_dart`, long sessions, other platforms | Not scheduled |
+| — | FS3 least IAM role for RTDB from functions | **Pending** (script ready; R runs it) |
+| done | B5 token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |
+| 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; P10c drafted above, two weaknesses open for R |
+| 2 | 8.5 anonymous upgrade, Windows and Linux | Done [V-39] |
+| 3 | 8.3 real custom token, Windows and Linux | Done [V-41] |
+| 4 | 8.4 custom-claim pickup | Done on Linux [V-42]; Windows not run |
+| 5 | 8.1 queued write across app restart, Windows and Linux | Done: write lost, outbox required [V-40] |
+| later | 8.1c, 8.7, Storage via `firebase_dart`, long sessions | Not scheduled |

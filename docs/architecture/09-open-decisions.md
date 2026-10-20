@@ -59,11 +59,11 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | FS3 | `archiveOperation` HTTPS function writes archives to Firestore with `firebase_admin_sdk`. Functions read and write RTDB through their own REST calls with the runtime default credential (no key files), scoped with `auth_variable_override`; a dedicated runtime service account per function group [V-33]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
 | FS4 | Standard edition: structured queries on keyword/tag fields, no full-text search. Revisit Enterprise if text search is needed [V-36]. | [06](06-accounts-backend.md) |
 | FS5 | Archived event and text logs are chunked into a subcollection to stay under 1 MiB per document [V-7]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
-| P9 | Badge sign-in via an HTTPS Dart function minting a custom token, conditional on probe 8.3. PDF417 symbology; payload is only badge id + 256-bit secret, secret stored hashed. Service Account Token Creator on the runtime service account is a deploy-checklist item [V-33]. Badge packages not approved yet. | [06](06-accounts-backend.md) |
+| P9 | Badge sign-in via an HTTPS Dart function minting a custom token, conditional on probe 8.3 (condition met: a real custom token signs in on Windows and Linux [V-41]). PDF417 symbology; payload is only badge id + 256-bit secret, secret stored hashed. Service Account Token Creator on the runtime service account is a deploy-checklist item [V-33]. Badge packages not approved yet. | [06](06-accounts-backend.md) |
 | P10a | Backend port and adapters, plus a document-store capability for Firestore. | [06](06-accounts-backend.md) |
 | P10b | Three Firebase projects (dev, staging, prod); RTDB and Firestore rules tested in the Emulator Suite. | [06](06-accounts-backend.md), [08](08-testing.md) |
 | P14 | HTTPS-only Dart functions: badge login, roles, payment webhook and store receipts (placeholders until concern 6), push via `firebase_admin_sdk` Messaging, pack publishing helper, `archiveOperation`. In-app inbox on RTDB at `/inbox/$uid`. | [06](06-accounts-backend.md) |
-| B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions, other platforms. FS2, 8.1b and B5 probes done. | [06](06-accounts-backend.md) |
+| B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions. All five ordered probes are done [V-38]–[V-42], as are FS2, 8.1b and B5 (Linux and Windows); FS2 natural expiry and the FS3 least IAM role are pending. Status: [verification.md](verification.md#probe-status). | [06](06-accounts-backend.md) |
 | B3 | Joins written by the GM client under RTDB rules; library verification under Firestore rules from the client; other admin-only RTDB writes through function REST. No Node function; the `firebase_admin` (appsup) lead is dropped. | [06](06-accounts-backend.md) |
 | B4 | No App Check enforcement in v1 (enforcement would lock out desktop) [V-37]; protection from Auth and rules; App Check monitor-only on mobile and web; revisit if abuse appears. | [06](06-accounts-backend.md) |
 | B5 | Encrypt the `firebase_dart` Hive box `firebase_auth` with `HiveAesCipher` after setup and before any auth use; key in the OS secure store via `flutter_secure_storage` 11.2.0. Guards: key access never fails silently, plus a plaintext-to-encrypted migration; a timeout for a locked Linux keyring. `hive` 2.2.3 is a direct dependency of `backend`, pinned exactly [V-34][V-35]. Accepted risk: `firebase_dart` depends on unmaintained `hive` and archived `firebaseapis` 0.2.0. | [06](06-accounts-backend.md) |
@@ -88,7 +88,7 @@ R wants D's approval on these before they are designed in full. The proposals ar
 
 | Item | Waits on |
 |---|---|
-| P10c RTDB live-play tree and rules | Probe 8.6 (rules prototype). The anonymous one-alias rule moves to Firestore. |
+| P10c RTDB live-play tree and rules | **R's ruling.** Drafted from probe 8.6 (emulator, 116/116 checks [V-38]); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play). Open for R: (1) the GM can delete `meta` of an unlocked operation and anyone can then recreate it as GM (recommend a no-delete rule); (2) any member can overwrite any `signaling/$peer` (recommend keying by uid); (3) whether `meta/locked` also freezes signaling. The anonymous one-alias rule is in Firestore. |
 | P10c Firestore collections | Still to be drafted, now that FS2 has passed. |
 
 ## Deferred
@@ -97,10 +97,12 @@ R wants D's approval on these before they are designed in full. The proposals ar
 
 ## Still unproven
 
-- FS2: natural ID-token expiry and auto-refresh (about 1 hour), composite-index queries, claim-based rules [V-32].
-- FS3: least IAM role for RTDB access from functions [V-33].
-- 09-2: deep links on macOS and the iOS verification-file rules [V-30].
-- Probes in the B2 order above.
+- FS2: natural ID-token expiry and auto-refresh (about 1 hour). Probe running. (Composite-index queries and claim-based rules: done [V-43].)
+- FS3: least IAM role for RTDB access from functions [V-33]. Probe script ready; R runs it.
+- 8.4 claim pickup on Windows (Linux done [V-42]).
+- RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).
+- Opening an existing plaintext `firebase_auth` box with the cipher (the B5 migration step) [V-34][V-44].
+- Deep links on Wayland, Flatpak, Snap and packaged builds [V-30]. macOS and iOS are not in v1 (R, 2026-10-20), so their checks are dropped.
 
 ## Concerns raised
 
