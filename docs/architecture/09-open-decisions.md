@@ -57,7 +57,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 |---|---|---|
 | FS1 | RTDB holds live play only; Firestore holds data at rest: archived operations, library, pack index (files stay in Storage), searchable account data. Answers B1. | [06](06-accounts-backend.md) |
 | FS2 | Desktop reaches Firestore through a small hand-written REST client in `backend`, authenticated with the `firebase_dart` ID token (`getIdToken()` per request) [V-32]. Web uses FlutterFire `cloud_firestore`. | [06](06-accounts-backend.md) |
-| FS3 | `archiveOperation` HTTPS function writes archives to Firestore with `firebase_admin_sdk`. Functions read and write RTDB through their own REST calls with the runtime default credential (no key files), scoped with `auth_variable_override`; a dedicated runtime service account per function group [V-33]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
+| FS3 | `archiveOperation` HTTPS function writes archives to Firestore with `firebase_admin_sdk`. Functions read and write RTDB through their own REST calls with the runtime default credential (no key files), scoped with `auth_variable_override`; a dedicated runtime service account per function group [V-33]. Each one that reaches RTDB gets `roles/firebasedatabase.admin`, no narrower custom role (R, 2026-10-20) [V-46]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
 | FS4 | Standard edition: structured queries on keyword/tag fields, no full-text search. Revisit Enterprise if text search is needed [V-36]. | [06](06-accounts-backend.md) |
 | FS5 | Archived event and text logs are chunked into a subcollection to stay under 1 MiB per document [V-7]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
 | P9 | Badge sign-in via an HTTPS Dart function minting a custom token, conditional on probe 8.3 (condition met: a real custom token signs in on Windows and Linux [V-41]). PDF417 symbology; payload is only badge id + 256-bit secret, secret stored hashed. Service Account Token Creator on the runtime service account is a deploy-checklist item [V-33]. Badge packages not approved yet. | [06](06-accounts-backend.md) |
@@ -99,7 +99,7 @@ R wants D's approval on these before they are designed in full. The proposals ar
 ## Still unproven
 
 - FS2 on Windows for natural expiry, plus revoked sessions, disabled users, password change and refresh-token failure (Linux natural expiry, composite indexes and claim rules: done [V-43][V-45]).
-- FS3: the single permission inside `roles/firebasedatabase.admin` that grants RTDB data access (not bisected; only needed for a custom role narrower than the predefined one) [V-46]. The role from a deployed function running as the dedicated account is not tested.
+- FS3: the RTDB role from a deployed function running as its dedicated service account (tested by impersonation only) [V-46].
 - 8.4 claim pickup on Windows (Linux done [V-42]).
 - RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).
 - Opening an existing plaintext `firebase_auth` box with the cipher (the B5 migration step) [V-34][V-44].
