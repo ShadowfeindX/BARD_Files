@@ -1,0 +1,16 @@
+# Changelog
+
+All notable changes to this project are recorded here (CLAUDE.md §10).
+
+## Unreleased
+
+### Docs
+- Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
+- Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.
+- Architecture spec: archived logs are frozen (not converted) with a plain-text log kept beside them; migration requires explicit GM confirmation of unrecoverable loss.
+- Architecture spec: adopted backend stack (firebase_dart client, Realtime Database for live data, HTTPS-only Dart Cloud Functions, Linux in v1); Cloud Run gateway removed; unproven probe items listed as open.
+- Architecture spec: firebase_admin_sdk and firebase_functions approved by R; package facts re-checked on pub.dev where the tool allows.
+- Architecture spec rewritten to R's review rulings (2026-10-20): `protocol_envelope` package so functions never resolve the engine; `xrandom` `Xoshiro128pp` RNG adapter in `session`; `var` formula node; settled rulebook gaps; GM review gate for consequence events (rolls never gated); reserved `source` on `CheckResolved`; operation-scoped pack tier and simplified skill schema; pack annotations stripped before shipping; library verification by R and D, revocable.
+- Architecture spec: rolling autosave with a sembast commit marker per batch and an interval RTDB head mirror; persistence on `sembast` (one file per operation); state management on `signals_flutter`; routing on `go_router` + `app_links` with `bard://join/<op>?alias=<id>`; web build player-only for now.
+- Architecture spec: Firestore returns for data at rest (archives, library, pack index, account data) through a hand-written REST client on desktop; functions reach RTDB over REST with the default credential; `archiveOperation` function; callables by URL from desktop; no App Check enforcement in v1; encrypted `firebase_dart` token box with `flutter_secure_storage` and pinned `hive`; PDF417 badges.
+- Architecture spec: 09 is now a decisions record; items pending D, held for probe 8.6, or deferred are listed there. Verification register gains V-28 to V-37 (package checks and probe results).
