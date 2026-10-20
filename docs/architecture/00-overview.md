@@ -37,7 +37,7 @@ These come from R and are not reopened here. Items ruled on 2026-10-20 keep thei
 ## Still open
 
 - **Pending D** (R wants the creative director's approval first): occult check attribute (C5/G6); "cast magic" and the rest of the occult system (F3); exact pack shape and details (P3; the JSON + manifest format is fixed); the physical-dice feature (concern 7); revisiting W1. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
-- **P10c Firestore collections** are still to be drafted. The Realtime Database live-play tree and rules are ruled ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play)).
+- **P10c Firestore collections** are still to be drafted. The Realtime Database live-play draft has its three open items ruled; the rest is Proposed ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play)).
 - **Probes:** all scheduled backend probes are done ([verification.md](verification.md#probe-status)); 8.1c, 8.7, Storage through `firebase_dart` and long sessions are not scheduled.
 
 Every external choice stays behind an interface so it does not leak into the engine, protocol or migrator.
