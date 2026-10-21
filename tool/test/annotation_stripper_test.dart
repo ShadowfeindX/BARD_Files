@@ -64,6 +64,30 @@ void main() {
     });
   });
 
+  test('stripPack handles a trailing slash and names a malformed file', () {
+    final dir = Directory.systemTemp.createTempSync('strip_slash');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    Directory('${dir.path}/in/sub').createSync(recursive: true);
+    File('${dir.path}/in/sub/a.json').writeAsStringSync('{"v":1}');
+    final reports = stripPack(
+      Directory('${dir.path}/in/'),
+      Directory('${dir.path}/out'),
+    );
+    expect(reports.keys, ['sub/a.json']);
+    expect(File('${dir.path}/out/sub/a.json').existsSync(), isTrue);
+    File('${dir.path}/in/bad.json').writeAsStringSync('{');
+    expect(
+      () => stripPack(Directory('${dir.path}/in'), Directory('${dir.path}/o2')),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('bad.json'),
+        ),
+      ),
+    );
+  });
+
   test('stripPack writes stripped json and skips other files', () {
     final dir = Directory.systemTemp.createTempSync('strip_test');
     addTearDown(() => dir.deleteSync(recursive: true));

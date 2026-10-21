@@ -76,16 +76,21 @@ Object? stripAnnotations(
 Map<String, StripReport> stripPack(Directory source, Directory target) {
   final reports = <String, StripReport>{};
   const encoder = JsonEncoder.withIndent('  ');
+  // Trailing separators would shift the relative-path offset below.
+  final root = source.path.replaceAll(RegExp(r'[\\/]+$'), '');
   for (final entity in source.listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.json')) continue;
     final relative = entity.path
-        .substring(source.path.length + 1)
+        .substring(root.length + 1)
         .replaceAll(r'\', '/');
     final report = StripReport();
-    final stripped = stripAnnotations(
-      jsonDecode(entity.readAsStringSync()),
-      report,
-    );
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(entity.readAsStringSync());
+    } on FormatException catch (e) {
+      throw FormatException('$relative: ${e.message}');
+    }
+    final stripped = stripAnnotations(decoded, report);
     final out = File('${target.path}/$relative')..createSync(recursive: true);
     out.writeAsStringSync('${encoder.convert(stripped)}\n');
     reports[relative] = report;
