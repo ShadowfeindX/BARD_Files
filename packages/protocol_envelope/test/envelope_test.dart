@@ -273,7 +273,7 @@ void main() {
       final m = roundTrip(
         const Welcome(
           settings: {'autoConfirm': true},
-          pack: PackRef(id: 'core', version: '0.1.0', contentHash: 'h'),
+          pack: PackPin(id: 'core', version: '0.1.0', contentHash: 'h'),
           snapshot: Snapshot(seq: 5, state: {'a': 1}),
           events: [
             {'seq': 6},

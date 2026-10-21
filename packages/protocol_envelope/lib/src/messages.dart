@@ -152,16 +152,16 @@ final class Hello extends Message {
 }
 
 /// The pinned pack an operation uses: `(id, version, contentHash)`.
-final class PackRef {
+final class PackPin {
   /// Creates a pack reference.
-  const PackRef({
+  const PackPin({
     required this.id,
     required this.version,
     required this.contentHash,
   });
 
   /// Decodes a pack reference.
-  factory PackRef.fromJson(JsonMap json) => PackRef(
+  factory PackPin.fromJson(JsonMap json) => PackPin(
     id: reqString(json, 'id'),
     version: reqString(json, 'version'),
     contentHash: reqString(json, 'contentHash'),
@@ -222,7 +222,7 @@ final class Welcome extends Message {
     settings: reqMap(body, 'settings'),
     pack: optMap(body, 'pack') == null
         ? null
-        : PackRef.fromJson(reqMap(body, 'pack')),
+        : PackPin.fromJson(reqMap(body, 'pack')),
     snapshot: optMap(body, 'snapshot') == null
         ? null
         : Snapshot.fromJson(reqMap(body, 'snapshot')),
@@ -233,7 +233,7 @@ final class Welcome extends Message {
   final JsonMap settings;
 
   /// The operation's pinned pack.
-  final PackRef? pack;
+  final PackPin? pack;
 
   /// A filtered snapshot, when the client cannot catch up from events.
   final Snapshot? snapshot;
