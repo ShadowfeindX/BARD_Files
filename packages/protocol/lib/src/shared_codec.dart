@@ -21,6 +21,35 @@ class UnknownTypeException extends ProtocolFormatException {
   final String type;
 }
 
+/// Deepest nesting a command or event may have. Real formulas are a handful
+/// of levels deep; the limit stops hostile input from overflowing the stack
+/// in the recursive term and condition decoders.
+const int maxJsonDepth = 64;
+
+/// Throws [ProtocolFormatException] when [json] nests deeper than
+/// [maxJsonDepth]. Stops descending at the limit, so it is safe on input of
+/// any depth.
+void checkJsonDepth(Object? json, [int depth = 0]) {
+  if (depth > maxJsonDepth) {
+    throw ProtocolFormatException('nested deeper than $maxJsonDepth levels');
+  }
+  if (json is Map) {
+    for (final value in json.values) {
+      checkJsonDepth(value, depth + 1);
+    }
+  } else if (json is List) {
+    for (final value in json) {
+      checkJsonDepth(value, depth + 1);
+    }
+  }
+}
+
+/// [map] with its keys in sorted order, so equal values always encode to the
+/// same text.
+Map<String, V> sortedKeys<V>(Map<String, V> map) => {
+  for (final key in map.keys.toList()..sort()) key: map[key] as V,
+};
+
 /// Checks the `v` field of a command or event.
 void checkShapeVersion(JsonMap json) {
   final v = json.integer('v');
@@ -282,23 +311,29 @@ Term decodeTerm(JsonMap json) => guarded('term', () {
     case 'var':
       return VarTerm(json.string('key'), normalizeNumber(json.number('value')));
     case 'dice':
+      final sides = json.integer('sides');
+      if (sides < 1) throw const ProtocolFormatException('sides must be >= 1');
       return DiceTerm(
-        sides: json.integer('sides'),
+        sides: sides,
         explode: json.optBool('explode'),
         rolls: [
           for (final roll in json.list('rolls'))
             DieRoll([
               for (final face in roll is List<Object?> ? roll : const [])
-                face is int
+                face is int && face >= 1 && face <= sides
                     ? face
                     : throw const ProtocolFormatException(
-                        'die faces must be integers',
+                        'die faces must be integers from 1 to sides',
                       ),
             ]),
         ],
       );
     case 'sum':
-      return SumTerm([for (final t in json.objectList('terms')) decodeTerm(t)]);
+      final terms = [for (final t in json.objectList('terms')) decodeTerm(t)];
+      if (terms.isEmpty) {
+        throw const ProtocolFormatException('sum needs at least one term');
+      }
+      return SumTerm(terms);
     case 'keepHighest':
       final options = [
         for (final t in json.objectList('options')) decodeTerm(t),
@@ -313,9 +348,15 @@ Term decodeTerm(JsonMap json) => guarded('term', () {
       ];
       return KeepHighestTerm(options: options, kept: kept);
     case 'op':
-      return OpTerm(enumByName(OpKind.values, json, 'op'), [
-        for (final t in json.objectList('args')) decodeTerm(t),
-      ], normalizeNumber(json.number('value')));
+      final op = enumByName(OpKind.values, json, 'op');
+      final args = [for (final t in json.objectList('args')) decodeTerm(t)];
+      if (args.length < op.minArgs ||
+          (op.maxArgs != null && args.length > op.maxArgs!)) {
+        throw ProtocolFormatException(
+          '${op.name} has the wrong argument count',
+        );
+      }
+      return OpTerm(op, args, normalizeNumber(json.number('value')));
     case final other:
       throw ProtocolFormatException('unknown term type "$other"');
   }

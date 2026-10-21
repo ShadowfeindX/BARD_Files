@@ -6,10 +6,10 @@
   },
   "name": "Agent Vale",
   "attributes": {
-    "STR": 1,
     "END": 2,
-    "WIL": 2,
-    "LCK": 3
+    "LCK": 3,
+    "STR": 1,
+    "WIL": 2
   },
   "skills": {
     "firearms": "proficient"

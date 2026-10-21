@@ -4,6 +4,20 @@ import 'package:protocol_envelope/protocol_envelope.dart';
 import 'json_read.dart';
 import 'shared_codec.dart';
 
+const _commandTypes = {
+  'startOperation',
+  'createAgent',
+  'requestAction',
+  'declineRequest',
+  'requireCheck',
+  'resolveCheck',
+  'applyCondition',
+  'clearCondition',
+  'applyDamage',
+  'applySanityLoss',
+  'broadcastToQualifying',
+};
+
 /// Encodes an engine [Command] as JSON for the `request` message body.
 ///
 /// Every command carries `v` (shape version), `type` (a stable name, the
@@ -25,8 +39,8 @@ JsonMap encodeCommand(Command command) {
         'createAgent',
         {
           'name': name,
-          'attributes': attributes.asMap(),
-          'skills': skills.asMap(),
+          'attributes': sortedKeys(attributes.asMap()),
+          'skills': sortedKeys(skills.asMap()),
           'ownerAlias': ownerAlias?.value,
         },
       ),
@@ -137,10 +151,17 @@ JsonMap encodeCommand(Command command) {
 /// ignored (additive changes within a major).
 Command decodeCommand(Object? json) {
   final map = asMap(json, 'command');
+  checkJsonDepth(map);
   checkShapeVersion(map);
+  // Type first, so a type from a later minor is reported as unknown even when
+  // it also uses an actor or visibility kind this build does not know.
+  final type = map.string('type');
+  if (!_commandTypes.contains(type)) {
+    throw UnknownTypeException(type, 'command');
+  }
   final actor = decodeActor(map.object('actor'));
   return guarded('command', () {
-    switch (map.string('type')) {
+    switch (type) {
       case 'startOperation':
         return StartOperation(
           operationId: map.string('operationId'),

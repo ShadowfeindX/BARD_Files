@@ -11,6 +11,13 @@ import 'support/samples.dart';
 Object? readFixture(String path) =>
     jsonDecode(File('test/fixtures/v1/$path').readAsStringSync());
 
+String fixtureFile(String path) =>
+    File('test/fixtures/v1/$path').readAsStringSync();
+
+/// The text a fixture file holds: two-space indented JSON and a newline.
+String fixtureText(Object? json) =>
+    '${const JsonEncoder.withIndent('  ').convert(json)}\n';
+
 /// JSON as a wire frame would carry it: encoded to text and parsed back.
 Object? onTheWire(Object? json) => jsonDecode(jsonEncode(json));
 
@@ -24,9 +31,11 @@ void main() {
       });
 
       test('$type matches its v1 fixture and still decodes it', () {
-        final fixture = readFixture('commands/$type.json');
-        expect(onTheWire(encodeCommand(command)), fixture);
-        expect(decodeCommand(fixture), command);
+        expect(
+          fixtureText(encodeCommand(command)),
+          fixtureFile('commands/$type.json'),
+        );
+        expect(decodeCommand(readFixture('commands/$type.json')), command);
       });
     });
 
@@ -47,9 +56,11 @@ void main() {
       });
 
       test('$type matches its v1 fixture and still decodes it', () {
-        final fixture = readFixture('events/$type.json');
-        expect(onTheWire(encodeEvent(event)), fixture);
-        expect(decodeEvent(fixture), event);
+        expect(
+          fixtureText(encodeEvent(event)),
+          fixtureFile('events/$type.json'),
+        );
+        expect(decodeEvent(readFixture('events/$type.json')), event);
       });
     });
 
@@ -65,6 +76,56 @@ void main() {
         onTheWire(encodeEvent(sampleEvents['checkResolved']!)),
       ) as CheckResolved;
       expect(resolved.total, 6 + 3 + 2 + 2 - 2);
+    });
+  });
+
+  group('optional and alternative shapes', () {
+    final extras = <Command>[
+      RequireCheck(
+        entity: vale,
+        attribute: 'WIL',
+        difficulty: const FixedDifficulty(12),
+      ),
+      CreateAgent(name: 'Nobody', attributes: {'WIL': 1}),
+      const StartOperation(
+        operationId: 'op_2',
+        settings: OperationSettings(
+          autoResolveChecks: true,
+          autoConfirmConsequences: true,
+          autoApplyEngineUpdates: false,
+          autoApplyPackUpdates: true,
+        ),
+      ),
+      const ApplyDamage(entity: vale, amount: 0),
+    ];
+    for (final command in extras) {
+      test('${command.runtimeType} with nulls and other settings', () {
+        expect(decodeCommand(onTheWire(encodeCommand(command))), command);
+      });
+    }
+
+    test('an event with every optional field empty', () {
+      final event = CheckResolved(
+        check: const CheckId('c2'),
+        spec: CheckSpec(entity: vale, attribute: 'WIL', dc: 3),
+        breakdown: CheckBreakdown(
+          primary: ConstTerm(1),
+          attribute: 'WIL',
+          attributeScore: 2,
+        ),
+        outcome: CheckOutcome.failure,
+        draws: DrawRange(0, 0),
+        actor: const GmActor(),
+        visibility: const GmOnly(),
+      );
+      expect(decodeEvent(onTheWire(encodeEvent(event))), event);
+    });
+
+    test('equal values encode to the same text whatever the key order', () {
+      final a = CreateAgent(name: 'A', attributes: {'STR': 1, 'WIL': 2});
+      final b = CreateAgent(name: 'A', attributes: {'WIL': 2, 'STR': 1});
+      expect(a, b);
+      expect(jsonEncode(encodeCommand(a)), jsonEncode(encodeCommand(b)));
     });
   });
 
@@ -231,6 +292,113 @@ void main() {
     test('a broadcast must be delivered to aliases only', () {
       final json =
           onTheWire(encodeEvent(sampleEvents['broadcastDelivered']!))!
+              as Map<String, Object?>;
+      json['visibility'] = {'kind': 'public'};
+      expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));
+    });
+
+    Object? nested(int depth) {
+      Object? inner = {'type': 'const', 'value': 1};
+      for (var i = 0; i < depth; i++) {
+        inner = {
+          'type': 'sum',
+          'terms': [inner],
+        };
+      }
+      return inner;
+    }
+
+    test('deep nesting is refused instead of overflowing the stack', () {
+      for (final depth in [40, 200, 20000]) {
+        final json =
+            onTheWire(encodeEvent(sampleEvents['checkResolved']!))!
+                as Map<String, Object?>;
+        (json['breakdown']! as Map)['primary'] = nested(depth);
+        expect(
+          () => decodeEvent(json),
+          throwsA(isA<ProtocolFormatException>()),
+          reason: 'depth $depth',
+        );
+      }
+      final command =
+          onTheWire(encodeCommand(sampleCommands['broadcastToQualifying']!))!
+              as Map<String, Object?>;
+      command['condition'] = nested(20000);
+      expect(
+        () => decodeCommand(command),
+        throwsA(isA<ProtocolFormatException>()),
+      );
+    });
+
+    test('a modest nesting depth still decodes', () {
+      final json =
+          onTheWire(encodeEvent(sampleEvents['checkResolved']!))!
+              as Map<String, Object?>;
+      (json['breakdown']! as Map)['primary'] = nested(10);
+      expect(decodeEvent(json), isA<CheckResolved>());
+    });
+
+    test('a later minor type is unknown even with a new actor kind', () {
+      final json =
+          onTheWire(encodeEvent(sampleEvents['damageApplied']!))!
+              as Map<String, Object?>;
+      json['type'] = 'weatherChanged';
+      json['actor'] = {'kind': 'system'};
+      json.remove('visibility');
+      expect(() => decodeEvent(json), throwsA(isA<UnknownTypeException>()));
+      final command =
+          onTheWire(encodeCommand(sampleCommands['applyDamage']!))!
+              as Map<String, Object?>;
+      command['type'] = 'rewind';
+      command['actor'] = {'kind': 'system'};
+      expect(
+        () => decodeCommand(command),
+        throwsA(isA<UnknownTypeException>()),
+      );
+    });
+
+    test('terms the engine would refuse are refused', () {
+      Map<String, Object?> withPrimary(Object? term) {
+        final json =
+            onTheWire(encodeEvent(sampleEvents['checkResolved']!))!
+                as Map<String, Object?>;
+        (json['breakdown']! as Map)['primary'] = term;
+        return json;
+      }
+
+      final bad = <Object?>[
+        {'type': 'dice', 'sides': 0, 'explode': null, 'rolls': <Object?>[]},
+        {
+          'type': 'dice',
+          'sides': 6,
+          'explode': null,
+          'rolls': [
+            [7],
+          ],
+        },
+        {
+          'type': 'dice',
+          'sides': 6,
+          'explode': null,
+          'rolls': [
+            [0],
+          ],
+        },
+        {'type': 'sum', 'terms': <Object?>[]},
+        {'type': 'op', 'op': 'sub', 'args': <Object?>[], 'value': 0},
+      ];
+      for (final term in bad) {
+        expect(
+          () => decodeEvent(withPrimary(term)),
+          throwsA(isA<ProtocolFormatException>()),
+          reason: '$term',
+        );
+      }
+    });
+
+    test('a broadcast record that claims to be public is refused', () {
+      final json =
+          onTheWire(encodeEvent(sampleEvents['broadcastEvaluated']!))!
               as Map<String, Object?>;
       json['visibility'] = {'kind': 'public'};
       expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));

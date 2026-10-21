@@ -4,6 +4,21 @@ import 'package:protocol_envelope/protocol_envelope.dart';
 import 'json_read.dart';
 import 'shared_codec.dart';
 
+const _eventTypes = {
+  'operationStarted',
+  'agentCreated',
+  'actionRequested',
+  'requestDeclined',
+  'checkRequired',
+  'checkResolved',
+  'conditionApplied',
+  'conditionCleared',
+  'damageApplied',
+  'sanityLost',
+  'broadcastEvaluated',
+  'broadcastDelivered',
+};
+
 /// Encodes an engine [Event] as JSON for an `events` message or a log line.
 ///
 /// The encoding is 1:1 with the full event: the stored log, the GM and the
@@ -40,8 +55,8 @@ JsonMap encodeEvent(Event event) {
         {
           'entity': entity.value,
           'name': name,
-          'attributes': attributes.asMap(),
-          'skills': skills.asMap(),
+          'attributes': sortedKeys(attributes.asMap()),
+          'skills': sortedKeys(skills.asMap()),
           'ownerAlias': ownerAlias?.value,
         },
       ),
@@ -177,12 +192,19 @@ JsonMap encodeEvent(Event event) {
 /// ignored (additive changes within a major).
 Event decodeEvent(Object? json) {
   final map = asMap(json, 'event');
+  checkJsonDepth(map);
   checkShapeVersion(map);
+  // Type first, so a type from a later minor is reported as unknown even when
+  // it also uses an actor or visibility kind this build does not know.
+  final type = map.string('type');
+  if (!_eventTypes.contains(type)) {
+    throw UnknownTypeException(type, 'event');
+  }
   final actor = decodeActor(map.object('actor'));
   final visibilityJson = map.object('visibility');
   return guarded('event', () {
     Visibility visibility() => decodeVisibility(visibilityJson);
-    switch (map.string('type')) {
+    switch (type) {
       case 'operationStarted':
         return OperationStarted(
           operationId: map.string('operationId'),
@@ -274,6 +296,13 @@ Event decodeEvent(Object? json) {
           visibility: visibility(),
         );
       case 'broadcastEvaluated':
+        // The engine fixes this record to GM-only; a frame that says
+        // otherwise is wrong rather than quietly corrected.
+        if (visibility() is! GmOnly) {
+          throw const ProtocolFormatException(
+            'broadcastEvaluated must be gmOnly',
+          );
+        }
         return BroadcastEvaluated(
           text: map.string('text'),
           condition: decodeConditionField(map, 'condition'),
