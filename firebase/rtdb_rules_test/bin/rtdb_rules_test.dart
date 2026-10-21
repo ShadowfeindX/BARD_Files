@@ -2,7 +2,9 @@
 // REST API. Started from probe 8.6's 116 checks [V-38], with R's P10c
 // rulings 1-3, the P23 removal of `phoneDraft`, the post-archive clean-up and
 // R's 2026-10-21 rulings (presence closed once archived, `meta` validation,
-// no signaling or phone messages for anonymous members) applied. Uses only
+// no signaling reads or writes and no phone messages for anonymous members,
+// plus the review follow-ups: phone message shape, `locked` kept) applied.
+// Uses only
 // dart:io. Auth is an unsigned JWT, which the emulator accepts.
 import 'dart:convert';
 import 'dart:io';
