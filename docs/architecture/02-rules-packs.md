@@ -85,7 +85,7 @@ The node itself is defined in [01-engine.md](01-engine.md); no other placement e
 
 ### Authoring annotations (Fixed)
 
-While authoring, pack files may carry annotation keys (`note`, `source`, `openItems`, `placeholder`, `gap`, and `*Note` keys). Tooling strips them before a pack ships. There is no reserved annotation key in the schema, so the validator's rule that an unknown key is an error stands for every shipped pack.
+While authoring, pack files may carry annotation keys (`note`, `source`, `openItems`, `placeholder`, `gap`, `*Note` keys, and any key starting with `_`; R, 2026-10-21). Tooling strips them before a pack ships. An object that held only annotations becomes `null`, the single pending-D signal. There is no reserved annotation key in the schema, so the validator's rule that an unknown key is an error stands for every shipped pack.
 
 ### Deprecation in packs (fixed)
 

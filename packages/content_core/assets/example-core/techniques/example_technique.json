@@ -1,0 +1,6 @@
+{
+  "id": "example_technique",
+  "name": "Example Technique",
+  "description": "[D or a GM writes this]",
+  "note": "Techniques are freeform by design (R): a name and a description. This file only shows where they live."
+}

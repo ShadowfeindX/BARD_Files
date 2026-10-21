@@ -1,0 +1,11 @@
+{
+  "id": "example-core",
+  "name": "B.A.R.D. Files Core (EXAMPLE, small sample)",
+  "version": "0.0.1",
+  "engineApi": 1,
+  "publisher": "bard-official",
+  "tier": "core",
+  "requires": [],
+  "verification": "pending",
+  "note": "Example only. Shows the shape of a pack with a few entries per file. contentHash is computed by tooling and is deliberately absent."
+}

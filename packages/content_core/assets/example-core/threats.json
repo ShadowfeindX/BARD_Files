@@ -1,0 +1,106 @@
+{
+  "human": [
+    {
+      "class": "F",
+      "health": 3,
+      "damageReduction": 0,
+      "skills": "none",
+      "gear": "improvised"
+    },
+    {
+      "class": "E",
+      "health": 5,
+      "damageReduction": 1,
+      "skills": "+3 combat skill",
+      "gear": "light melee"
+    },
+    {
+      "class": "D",
+      "health": 8,
+      "damageReduction": 2,
+      "skills": "2 skills +3",
+      "gear": "Cat-D pistol, armor vest"
+    },
+    {
+      "class": "OMEGA",
+      "health": 50,
+      "healthOpenEnded": true,
+      "damageReduction": 10,
+      "skills": "anything",
+      "gear": "anything",
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Handler decides. Printed: Health 50+, DR 10."
+    }
+  ],
+  "supernatural": [
+    {
+      "class": "E",
+      "health": 8,
+      "damageReduction": 0,
+      "damage": {
+        "category": "E",
+        "dice": {
+          "type": "dice",
+          "count": 1,
+          "sides": 8,
+          "explode": null
+        },
+        "min": 1
+      },
+      "sanityLoss": 2
+    },
+    {
+      "class": "D",
+      "health": 14,
+      "damageReduction": 3,
+      "damage": {
+        "category": "C",
+        "dice": {
+          "type": "dice",
+          "count": 1,
+          "sides": 12,
+          "explode": null
+        },
+        "min": 3
+      },
+      "sanityLoss": 3
+    },
+    {
+      "class": "OMEGA",
+      "health": 100,
+      "healthOpenEnded": true,
+      "damageReduction": 15,
+      "damageReductionOpenEnded": true,
+      "damage": {
+        "category": "OMEGA",
+        "dice": {
+          "type": "dice",
+          "count": 5,
+          "sides": 6,
+          "explode": null
+        },
+        "min": 15,
+        "openEnded": true
+      },
+      "sanityLoss": 12,
+      "sanityLossOpenEnded": true,
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Handler decides. Printed: Health 100+, DR 15+, 5d6+ min 15+, Sanity 12+."
+    }
+  ],
+  "perClassNumbersForAttackAndDefense": {
+    "placeholder": true,
+    "gap": "G11",
+    "note": "The book gives no Evasion, attack bonus or initiative for a class. Fields to hold them are not yet in the shape because D has not chosen them."
+  },
+  "damageNote": "Enemy damage is their own value, not the weapon table (R). Some labels differ from the weapon table on purpose.",
+  "source": "Rulebook pp35-36",
+  "openItems": [
+    {
+      "gap": "G11",
+      "summary": "Numbers an NPC needs to attack and defend."
+    }
+  ]
+}

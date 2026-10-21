@@ -1,0 +1,56 @@
+{
+  "events": [
+    {
+      "key": "gore_violence_sudden_death",
+      "name": "Gore, Violence, Sudden Death",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "key": "minor_supernatural_entity",
+      "name": "Minor Supernatural Entity",
+      "min": 2,
+      "max": 3
+    },
+    {
+      "key": "forbidden_rituals_major_occult_site",
+      "name": "Forbidden Rituals, Major Occult Site",
+      "min": 3,
+      "max": 5
+    },
+    {
+      "key": "direct_combat_major_entity",
+      "name": "Direct Combat with Major Entity",
+      "min": 5,
+      "max": 8
+    },
+    {
+      "key": "dimensional_breach_eldritch_event",
+      "name": "Dimensional Breach, Eldritch Event",
+      "min": 8,
+      "max": null,
+      "openEnded": true
+    }
+  ],
+  "source": "Rulebook p17",
+  "valueChoice": {
+    "placeholder": true,
+    "gap": "G5",
+    "note": "The app needs one amount per event. The book gives ranges and does not say how to pick inside one. Min and max are stored; the picking rule is open."
+  },
+  "fumble": {
+    "placeholder": true,
+    "gap": "G5",
+    "note": "Book: full loss plus 1 extra point and immediate complications. Needs a stored rule."
+  },
+  "openItems": [
+    {
+      "gap": "G5",
+      "summary": "Amounts inside ranges, trauma-check DC, half-loss rounding, partial success on anomalous damage."
+    },
+    {
+      "gap": "GM override",
+      "summary": "Every amount can be changed by the Handler before it is shown to players (R's ruling)."
+    }
+  ]
+}

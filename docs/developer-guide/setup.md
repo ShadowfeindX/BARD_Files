@@ -21,6 +21,8 @@ On Windows use the matching `windows` archive from the same storage path and add
 
 ## First build
 
+The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist). See [content_core/README.md](../../packages/content_core/README.md).
+
 From the repository root:
 
 ```bash
@@ -52,6 +54,7 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 | Analyze | `flutter analyze` | any warning or info (one `analysis_options.yaml` at the root) |
 | Dependency rules | `dart run tool/bin/check_dependency_rules.dart` | a pubspec lists a package its layer may not, a pubspec is not in the workspace, or `apps/functions` reaches `engine` or `protocol` transitively |
 | Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (F5) |
+| Rules pack | `bash tool/build_pack.sh` then `bash tool/build_pack.sh --check` | the generated pack (`packages/content_core/assets/generated/`, git-ignored) is missing, stale or has extra files |
 | Tests | `bash tool/test_all.sh` | any package test fails |
 
 Pack validation of `content_core` ([08-testing.md](../architecture/08-testing.md#continuous-integration-proposed), step 5) joins this list when the pack loader lands.

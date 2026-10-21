@@ -1,0 +1,108 @@
+{
+  "performance": [
+    {
+      "key": "F",
+      "name": "Cat-F",
+      "drivingModifier": 1
+    },
+    {
+      "key": "E",
+      "name": "Cat-E",
+      "drivingModifier": 2
+    },
+    {
+      "key": "D",
+      "name": "Cat-D",
+      "drivingModifier": 2
+    },
+    {
+      "key": "C",
+      "name": "Cat-C",
+      "drivingModifier": 3
+    },
+    {
+      "key": "B",
+      "name": "Cat-B",
+      "drivingModifier": 4
+    },
+    {
+      "key": "A",
+      "name": "Cat-A",
+      "drivingModifier": 4
+    },
+    {
+      "key": "S",
+      "name": "Cat-S",
+      "drivingModifier": 5
+    },
+    {
+      "key": "OMEGA",
+      "name": "Cat-Ω",
+      "drivingModifier": null,
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Printed as ???. Handler decides."
+    }
+  ],
+  "durability": [
+    {
+      "key": "F",
+      "name": "Cat-F",
+      "hp": 5,
+      "capacity": "1 passenger"
+    },
+    {
+      "key": "E",
+      "name": "Cat-E",
+      "hp": 8,
+      "capacity": "1-2 passengers"
+    },
+    {
+      "key": "D",
+      "name": "Cat-D",
+      "hp": 12,
+      "capacity": "4-5 passengers"
+    },
+    {
+      "key": "C",
+      "name": "Cat-C",
+      "hp": 16,
+      "capacity": "5-8 passengers"
+    },
+    {
+      "key": "B",
+      "name": "Cat-B",
+      "hp": 20,
+      "capacity": "10+ passengers"
+    },
+    {
+      "key": "A",
+      "name": "Cat-A",
+      "hp": 25,
+      "capacity": "4-6 crew"
+    },
+    {
+      "key": "S",
+      "name": "Cat-S",
+      "hp": 30,
+      "capacity": "not printed",
+      "hpOpenEnded": true
+    },
+    {
+      "key": "OMEGA",
+      "name": "Cat-Ω",
+      "hp": null,
+      "printedAs": "∞",
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Handler decides."
+    }
+  ],
+  "source": "Rulebook p23",
+  "openItems": [
+    {
+      "gap": "G13",
+      "summary": "Crash test and stunt DCs use old names or DC 9 and are not represented here."
+    }
+  ]
+}

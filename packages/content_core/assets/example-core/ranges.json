@@ -1,0 +1,48 @@
+{
+  "bands": [
+    {
+      "key": "point_blank",
+      "name": "Point Blank",
+      "maxFeet": 5,
+      "penalty": 0
+    },
+    {
+      "key": "close",
+      "name": "Close",
+      "maxFeet": 50,
+      "penalty": 0
+    },
+    {
+      "key": "medium",
+      "name": "Medium",
+      "minFeet": 51,
+      "maxFeet": 150,
+      "penalty": -1
+    },
+    {
+      "key": "long",
+      "name": "Long",
+      "minFeet": 151,
+      "maxFeet": 500,
+      "penalty": -3,
+      "notWithDamageCategories": [
+        "E",
+        "F"
+      ]
+    },
+    {
+      "key": "extreme",
+      "name": "Extreme",
+      "minFeet": 501,
+      "penalty": -5,
+      "requires": "Aim and Expert Firearms (as printed)"
+    }
+  ],
+  "source": "Rulebook p26. Extreme is -5 per the print copy (R).",
+  "openItems": [
+    {
+      "gap": "G10",
+      "summary": "Aim is required for Extreme but never defined."
+    }
+  ]
+}
