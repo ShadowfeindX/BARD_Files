@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "type": "applyDamage",
+  "actor": {
+    "kind": "gm"
+  },
+  "entity": "e1",
+  "amount": 4,
+  "check": "c1",
+  "visibility": {
+    "kind": "public"
+  }
+}

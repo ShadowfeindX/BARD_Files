@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "type": "startOperation",
+  "actor": {
+    "kind": "gm"
+  },
+  "operationId": "op_01J8Z3",
+  "settings": {
+    "autoResolveChecks": false,
+    "autoConfirmConsequences": true,
+    "autoApplyEngineUpdates": true,
+    "autoApplyPackUpdates": false
+  }
+}

@@ -210,6 +210,13 @@ final class RulesPack {
   /// The derived stat with [key], or `null`.
   DerivedStat? derivedStat(String key) => _find(derived, (d) => d.key, key);
 
+  /// The difficulty category with [key], or `null`.
+  DifficultyCategory? difficultyCategory(String key) =>
+      _find(difficultyCategories, (c) => c.key, key);
+
+  /// The condition with [id], or `null`.
+  ConditionDef? condition(String id) => _find(conditions, (c) => c.id, id);
+
   static T? _find<T>(List<T> items, String Function(T) keyOf, String key) {
     for (final item in items) {
       if (keyOf(item) == key) return item;

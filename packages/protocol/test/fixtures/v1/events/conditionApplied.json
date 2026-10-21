@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "type": "conditionApplied",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "entity": "e1",
+  "condition": "bleeding",
+  "overriddenFrom": "stunned",
+  "check": "c1"
+}

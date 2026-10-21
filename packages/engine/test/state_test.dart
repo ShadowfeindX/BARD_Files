@@ -81,7 +81,13 @@ void main() {
   });
 
   test('component type keys are unique and registered', () {
-    expect(componentTypes.keys, ['identity', 'attributes', 'skills']);
+    expect(componentTypes.keys, [
+      'identity',
+      'attributes',
+      'skills',
+      'vitals',
+      'conditions',
+    ]);
     for (final entry in componentTypes.entries) {
       expect(entry.value.typeKey, entry.key);
     }

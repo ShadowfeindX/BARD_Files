@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "type": "sanityLost",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "redacted"
+  },
+  "entity": "e1",
+  "amount": 2,
+  "overriddenFrom": null,
+  "check": null
+}

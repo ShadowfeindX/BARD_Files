@@ -140,6 +140,8 @@ A **dice expression** is engine vocabulary: a small data structure (not a string
 
 A **formula** is engine vocabulary too: a tiny data-only expression tree over attribute references, constants, `var` nodes and `+ − × ÷ min max floor`. No scripting language, no `eval`. This keeps packs editable by D and safe to load from the cloud. (P4, approved by R: data-only expressions and formulas, no scripting. R's reason: a new mechanic usually arrives with other structural engine changes anyway.)
 
+A **condition** (approved by R with the stat-gated broadcast, 11 §Messaging) is a yes-or-no test built the same data-only way: `{"type":"compare","op":<lt|le|eq|ne|ge|gt>,"left":<formula>,"right":<formula>}`. Both sides are formulas with no dice and no `var`. It is a separate node kind from expressions, since it yields a yes or no rather than a number. The JSON form, the six operators and the absence of combinators (and, or, not) are Proposed.
+
 **The `var` node** (approved by R 2026-10-20) is `{"type":"var","key":<name>}`: a named number the engine supplies at evaluation time, so a pack can refer to a value that exists only in the moment of the roll or purchase. The approved placements are:
 
 | Placement | Expression | `var` supplied by the engine |

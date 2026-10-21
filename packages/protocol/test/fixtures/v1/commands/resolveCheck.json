@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "type": "resolveCheck",
+  "actor": {
+    "kind": "gm"
+  },
+  "check": "c1"
+}

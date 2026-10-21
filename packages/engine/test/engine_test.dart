@@ -1,6 +1,7 @@
 import 'package:engine/engine.dart';
 import 'package:test/test.dart';
 
+import 'support/decisions.dart';
 import 'support/test_pack.dart';
 
 void main() {
@@ -225,6 +226,42 @@ void main() {
       });
     }
 
+    test('an alias plays at most one agent', () {
+      const alias = AliasId('a1');
+      final ids = SequentialIdSource();
+      final withOne = engine.replay(
+        started,
+        accepted(
+          decide(
+            started,
+            CreateAgent(
+              name: 'Vale',
+              attributes: validScores(),
+              ownerAlias: alias,
+            ),
+            ids: ids,
+          ),
+        ),
+      );
+      expect(
+        rejection(
+          decide(
+            withOne,
+            CreateAgent(
+              name: 'Hall',
+              attributes: validScores(),
+              ownerAlias: alias,
+            ),
+            ids: ids,
+          ),
+        ),
+        RejectionCode.aliasTaken,
+      );
+      // GM-run agents have no owner, so any number may exist.
+      final gmRun = CreateAgent(name: 'Watcher', attributes: validScores());
+      expect(decide(withOne, gmRun), isA<Accepted>());
+    });
+
     test('a rejection draws no id', () {
       final ids = SequentialIdSource();
       decide(
@@ -259,13 +296,3 @@ void main() {
     expect(state.stores.all(Identity.componentType).length, 2);
   });
 }
-
-List<Event> accepted(Decision decision) => switch (decision) {
-  Accepted(:final events) => events,
-  Rejected(:final reason) => throw StateError('Unexpected rejection: $reason'),
-};
-
-RejectionCode rejection(Decision decision) => switch (decision) {
-  Rejected(:final reason) => reason.code,
-  Accepted(:final events) => throw StateError('Unexpected accept: $events'),
-};

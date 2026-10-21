@@ -110,6 +110,20 @@ Every interface has an in-memory implementation in `session` itself, used by tes
 
 **Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per operation, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long operation is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
 
+### Event entries (Proposed)
+
+The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+
+| Entry | Sent when | JSON |
+|---|---|---|
+| full | the recipient may read the event | `{"seq": n, "event": {...}}`, plus `"req": "<requestId>"` for the agent whose request caused it (this is the acknowledgement of a request; redacted and hidden entries carry it too) |
+| redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
+| hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
+
+A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is); the alternative, per-recipient gaps, would break the consecutive-`seq` rule. To be confirmed by R.
+
+Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
+
 ## Play modes
 
 All modes run the same loop; they differ only in which `Transport` and whether a `RelayActor` is attached.
@@ -149,8 +163,8 @@ The backend copy is a mirror, never a second authority. If the backend holds eve
 
 Players can send in-world text messages ("phone") that are forwarded to the GM (Fixed).
 
-- Sending is a command: `SendPhoneMessage(fromAlias, to, body)` where `to` is the GM, an NPC entity, or another alias.
-- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]` (the GM always sees it). Messages to an NPC go to the GM, who answers **as** that NPC with `SendPhoneMessage(fromNpc, ...)`.
+- Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields **Proposed**). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
+- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box at mission end is the archive function's job (P17) and waits on Q24; the engine has no such event.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
 - On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box only when the "mission" ends are R's rulings (2026-10-21, P17); the mission-to-spec-unit mapping waits on Q24, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).

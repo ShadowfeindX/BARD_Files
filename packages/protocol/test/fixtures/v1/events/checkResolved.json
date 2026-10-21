@@ -1,0 +1,65 @@
+{
+  "v": 1,
+  "type": "checkResolved",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "check": "c1",
+  "spec": {
+    "entity": "e1",
+    "attribute": "DEX",
+    "skill": "firearms",
+    "category": "C",
+    "dc": 10,
+    "modifiers": [
+      {
+        "label": "Cover",
+        "value": -2
+      }
+    ],
+    "request": "r1"
+  },
+  "breakdown": {
+    "primary": {
+      "type": "dice",
+      "sides": 6,
+      "explode": true,
+      "rolls": [
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    "attribute": "DEX",
+    "attributeScore": 2,
+    "skill": "firearms",
+    "tier": "proficient",
+    "proficiency": {
+      "type": "dice",
+      "sides": 4,
+      "explode": null,
+      "rolls": [
+        [
+          2
+        ]
+      ]
+    },
+    "modifiers": [
+      {
+        "label": "Cover",
+        "value": -2
+      }
+    ]
+  },
+  "outcome": "success",
+  "draws": {
+    "start": 0,
+    "end": 3
+  },
+  "source": "rng",
+  "enteredBy": null
+}
