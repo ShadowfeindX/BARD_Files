@@ -1,6 +1,7 @@
 import 'package:engine/engine.dart';
 import 'package:test/test.dart';
 
+import 'support/decisions.dart';
 import 'support/test_pack.dart';
 
 void main() {
@@ -259,13 +260,3 @@ void main() {
     expect(state.stores.all(Identity.componentType).length, 2);
   });
 }
-
-List<Event> accepted(Decision decision) => switch (decision) {
-  Accepted(:final events) => events,
-  Rejected(:final reason) => throw StateError('Unexpected rejection: $reason'),
-};
-
-RejectionCode rejection(Decision decision) => switch (decision) {
-  Rejected(:final reason) => reason.code,
-  Accepted(:final events) => throw StateError('Unexpected accept: $events'),
-};

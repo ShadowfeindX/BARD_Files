@@ -1,5 +1,6 @@
 import '../pack/rules_pack.dart';
 import 'component_stores.dart';
+import 'pending_state.dart';
 
 /// Per-operation GM settings, stored in operation meta.
 final class OperationSettings {
@@ -115,19 +116,21 @@ final class RngState {
 
 /// The whole state of one operation: a fold of its events (01 §State).
 ///
-/// Immutable. The encounter and pending-request parts listed in 01 §State are
-/// added with the systems that fill them.
+/// Immutable. The encounter part listed in 01 §State is added with the
+/// combat system.
 final class OperationState {
   /// The state before any event: not started, no entities.
   const OperationState.initial()
     : meta = null,
       stores = const ComponentStores.empty(),
+      pending = const PendingState.empty(),
       rng = const RngState();
 
   /// Creates a state from its parts.
   const OperationState({
     required this.meta,
     required this.stores,
+    this.pending = const PendingState.empty(),
     required this.rng,
   });
 
@@ -136,6 +139,9 @@ final class OperationState {
 
   /// ECS stores.
   final ComponentStores stores;
+
+  /// Open action requests and checks.
+  final PendingState pending;
 
   /// RNG draw position.
   final RngState rng;
@@ -147,10 +153,12 @@ final class OperationState {
   OperationState copyWith({
     OperationMeta? meta,
     ComponentStores? stores,
+    PendingState? pending,
     RngState? rng,
   }) => OperationState(
     meta: meta ?? this.meta,
     stores: stores ?? this.stores,
+    pending: pending ?? this.pending,
     rng: rng ?? this.rng,
   );
 
@@ -159,11 +167,12 @@ final class OperationState {
       other is OperationState &&
       other.meta == meta &&
       other.stores == stores &&
+      other.pending == pending &&
       other.rng == rng;
 
   @override
-  int get hashCode => Object.hash(meta, stores, rng);
+  int get hashCode => Object.hash(meta, stores, pending, rng);
 
   @override
-  String toString() => 'OperationState($meta, $stores, $rng)';
+  String toString() => 'OperationState($meta, $stores, $pending, $rng)';
 }

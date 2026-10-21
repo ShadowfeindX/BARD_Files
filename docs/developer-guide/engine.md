@@ -25,7 +25,10 @@ switch (decision) {
 | `commands/` | The sealed `Command` family. One `part` file per system, each with a sealed sub-family (`OperationCommand`, `CharacterCommand`). |
 | `events/` | The sealed `Event` family, laid out the same way. Every event has an `actor` and a `visibility`. |
 | `components/` | The sealed `Component` family and one `ComponentType` constant per component (`Identity.componentType`, ...). |
-| `state/` | `OperationState` (meta, ECS stores, RNG draw count) and `ComponentStores`. |
+| `state/` | `OperationState` (meta, ECS stores, pending requests and checks, RNG draw count), `ComponentStores` and `PendingState`. |
+| `checks/` | Value types of the check flow: ids, `Difficulty`, `CheckModifier`, `CheckSpec`, `CheckBreakdown`, `CheckOutcome`, `DrawRange`, `RollSourceKind`. |
+| `read_models/` | `DerivedStats`: derived stats and the `VitalsView` (Health and Sanity now), computed from attributes, never stored. |
+| `narrator/` | `Narrator`: plain-text log lines per event, with GM, player and redacted lines. |
 | `systems/` | One class per system. Each decides its own command sub-family and applies its own event sub-family. |
 | `expr/` | Dice expressions and formulas: nodes, evaluator with breakdown, JSON form, approved `var` keys. |
 | `pack/` | `RulesPack`; `files/` holds one parser plus value types per pack file; `load/` holds `loadPack`, the issue log, the pending-D marker and the content hash. See [packs.md](packs.md). |
@@ -43,6 +46,25 @@ All state is immutable. `ImmutableMap` is copy-on-write; it can be swapped for a
 ## Adding a component
 
 Add the class to `components/components.dart` with a `static const componentType = ComponentType<X>._('x')` and register it in `componentTypes`. The `typeKey` never changes within an engine major. Components never store values that can be derived (Health max, Evasion, ...).
+
+## Checks and consequences
+
+```
+Player:  RequestAction(entity, description, suggestedSkill?)  → ActionRequested   (GM + that player)
+GM:      DeclineRequest(request, reason?)                      → RequestDeclined
+GM:      RequireCheck(entity, attribute?, skill?, difficulty,  → CheckRequired     (pending until resolved)
+                      modifiers, request?, visibility)
+GM:      ResolveCheck(check)                                   → CheckResolved     (a RollingEvent)
+GM:      ApplyDamage / ApplySanityLoss / ApplyCondition        → DamageApplied / SanityLost / ConditionApplied (Consequences)
+GM:      ClearCondition                                        → ConditionCleared
+```
+
+- A check totals `primary die + attribute score + proficiency dice + modifiers` (§2, G16). At or above the DC is a success; short by at most the pack's `partialSuccessWithin` is a partial success; otherwise a failure. Fumbles (G1) and Luck advantage (G2) stay off until D rules. Assistance and opposed checks are not built yet.
+- With `autoResolveChecks` on, `RequireCheck` emits `CheckRequired` and `CheckResolved` together.
+- `CheckResolved` carries the whole `CheckBreakdown` (every face, explosions included), the DC, the outcome, its `DrawRange` and `source` (`rng`; `entered` is reserved, concern 7).
+- `Consequence` marks the events the session holds for GM review (F2). `DamageApplied.withAmount` and `SanityLost.withAmount` give the edited event with the original in `overriddenFrom`. `CheckResolved` is never a consequence. Amounts are GM-entered for now; damage dice, DR and sanity bands come with the vitals rules.
+- `Vitals` stores losses (`damageTaken`, `sanityLost`), not current values, so maximums stay derived. `DerivedStats(pack).vitals(state, entity)` gives the current values, unclamped.
+- `Narrator(pack).narrate(state, event)` returns a `Narration`. The session picks the line per audience from the event's visibility: GM always `gm`; players allowed by `Public` or `AliasesOnly` get `player`; with `Redacted` every player gets `redacted`; `GmOnly` has no player line.
 
 ## Expressions and formulas
 
@@ -75,7 +97,7 @@ Packs write data-only trees (P4); there is no scripting:
 
 From the gate review of the engine core (2026-10-21):
 
-- **RNG draw count.** Each rolling event records the range of draws it used, and `evolve` sets `RngState.drawCount` to the end of that range. It never adds to it. A rejected command must leave the count where it was: either `decide` validates everything before its first draw, or the host stores the RNG's real count and reopens at the higher of the two. The check system adds a test for this.
+- **RNG draw count.** Each rolling event (`RollingEvent`) records the range of draws it used, and `Engine.evolve` sets `RngState.drawCount` to the end of that range, in one place for every rolling event. It never adds to it. A rejected command leaves the count where it was: the check system validates everything (pending check, scores, tiers, the values its dice read, and that the RNG's count matches the state's, else `rngOutOfSync`) before its first draw. `Engine.decide` throws a `StateError` if a rejection drew anyway, since that would be a bug. Tests: `check_system_test.dart`, group "draw-count invariant".
 - **Entity ids.** `SequentialIdSource` restarts at `start`. The production `IdSource` in the session must never hand out an id already in the log after a crash and reopen. It derives the next id from state, or stores its counter with the commit marker.
 
 ## Proposed in this code (for R to accept or change)
@@ -87,6 +109,11 @@ From the gate review of the engine core (2026-10-21):
 - Setting defaults: auto-resolve and auto-confirm off.
 - `KeepHighest` and its JSON form; `floor` as an `op`.
 - `engineVersion` `1.0.0-dev.1`: major 1 matches `engineApi` 1, which the provisional pack declares (the scaffold had 0.0.0).
-- Seeds stay in `session`, not in engine state: state keeps only `RngState.drawCount`, so nothing broadcast can carry the seed. No event advances it yet; rolling events (the check system) will.
+- Seeds stay in `session`, not in engine state: state keeps only `RngState.drawCount`, so nothing broadcast can carry the seed. `CheckResolved` is the first event that advances it.
+- The check flow: command and event names and fields; `CheckSpec`, `CheckBreakdown`, `DrawRange`; `Difficulty` as a pack category or a fixed DC (the fixed form also covers Cat-Ω values the Handler sets, G12, and the book's old named DCs, G13); `rngOutOfSync`, `unknownRequest`, `unknownCheck` and `unavailable` rejection codes; a request is seen by the GM and the player who sent it.
+- A skill with no recorded tier on the entity adds no proficiency dice (the pack's `untrained` tier also has no bonus).
+- GM-entered consequences with a `visibility` the GM chooses (default `Public`); `ConditionApplied` is a consequence, `ConditionCleared` is not (it is a direct GM edit). Applying an active condition again, or clearing one that is not active, is rejected. A consequence's `check` id is recorded, not checked.
+- `Vitals` stores losses rather than current values; `Conditions` holds only ids for now. `DerivedKeys.health` and `DerivedKeys.sanity` (`health`, `sanity`) are engine vocabulary the vitals view reads.
+- The narrator's English wording and line shapes; the pack's `strings/` has no narration templates yet.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
 - Not checked yet because the rule is not ruled: whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.

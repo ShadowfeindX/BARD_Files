@@ -65,6 +65,20 @@ enum RejectionCode {
 
   /// A pack expression could not be evaluated.
   evaluationFailed,
+
+  /// The command names an action request that is not open.
+  unknownRequest,
+
+  /// The command names a check that is not pending.
+  unknownCheck,
+
+  /// The pack does not supply what the command needs (for example no check
+  /// rules).
+  unavailable,
+
+  /// The RNG handed to `decide` is not at the draw count the state records,
+  /// so a roll would not be auditable. Nothing was drawn.
+  rngOutOfSync,
 }
 
 /// Why a command was refused: a [code] for programs and a [message] for

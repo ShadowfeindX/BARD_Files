@@ -5,6 +5,7 @@
 library;
 
 export 'src/actor.dart';
+export 'src/checks/check_types.dart';
 export 'src/commands/commands.dart';
 export 'src/components/components.dart';
 export 'src/decision.dart';
@@ -40,8 +41,11 @@ export 'src/expr/vars.dart';
 export 'src/ids.dart';
 export 'src/immutable_map.dart';
 export 'src/pack/rules_pack.dart';
+export 'src/narrator/narrator.dart';
+export 'src/read_models/derived_stats.dart';
 export 'src/rng.dart';
 export 'src/state/component_stores.dart';
 export 'src/state/operation_state.dart';
+export 'src/state/pending_state.dart';
 export 'src/version.dart';
 export 'src/visibility.dart';

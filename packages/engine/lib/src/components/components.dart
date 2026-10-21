@@ -154,6 +154,76 @@ final class Skills extends Component {
   String toString() => 'Skills(${tiers.asMap()})';
 }
 
+/// Health and Sanity lost so far.
+///
+/// Stores losses, not current values, so the maximums stay derived from
+/// attributes (01 §Components: a component never stores a derived value).
+/// Current = derived maximum - loss; the vitals read model computes it.
+/// Proposed shape for the 01 `Vitals` row.
+final class Vitals extends Component {
+  /// Creates vitals.
+  const Vitals({this.damageTaken = 0, this.sanityLost = 0});
+
+  /// The [ComponentType] of [Vitals].
+  static const componentType = ComponentType<Vitals>._('vitals');
+
+  /// Health lost.
+  final int damageTaken;
+
+  /// Sanity lost.
+  final int sanityLost;
+
+  /// Returns a copy with the given values replaced.
+  Vitals copyWith({int? damageTaken, int? sanityLost}) => Vitals(
+    damageTaken: damageTaken ?? this.damageTaken,
+    sanityLost: sanityLost ?? this.sanityLost,
+  );
+
+  @override
+  ComponentType<Vitals> get type => componentType;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Vitals &&
+      other.damageTaken == damageTaken &&
+      other.sanityLost == sanityLost;
+
+  @override
+  int get hashCode => Object.hash(Vitals, damageTaken, sanityLost);
+
+  @override
+  String toString() => 'Vitals(damage: $damageTaken, sanity lost: $sanityLost)';
+}
+
+/// Active conditions and afflictions, by pack condition id.
+///
+/// Source and duration (01 `Conditions` row) come with the condition system.
+final class Conditions extends Component {
+  /// Creates the set of active conditions.
+  Conditions(Set<String> ids) : ids = Set.unmodifiable(ids);
+
+  /// The [ComponentType] of [Conditions].
+  static const componentType = ComponentType<Conditions>._('conditions');
+
+  /// Active pack condition ids.
+  final Set<String> ids;
+
+  @override
+  ComponentType<Conditions> get type => componentType;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Conditions &&
+      other.ids.length == ids.length &&
+      other.ids.containsAll(ids);
+
+  @override
+  int get hashCode => Object.hash(Conditions, Object.hashAllUnordered(ids));
+
+  @override
+  String toString() => 'Conditions($ids)';
+}
+
 /// Every component type the engine knows, by [ComponentType.typeKey].
 ///
 /// Decoders use it to refuse component types from a newer engine.
@@ -161,4 +231,6 @@ const Map<String, ComponentType<Component>> componentTypes = {
   'identity': Identity.componentType,
   'attributes': Attributes.componentType,
   'skills': Skills.componentType,
+  'vitals': Vitals.componentType,
+  'conditions': Conditions.componentType,
 };
