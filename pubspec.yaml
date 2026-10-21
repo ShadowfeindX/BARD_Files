@@ -1,0 +1,23 @@
+name: bard_workspace
+description: Root of the B.A.R.D. Files pub workspace. Holds no code.
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+  flutter: ^3.47.7
+
+# Members are listed explicitly; tool/check_dependency_rules.dart fails if a
+# pubspec exists that is not listed here.
+workspace:
+  - packages/engine
+  - packages/protocol_envelope
+  - packages/protocol
+  - packages/session
+  - packages/migrator
+  - packages/content_core
+  - packages/backend
+  - packages/ui_kit
+  - apps/bard
+  - apps/companion
+  - apps/functions
+  - tool
