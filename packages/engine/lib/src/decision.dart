@@ -63,6 +63,9 @@ enum RejectionCode {
   /// The command names an entity that does not exist.
   unknownEntity,
 
+  /// The alias already plays an agent in this operation.
+  aliasTaken,
+
   /// A pack expression could not be evaluated.
   evaluationFailed,
 

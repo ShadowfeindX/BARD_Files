@@ -23,7 +23,7 @@ final class CharacterSystem {
     CharacterCommand command,
     IdSource ids,
   ) => switch (command) {
-    CreateAgent() => _createAgent(command, ids),
+    CreateAgent() => _createAgent(state, command, ids),
   };
 
   /// Applies a [CharacterEvent].
@@ -44,10 +44,28 @@ final class CharacterSystem {
         ),
       };
 
-  Decision _createAgent(CreateAgent command, IdSource ids) {
+  Decision _createAgent(
+    OperationState state,
+    CreateAgent command,
+    IdSource ids,
+  ) {
     final problem = _checkAgent(command);
     if (problem != null) return Rejected(problem);
     final owner = command.ownerAlias;
+    // An alias is one character in an operation (11 §Terminology), so it
+    // plays at most one agent.
+    if (owner != null &&
+        state.stores
+            .all(Identity.componentType)
+            .entries
+            .any((e) => e.value.ownerAlias == owner)) {
+      return Rejected(
+        Rejection(
+          RejectionCode.aliasTaken,
+          'Alias "${owner.value}" already plays an agent.',
+        ),
+      );
+    }
     return Accepted([
       AgentCreated(
         entity: ids.next(),

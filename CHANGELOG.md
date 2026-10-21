@@ -25,6 +25,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - First commands: `StartOperation` (genesis `OperationStarted` pins engine version, pack and settings) and `CreateAgent` (`AgentCreated`; attribute and skill keys and per-attribute creation limits checked against the pack).
 - `Rng` and `IdSource` interfaces, `ScriptedRng` for tests, `SequentialIdSource`.
 - Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, numbers bounded to the range the VM and the web agree on, and only the two approved `var` keys.
+- `CreateAgent` refuses a second agent for an alias that already plays one (`aliasTaken`).
 - `RulesPack` in-memory pack type (attributes, creation limits, proficiency tiers, skills, derived formulas).
 
 ### Checks

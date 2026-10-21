@@ -226,6 +226,42 @@ void main() {
       });
     }
 
+    test('an alias plays at most one agent', () {
+      const alias = AliasId('a1');
+      final ids = SequentialIdSource();
+      final withOne = engine.replay(
+        started,
+        accepted(
+          decide(
+            started,
+            CreateAgent(
+              name: 'Vale',
+              attributes: validScores(),
+              ownerAlias: alias,
+            ),
+            ids: ids,
+          ),
+        ),
+      );
+      expect(
+        rejection(
+          decide(
+            withOne,
+            CreateAgent(
+              name: 'Hall',
+              attributes: validScores(),
+              ownerAlias: alias,
+            ),
+            ids: ids,
+          ),
+        ),
+        RejectionCode.aliasTaken,
+      );
+      // GM-run agents have no owner, so any number may exist.
+      final gmRun = CreateAgent(name: 'Watcher', attributes: validScores());
+      expect(decide(withOne, gmRun), isA<Accepted>());
+    });
+
     test('a rejection draws no id', () {
       final ids = SequentialIdSource();
       decide(

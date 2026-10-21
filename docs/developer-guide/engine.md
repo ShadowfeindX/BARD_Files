@@ -120,4 +120,5 @@ From the gate review of the engine core (2026-10-21):
 - `Vitals` stores losses rather than current values; `Conditions` holds only ids for now. `DerivedKeys.health` and `DerivedKeys.sanity` (`health`, `sanity`) are engine vocabulary the vitals view reads.
 - The narrator's English wording and line shapes. 01 says narration uses the pack's `strings/`, which has no narration templates yet; moving the wording there is open.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
-- Not checked yet because the rule is not ruled: whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.
+- An alias plays at most one agent in an operation (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.
+- Not checked yet because the rule is not ruled (G19, parked for D): whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.
