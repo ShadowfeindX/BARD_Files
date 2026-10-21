@@ -4,7 +4,7 @@ Realtime Database (RTDB) rules for live play and the checks that prove them. The
 
 | File | What it is |
 |---|---|
-| `database.rules.json` | RTDB security rules. Started from probe 8.6's prototype, with R's P10c rulings 1-3 applied and the `phoneDraft` path removed (P23). |
+| `database.rules.json` | RTDB security rules. Started from probe 8.6's prototype, with R's P10c rulings 1-3 applied, the `phoneDraft` path removed (P23) and R's 2026-10-21 rulings on presence, `meta` validation and anonymous members. |
 | `firebase.json` | Emulator configuration: Database emulator on `127.0.0.1:9000`, no UI. |
 | `rtdb_rules_test/` | SDK-only Dart program (no packages) that checks the rules through the emulator's REST API. |
 | `run_rtdb_rules_test.sh` | Starts the Database emulator, runs the checks, stops the emulator. |

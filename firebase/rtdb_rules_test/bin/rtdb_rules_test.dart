@@ -1,8 +1,9 @@
 // RTDB live-play rules checks (P10c), run against the Database emulator's
 // REST API. Started from probe 8.6's 116 checks [V-38], with R's P10c
-// rulings 1-3, the P23 removal of `phoneDraft` and the post-archive clean-up
-// applied. Uses only dart:io. Auth is an unsigned JWT, which the emulator
-// accepts.
+// rulings 1-3, the P23 removal of `phoneDraft`, the post-archive clean-up and
+// R's 2026-10-21 rulings (presence closed once archived, `meta` validation,
+// no signaling or phone messages for anonymous members) applied. Uses only
+// dart:io. Auth is an unsigned JWT, which the emulator accepts.
 import 'dart:convert';
 import 'dart:io';
 
@@ -113,6 +114,7 @@ Future<void> main() async {
   final gmAnon = Who.user('anonGm', provider: 'anonymous');
   final p1 = Who.user('p1', provider: 'anonymous'); // anonymous player
   final p2 = Who.user('p2');
+  final p4 = Who.user('p4');
   final out = Who.user('out1'); // not a member
   final none = Who.anon();
   const op = 'op1';
@@ -165,6 +167,36 @@ Future<void> main() async {
     'gm can edit status',
     call('PUT', o('meta/status'), gm, body: 'paused'),
     200,
+  );
+  await expectCode(
+    'gm cannot remove status (validate)',
+    call('DELETE', o('meta/status'), gm),
+    401,
+  );
+  await expectCode(
+    'gm cannot replace meta without status (validate)',
+    call('PUT', o('meta'), gm, body: {'gm': 'gm1', 'lastSeq': 1}),
+    401,
+  );
+  await expectCode(
+    'status must be a string (validate)',
+    call('PUT', o('meta/status'), gm, body: 3),
+    401,
+  );
+  await expectCode(
+    'locked must be a boolean (validate)',
+    call('PUT', o('meta/locked'), gm, body: 'yes'),
+    401,
+  );
+  await expectCode(
+    'gm can set locked false before the lock',
+    call('PUT', o('meta/locked'), gm, body: false),
+    200,
+  );
+  await expectCode(
+    'full account cannot create an operation without status (validate)',
+    call('PUT', '/operations/op3/meta', p2, body: {'gm': 'p2'}),
+    401,
   );
 
   // ---- ruling 1: meta is never deleted ----
@@ -502,47 +534,57 @@ Future<void> main() async {
   // ---- phone (P17: GM and player messages in one box per player) ----
   await expectCode(
     'phoneDraft path is gone (P23): member cannot write it',
-    call('PUT', o('phoneDraft/m1'), p1, body: {'from': 'p1', 'text': 'hi'}),
+    call('PUT', o('phoneDraft/m1'), p2, body: {'from': 'p2', 'text': 'hi'}),
     401,
   );
   await expectCode(
     'phone/<uid>: member writes own box',
-    call('PUT', o('phone/p1/m1'), p1, body: {'from': 'p1', 'text': 'hi'}),
+    call('PUT', o('phone/p2/m1'), p2, body: {'from': 'p2', 'text': 'hi'}),
     200,
   );
   await expectCode(
     'phone/<uid>: member cannot write into another box',
-    call('PUT', o('phone/p2/m2'), p1, body: {'from': 'p1', 'text': 'hi'}),
+    call('PUT', o('phone/p1/m2'), p2, body: {'from': 'p2', 'text': 'hi'}),
     401,
   );
   await expectCode(
     'phone/<uid>: forged from rejected',
-    call('PUT', o('phone/p1/m3'), p1, body: {'from': 'p2', 'text': 'hi'}),
+    call('PUT', o('phone/p2/m3'), p2, body: {'from': 'p1', 'text': 'hi'}),
     401,
   );
   await expectCode(
     'phone/<uid>: member cannot delete own message (create-only)',
-    call('DELETE', o('phone/p1/m1'), p1),
+    call('DELETE', o('phone/p2/m1'), p2),
     401,
   );
   await expectCode(
+    'phone/<uid>: anonymous member cannot send a message (no messaging for tier 0)',
+    call('PUT', o('phone/p1/a1'), p1, body: {'from': 'p1', 'text': 'hi'}),
+    401,
+  );
+  await expectCode(
+    'phone/<uid>: anonymous member reads own box',
+    call('GET', o('phone/p1'), p1),
+    200,
+  );
+  await expectCode(
     'phone/<uid>: gm delivers into a player box',
-    call('PUT', o('phone/p2/m4'), gm, body: {'from': 'npc7', 'text': 'boo'}),
+    call('PUT', o('phone/p1/m4'), gm, body: {'from': 'npc7', 'text': 'boo'}),
     200,
   );
   await expectCode(
     'phone/<uid>: gm cannot delete a message (create-only)',
-    call('DELETE', o('phone/p2/m4'), gm),
+    call('DELETE', o('phone/p1/m4'), gm),
     401,
   );
   await expectCode(
     'phone/<uid>: owner lists own box',
-    call('GET', o('phone/p2'), p2),
+    call('GET', o('phone/p1'), p1),
     200,
   );
   await expectCode(
     'phone/<uid>: other player cannot list box',
-    call('GET', o('phone/p2'), p1),
+    call('GET', o('phone/p1'), p2),
     401,
   );
   await expectCode(
@@ -552,24 +594,29 @@ Future<void> main() async {
   );
   await expectCode(
     'phone/<uid>: gm lists a box',
-    call('GET', o('phone/p2'), gm),
+    call('GET', o('phone/p1'), gm),
     200,
   );
 
   // ---- ruling 2: signaling keyed by uid ----
   await expectCode(
-    'member writes own signaling branch',
-    call('PUT', o('signaling/p1/offer'), p1, body: 'sdp1'),
+    'gm adds a second full-account player as member',
+    call('PUT', o('members/p4'), gm, body: {'aliasId': 'a4', 'joinedAt': 1}),
     200,
   );
   await expectCode(
-    'member cannot overwrite another uid\'s signaling (ruling 2)',
-    call('PUT', o('signaling/p1/offer'), p2, body: 'x'),
+    'member writes own signaling branch',
+    call('PUT', o('signaling/p2/offer'), p2, body: 'sdp2'),
+    200,
+  );
+  await expectCode(
+    'full-account member cannot overwrite another uid\'s signaling (ruling 2)',
+    call('PUT', o('signaling/p2/offer'), p4, body: 'x'),
     401,
   );
   await expectCode(
-    'member cannot write into another uid\'s signaling (ruling 2)',
-    call('PUT', o('signaling/p1/answer'), p2, body: 'x'),
+    'full-account member cannot write into another uid\'s signaling (ruling 2)',
+    call('PUT', o('signaling/p2/answer'), p4, body: 'x'),
     401,
   );
   await expectCode(
@@ -577,16 +624,21 @@ Future<void> main() async {
     call(
       'PUT',
       o('signaling'),
-      p2,
+      p1,
       body: {
-        'p1': {'offer': 'x'},
+        'p2': {'offer': 'x'},
       },
     ),
     401,
   );
   await expectCode(
+    'anonymous member cannot write own signaling (no voice or video for tier 0)',
+    call('PUT', o('signaling/p1/offer'), p1, body: 'sdp-anon'),
+    401,
+  );
+  await expectCode(
     'gm writes any uid\'s signaling branch',
-    call('PUT', o('signaling/p2/offer'), gm, body: 'sdp-gm'),
+    call('PUT', o('signaling/p1/offer'), gm, body: 'sdp-gm'),
     200,
   );
   await expectCode(
@@ -596,12 +648,12 @@ Future<void> main() async {
   );
   await expectCode(
     'member reads another uid\'s signaling (read scope as probed)',
-    call('GET', o('signaling/p1'), p2),
+    call('GET', o('signaling/p2'), p1),
     200,
   );
   await expectCode(
     'non-member cannot read signaling',
-    call('GET', o('signaling/p1'), out),
+    call('GET', o('signaling/p2'), out),
     401,
   );
 
@@ -712,7 +764,7 @@ Future<void> main() async {
   );
   await expectCode(
     'locked: member cannot write own signaling (ruling 3)',
-    call('PUT', o('signaling/p1/candidate'), p1, body: 'c1'),
+    call('PUT', o('signaling/p2/candidate'), p2, body: 'c1'),
     401,
   );
   await expectCode(
@@ -799,7 +851,7 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'index-free query: orderBy \$key on head refused to player',
+    'player cannot read head even with an orderBy \$key query',
     call('GET', o('head'), p1, q: {'orderBy': '"\$key"'}),
     401,
   );
@@ -860,16 +912,23 @@ Future<void> main() async {
   );
   await expectCode(
     'clean-up: member cannot write signaling again',
-    call('PUT', o('signaling/p1/offer'), p1, body: 'x'),
+    call('PUT', o('signaling/p2/offer'), p2, body: 'x'),
     401,
   );
-  // Recorded behaviour, not a ruling: presence is writable under the lock
-  // and members are kept, so a member's client can still write presence
-  // after the clean-up. Reported to R as an open item.
   await expectCode(
-    'clean-up: member can still write own presence (open item)',
-    call('PUT', '/presence/$op/p1', p1, body: true),
+    'clean-up: function marks the operation archived',
+    call('PUT', o('meta/status'), admin, body: 'archived'),
     200,
+  );
+  await expectCode(
+    'archived: member cannot write own presence again',
+    call('PUT', '/presence/$op/p2', p2, body: true),
+    401,
+  );
+  await expectCode(
+    'archived: anonymous member cannot write own presence again',
+    call('PUT', '/presence/$op/p1', p1, body: true),
+    401,
   );
 
   print(lines.join('\n'));

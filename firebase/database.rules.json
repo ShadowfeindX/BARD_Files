@@ -9,6 +9,13 @@
           ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('locked').val() !== true && newData.child('gm').val() === auth.uid && (!data.exists() || data.child('gm').val() === auth.uid)",
           "gm": {
             ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())"
+          },
+          ".validate": "newData.hasChildren(['gm', 'status'])",
+          "status": {
+            ".validate": "newData.isString()"
+          },
+          "locked": {
+            ".validate": "newData.isBoolean()"
           }
         },
         "members": {
@@ -68,7 +75,7 @@
           "$uid": {
             ".read": "auth != null && auth.uid === $uid",
             "$push": {
-              ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists() && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists() && newData.child('from').val() === auth.uid))"
+              ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists() && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists() && newData.child('from').val() === auth.uid))"
             }
           },
           ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
@@ -76,7 +83,7 @@
         "signaling": {
           "$uid": {
             ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
-            ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists()))"
+            ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists()))"
           }
         }
       }
@@ -85,7 +92,7 @@
       "$op": {
         ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists()"
+          ".write": "auth != null && auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists() && root.child('operations/' + $op + '/meta/status').val() !== 'archived'"
         }
       }
     },
