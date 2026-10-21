@@ -180,6 +180,86 @@ Future<void> main() async {
     call('PUT', o('meta'), gm, body: {'gm': 'gm1', 'status': 'archived'}),
     401,
   );
+
+  // ---- multi-path PATCH and root PUT, before the lock ----
+  // A PATCH on the operation node updates several paths in one write; each
+  // changed path is checked and a refusal rolls back the whole write.
+  await expectCode(
+    'multi-path PATCH: gm updates status and head together (control)',
+    call(
+      'PATCH',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta/status': 'paused',
+        'head': {'seq': 1},
+      },
+    ),
+    200,
+  );
+  await expectCode(
+    'multi-path PATCH: status archived with head is refused',
+    call(
+      'PATCH',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta/status': 'archived',
+        'head': {'seq': 2},
+      },
+    ),
+    401,
+  );
+  await expectBody(
+    'multi-path PATCH: refused write left head unchanged (atomic)',
+    call('GET', o('head/seq'), gm),
+    (c, t) => c == 200 && jsonDecode(t) == 1,
+  );
+  await expectCode(
+    'root PATCH: status archived across paths is refused',
+    call('PATCH', '/', gm, body: {'operations/$op/meta/status': 'archived'}),
+    401,
+  );
+  await expectCode(
+    'multi-path PATCH: gm cannot delete meta',
+    call('PATCH', '/operations/$op', gm, body: {'meta': null}),
+    401,
+  );
+  await expectCode(
+    'multi-path PATCH: gm cannot delete meta/status with head',
+    call(
+      'PATCH',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta/status': null,
+        'head': {'seq': 3},
+      },
+    ),
+    401,
+  );
+  await expectCode(
+    'PATCH on meta: gm cannot set status archived',
+    call('PATCH', o('meta'), gm, body: {'status': 'archived'}),
+    401,
+  );
+  await expectCode(
+    'root PUT of the operation node is refused (no write rule there)',
+    call(
+      'PUT',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta': {'gm': 'gm1', 'status': 'paused'},
+      },
+    ),
+    401,
+  );
+  await expectCode(
+    'DELETE of the operation node is refused',
+    call('DELETE', '/operations/$op', gm),
+    401,
+  );
   await expectCode(
     'gm cannot remove status (validate)',
     call('DELETE', o('meta/status'), gm),
@@ -889,6 +969,57 @@ Future<void> main() async {
     'locked: members can still read public events',
     call('GET', o('events/public'), p2),
     200,
+  );
+  // ---- multi-path PATCH and root PUT, after the lock ----
+  await expectCode(
+    'locked: multi-path PATCH of status and an event is refused',
+    call(
+      'PATCH',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta/status': 'paused',
+        'events/public/e8': {'seq': 8, 'body': 'x'},
+      },
+    ),
+    401,
+  );
+  await expectBody(
+    'locked: refused PATCH wrote no event (atomic)',
+    call('GET', o('events/public/e8'), gm),
+    (c, t) => c == 200 && jsonDecode(t) == null,
+  );
+  await expectCode(
+    'locked: PATCH cannot unlock',
+    call('PATCH', '/operations/$op', gm, body: {'meta/locked': false}),
+    401,
+  );
+  await expectCode(
+    'locked: PATCH cannot remove locked',
+    call('PATCH', '/operations/$op', gm, body: {'meta/locked': null}),
+    401,
+  );
+  await expectCode(
+    'locked: PATCH cannot delete meta',
+    call('PATCH', '/operations/$op', gm, body: {'meta': null}),
+    401,
+  );
+  await expectCode(
+    'locked: root PUT of the operation node is refused',
+    call(
+      'PUT',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta': {'gm': 'gm1', 'status': 'archived', 'locked': false},
+      },
+    ),
+    401,
+  );
+  await expectCode(
+    'locked: DELETE of the operation node is refused',
+    call('DELETE', '/operations/$op', gm),
+    401,
   );
   await expectCode(
     'locked: gm can still read head',
