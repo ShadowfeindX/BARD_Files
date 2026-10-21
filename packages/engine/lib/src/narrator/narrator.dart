@@ -7,12 +7,16 @@
 /// the state. Line shapes are Proposed.
 library;
 
+import '../actor.dart';
 import '../checks/check_types.dart';
 import '../components/components.dart';
 import '../events/events.dart';
+import '../expr/condition.dart';
 import '../expr/evaluate.dart';
+import '../expr/expr.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
+import '../phone.dart';
 import '../state/operation_state.dart';
 import '../visibility.dart';
 
@@ -106,11 +110,69 @@ final class Narrator {
       ConditionApplied() =>
         '${_name(state, event.entity)} is now ${_condition(event.condition)}'
             '${was(event.overriddenFrom == null ? null : _condition(event.overriddenFrom!))}.',
+      BroadcastEvaluated() => _evaluated(state, event),
+      PhoneMessageSent() =>
+        '${_party(state, event.from)} texts '
+            '${_party(state, event.to)}: "${event.text}"',
+      BroadcastDelivered() =>
+        forGm
+            ? 'Message to ${_aliases(state, event.visibility.aliases)}: '
+                  '"${event.text}"'
+            : '"${event.text}"',
       ConditionCleared() =>
         '${_name(state, event.entity)} is no longer '
             '${_condition(event.condition)}.',
     };
   }
+
+  /// A party's name; the Handler is "the Handler" to everyone.
+  String _party(OperationState state, PhoneParty party) => switch (party) {
+    PhoneGm() => 'the Handler',
+    PhoneAlias(:final alias) => _aliases(state, {alias}),
+    PhoneNpc(:final entity) => _name(state, entity),
+  };
+
+  String _evaluated(OperationState state, BroadcastEvaluated event) {
+    final recipients = event.recipients;
+    final who = recipients.isEmpty
+        ? 'nobody qualified'
+        : 'to ${_aliases(state, recipients)}';
+    return 'Broadcast "${event.text}" where ${_conditionText(event.condition)}'
+        ': $who (${recipients.length} of '
+        '${{for (final c in event.candidates) c.alias}.length}).';
+  }
+
+  /// The names of the agents [aliases] play, in the order given.
+  String _aliases(OperationState state, Set<AliasId> aliases) {
+    final names = <String>[];
+    for (final alias in aliases) {
+      final entity = state.stores
+          .all(Identity.componentType)
+          .entries
+          .where((e) => e.value.ownerAlias == alias)
+          .firstOrNull;
+      names.add(entity?.value.name ?? alias.value);
+    }
+    return names.join(', ');
+  }
+
+  String _conditionText(Condition condition) => switch (condition) {
+    Compare(:final op, :final left, :final right) =>
+      '${_exprText(left)} ${op.symbol} ${_exprText(right)}',
+  };
+
+  /// A short readable form of a formula for the GM's log.
+  String _exprText(Expr expr) => switch (expr) {
+    Const(:final value) => '${normalizeNumber(value)}',
+    Attr(:final key) => _attribute(key),
+    Var(:final key) => key,
+    Dice(:final count, :final sides) => '${count}d$sides',
+    Sum(:final terms) => '(${terms.map(_exprText).join(' + ')})',
+    KeepHighest(:final pool, :final keep) =>
+      'best $keep of (${pool.map(_exprText).join(', ')})',
+    Op(:final op, :final args) =>
+      '${op.name}(${args.map(_exprText).join(', ')})',
+  };
 
   String _resolved(OperationState state, CheckResolved event) {
     final b = event.breakdown;

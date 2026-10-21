@@ -1,6 +1,7 @@
 import 'commands/commands.dart';
 import 'decision.dart';
 import 'events/events.dart';
+import 'expr/condition.dart';
 import 'expr/evaluate.dart';
 import 'ids.dart';
 import 'pack/rules_pack.dart';
@@ -9,6 +10,7 @@ import 'state/operation_state.dart';
 import 'systems/character_system.dart';
 import 'systems/check_system.dart';
 import 'systems/condition_system.dart';
+import 'systems/messaging_system.dart';
 import 'systems/operation_system.dart';
 import 'systems/vitals_system.dart';
 
@@ -23,7 +25,8 @@ final class Engine {
     : _operation = OperationSystem(pack),
       _character = CharacterSystem(pack),
       _check = CheckSystem(pack),
-      _condition = ConditionSystem(pack);
+      _condition = ConditionSystem(pack),
+      _messaging = MessagingSystem(pack);
 
   /// The pack this engine runs.
   final RulesPack pack;
@@ -33,6 +36,8 @@ final class Engine {
   final CheckSystem _check;
   final ConditionSystem _condition;
   final VitalsSystem _vitals = const VitalsSystem();
+
+  final MessagingSystem _messaging;
 
   /// Turns [command] into events, or a rejection, given [state].
   ///
@@ -77,6 +82,7 @@ final class Engine {
         CheckCommand() => _check.decide(state, command, rng, ids),
         VitalsCommand() => _vitals.decide(state, command),
         ConditionCommand() => _condition.decide(state, command),
+        MessagingCommand() => _messaging.decide(state, command),
       };
     } on EvaluationException catch (e) {
       decision = Rejected(Rejection(RejectionCode.evaluationFailed, e.message));
@@ -103,6 +109,7 @@ final class Engine {
       CheckEvent() => _check.evolve(state, event),
       VitalsEvent() => _vitals.evolve(state, event),
       ConditionEvent() => _condition.evolve(state, event),
+      MessagingEvent() => _messaging.evolve(state, event),
     };
     return switch (event) {
       // The highest end so far: a held consequence batch confirmed after
@@ -112,6 +119,14 @@ final class Engine {
       _ => next,
     };
   }
+
+  /// The GM's preview of a stat-gated broadcast: every alias's result
+  /// against [condition] in [state], without sending anything. The same list
+  /// `BroadcastToQualifying` records.
+  List<BroadcastCandidate> broadcastPreview(
+    OperationState state,
+    Condition condition,
+  ) => _messaging.candidates(state, condition);
 
   /// Folds [events] over [initial] with [evolve].
   OperationState replay(OperationState initial, Iterable<Event> events) =>

@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "type": "sendPhoneMessage",
+  "actor": {
+    "kind": "alias",
+    "alias": "al_vale"
+  },
+  "from": {
+    "kind": "alias",
+    "alias": "al_vale"
+  },
+  "to": {
+    "kind": "npc",
+    "entity": "e3"
+  },
+  "text": "Who goes there?"
+}

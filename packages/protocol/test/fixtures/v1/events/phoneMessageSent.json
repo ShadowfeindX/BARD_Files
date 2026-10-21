@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "type": "phoneMessageSent",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "aliases",
+    "aliases": [
+      "al_vale"
+    ]
+  },
+  "from": {
+    "kind": "npc",
+    "entity": "e3"
+  },
+  "to": {
+    "kind": "alias",
+    "alias": "al_vale"
+  },
+  "text": "Go away."
+}

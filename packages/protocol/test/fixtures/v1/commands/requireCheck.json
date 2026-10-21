@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "type": "requireCheck",
+  "actor": {
+    "kind": "gm"
+  },
+  "entity": "e1",
+  "attribute": null,
+  "skill": "firearms",
+  "difficulty": {
+    "kind": "category",
+    "category": "C"
+  },
+  "modifiers": [
+    {
+      "label": "Cover",
+      "value": -2
+    }
+  ],
+  "request": "r1",
+  "visibility": {
+    "kind": "aliases",
+    "aliases": [
+      "al_quinn",
+      "al_vale"
+    ]
+  }
+}

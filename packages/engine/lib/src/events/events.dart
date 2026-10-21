@@ -8,8 +8,11 @@ library;
 
 import '../actor.dart';
 import '../checks/check_types.dart';
+import '../equality.dart';
+import '../expr/condition.dart';
 import '../ids.dart';
 import '../immutable_map.dart';
+import '../phone.dart';
 import '../pack/rules_pack.dart';
 import '../state/operation_state.dart';
 import '../visibility.dart';
@@ -17,6 +20,7 @@ import '../visibility.dart';
 part 'character_events.dart';
 part 'check_events.dart';
 part 'condition_events.dart';
+part 'messaging_events.dart';
 part 'operation_events.dart';
 part 'vitals_events.dart';
 
