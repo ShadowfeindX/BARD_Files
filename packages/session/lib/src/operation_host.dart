@@ -347,16 +347,25 @@ final class OperationHost {
       ConditionApplied() => e.entity,
       _ => null,
     };
+    // The log must show both values: an edit that changes the event has to
+    // record what it replaced (`withAmount`, `withCondition` do).
+    Object? replaced(Event e) => switch (e) {
+      DamageApplied() => e.overriddenFrom,
+      SanityLost() => e.overriddenFrom,
+      ConditionApplied() => e.overriddenFrom,
+      _ => null,
+    };
     final entity = entityOf(original);
     if (edited.runtimeType != original.runtimeType ||
         edited is! Consequence ||
         entity == null ||
         entityOf(edited) != entity ||
         edited.actor != original.actor ||
-        edited.visibility != original.visibility) {
+        edited.visibility != original.visibility ||
+        (edited != original && replaced(edited) == null)) {
       throw ArgumentError(
         'A review edit must return the same consequence type for the same '
-        'entity, actor and visibility.',
+        'entity, actor and visibility, and record the value it replaced.',
       );
     }
     return edited;
@@ -390,12 +399,17 @@ final class OperationHost {
     );
     _connections.add(connection);
     connection.actor.envelopes.listen(
-      (envelope) => _mailbox.run(() => _onEnvelope(connection, envelope)),
+      (envelope) => unawaited(
+        _mailbox
+            .run(() => _onEnvelope(connection, envelope))
+            .catchError((Object e) => onProtocolError?.call(e)),
+      ),
       onDone: () => _connections.remove(connection),
     );
   }
 
   Future<void> _onEnvelope(_Connection c, Envelope envelope) async {
+    if (_closed) return;
     try {
       final known = envelope.messageType;
       // Version rules run on the header, before the body is read, so a frame
@@ -639,9 +653,16 @@ final class OperationHost {
     final written = EngineVersion.parse(engine_lib.engineVersion);
     if (_requiredEngine < written) _requiredEngine = written;
     final first = committed.first.seq;
+    // The batch is committed; a link that fails now must not undo it or stop
+    // the others, and recovers by resync.
     for (final c in _connections.toList()) {
       if (c.perspective == null) continue;
-      await _sendEntries(c, first, welcome: false, upTo: seq);
+      try {
+        await _sendEntries(c, first, welcome: false, upTo: seq);
+      } on Object catch (e) {
+        onProtocolError?.call(e);
+        _connections.remove(c);
+      }
     }
     for (final v in _views) {
       v._feed.apply(_entriesFor(v.perspective, first, null, upTo: seq));

@@ -102,6 +102,23 @@ Event projectFor(Event event, Perspective perspective) {
       actor: event.actor,
       visibility: narrowed(event.visibility) as AliasesOnly,
     ),
+    CheckRequired() => CheckRequired(
+      check: event.check,
+      spec: event.spec,
+      actor: event.actor,
+      visibility: narrowed(event.visibility),
+    ),
+    CheckResolved() => CheckResolved(
+      check: event.check,
+      spec: event.spec,
+      breakdown: event.breakdown,
+      outcome: event.outcome,
+      draws: event.draws,
+      source: event.source,
+      enteredBy: event.enteredBy,
+      actor: event.actor,
+      visibility: narrowed(event.visibility),
+    ),
     _ => event,
   };
 }

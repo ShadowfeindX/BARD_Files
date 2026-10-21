@@ -472,6 +472,13 @@ void main() {
             actor: e.actor,
             visibility: const GmOnly(),
           ),
+          // Changes the value without recording what it replaced.
+          (e) => DamageApplied(
+            entity: e.entity,
+            amount: 1,
+            actor: e.actor,
+            visibility: e.visibility,
+          ),
         ];
         for (final swap in swaps) {
           await expectLater(

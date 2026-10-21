@@ -36,10 +36,13 @@
 
 ## Open
 
+- Held consequence batches are in memory: closing or reopening the host loses them without a message. Whether they should survive a reopen is for R.
+- The host stores text-log lines but never sends a `textlog` message (that message is for archived text from earlier engine majors).
+- `projectFor` covers the events that can address several aliases today (`BroadcastDelivered`, `CheckRequired`, `CheckResolved`) and the three that carry `overriddenFrom`; a new event with either property needs a case.
 - The host never decodes a stored snapshot: it replays the log. Snapshots for fast joins come later.
 - Admission (invites, bans, locks, the anonymous alias map) lives in memory: a reopened host starts empty until the account layer repopulates it.
 - Frames are sent one link at a time inside the commit, so a slow link delays the loop.
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
 - No narrator, ping scheduling, reconnect backoff or participant-side store yet.
-- Co-recipient visibility is still open (11 §Messaging); until R rules, `projectFor` narrows `BroadcastDelivered` to the viewer.
+- Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
 - `hidden` entries keep `seq` consecutive per recipient; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.

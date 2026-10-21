@@ -116,6 +116,18 @@ void main() {
       },
     );
 
+    test('a check addressed to several aliases is narrowed to the viewer', () {
+      final required = CheckRequired(
+        check: const CheckId('c1'),
+        spec: CheckSpec(entity: const EntityId('e1'), attribute: 'STR', dc: 10),
+        actor: const GmActor(),
+        visibility: AliasesOnly({AliasId('hall'), AliasId('vale')}),
+      );
+      final seen = projectFor(required, hall) as CheckRequired;
+      expect(seen.visibility, AliasesOnly({AliasId('hall')}));
+      expect(seen.check, required.check);
+    });
+
     test('other events pass through unchanged', () {
       final created = agentCreated('e1', const Public());
       expect(projectFor(created, hall), same(created));
