@@ -56,14 +56,44 @@ void main() {
 
   test('the condition never reaches players', () {
     final t = table();
+    final narrator = Narrator(t.engine.pack);
     final events = t.run(
       BroadcastToQualifying(text: 'Whispers.', condition: wilBelow3),
     );
     for (final event in events) {
-      if (event.visibility case AliasesOnly() || Public()) {
+      final player = narrator.narrate(t.state, event).player;
+      if (event.visibility is GmOnly) {
+        expect(player, isNull);
+      } else {
         expect(event, isA<BroadcastDelivered>());
+        expect(player, isNot(contains('WIL')));
       }
     }
+    // The delivered event carries only the text and its recipients.
+    expect(
+      events.last,
+      BroadcastDelivered(
+        text: 'Whispers.',
+        actor: const GmActor(),
+        visibility: AliasesOnly({Table.valeAlias}),
+      ),
+    );
+  });
+
+  test('an alias with several agents qualifies if any of them passes', () {
+    final t = table();
+    t.run(
+      CreateAgent(
+        name: 'Hall (second)',
+        attributes: {...validScores(), 'WIL': 1},
+        ownerAlias: hallAlias,
+      ),
+    );
+    final evaluated =
+        t.run(BroadcastToQualifying(text: 'x', condition: wilBelow3)).first
+            as BroadcastEvaluated;
+    expect(evaluated.candidates.where((c) => c.alias == hallAlias).length, 2);
+    expect(evaluated.recipients, {Table.valeAlias, hallAlias});
   });
 
   test('when nobody qualifies only the GM record is written', () {
@@ -84,14 +114,14 @@ void main() {
     t.state = t.state.copyWith(
       stores: t.state.stores.put(Table.vale, Attributes(scores)),
     );
-    final candidates = t.engine.messaging.candidates(t.state, wilBelow3);
+    final candidates = t.engine.broadcastPreview(t.state, wilBelow3);
     expect(candidates.first.result, isNull);
     expect(candidates.first.qualifies, isFalse);
   });
 
   test('the GM preview matches what the broadcast records', () {
     final t = table();
-    final preview = t.engine.messaging.candidates(t.state, wilBelow3);
+    final preview = t.engine.broadcastPreview(t.state, wilBelow3);
     final evaluated =
         t.run(BroadcastToQualifying(text: 'x', condition: wilBelow3)).first
             as BroadcastEvaluated;

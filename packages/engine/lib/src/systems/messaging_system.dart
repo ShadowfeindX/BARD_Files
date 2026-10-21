@@ -34,8 +34,8 @@ final class MessagingSystem {
 
   /// Every alias's result against [condition], without sending anything.
   ///
-  /// The GM's preview of who would receive a broadcast. Agents owned by an
-  /// alias are tested, in creation order; an alias with several agents is
+  /// The GM's preview of who would receive a broadcast. Agents (entity kind
+  /// `agent`) owned by an alias are tested, in creation order; an alias with several agents is
   /// listed once per agent and qualifies if any of them passes.
   List<BroadcastCandidate> candidates(
     OperationState state,
@@ -45,7 +45,7 @@ final class MessagingSystem {
     for (final MapEntry(key: entity, value: identity)
         in state.stores.all(Identity.componentType).entries) {
       final alias = identity.ownerAlias;
-      if (alias == null) continue;
+      if (alias == null || identity.kind != EntityKind.agent) continue;
       final scores =
           state.stores.get(Attributes.componentType, entity)?.scores.asMap() ??
           const <String, int>{};

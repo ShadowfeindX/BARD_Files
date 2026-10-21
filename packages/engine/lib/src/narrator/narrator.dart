@@ -7,10 +7,10 @@
 /// the state. Line shapes are Proposed.
 library;
 
+import '../actor.dart';
 import '../checks/check_types.dart';
 import '../components/components.dart';
 import '../events/events.dart';
-import '../actor.dart';
 import '../expr/condition.dart';
 import '../expr/evaluate.dart';
 import '../expr/expr.dart';
