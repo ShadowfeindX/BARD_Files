@@ -96,7 +96,7 @@ Public content is moderator-approved first, so an edit goes to `profilesPending/
 ### `badgeNumbers/{n}` and `signInCodes/{code}` (function only)
 
 - `badgeNumbers/{n}`: `{ uid, issuedAt }`. Lets the companion scan resolve a badge to an account. Clients cannot read or write it; a function resolves a scan and returns only what the scanner may see. Numbers 0 to 99 are hand-assigned (D is `0000000000000013`). The number is a keyed permutation computed in a function, so it is not derivable from the uid.
-- `signInCodes/{code}`: `{ uid, expiresAt, used }`. Single use, issued by a function. A TTL policy on `expiresAt` removes stale codes as clean-up only: TTL deletion is lazy (up to about a day after expiry; figure from the Firestore docs, `[U]`), so the redeeming function checks `expiresAt` and `used` inside a transaction and never relies on deletion. Before enabling TTL, check the RTDB `meta` handling for the same pattern.
+- `signInCodes/{code}`: `{ uid, expiresAt, used }`. Single use, issued by a function. A TTL policy on `expiresAt` removes stale codes as clean-up only: TTL deletion is lazy (up to about a day after expiry; figure from the Firestore docs, `[U]`), so the redeeming function checks `expiresAt` and `used` inside a transaction and never relies on deletion.
 - `createAgent` (one HTTPS function, Proposed): verifies the caller is a full account with no `agents` document, generates the badge number, creates `badgeNumbers/{n}` only if absent, writes `agents/{uid}` (age bracket from account creation) and sets the tier 1 claim.
 
 ## Aliases (characters)
@@ -158,7 +158,7 @@ The alias sheet and play state (inventory, skills, contacts) are engine componen
 
 ### `operations/{opId}/joinRequests/{uid}`
 
-Join request from a non-member (11). Not the same as the RTDB `requests` branch, which holds in-play requests from members. `{ aliasId, message?, status: 'open', createdAt }`, keys whitelisted. Any signed-in account, anonymous included (06: anonymous can join any session), creates one document keyed by their own uid on an operation whose `visibility` is `public`; invites reach private operations through the invite function. `message` is free text and therefore allowed **only for full accounts** (R: no messaging for tier 0). The requester cannot read it back (as in RTDB); the GM, while a handler, reads, updates `status`, and deletes. This closes the request field whitelist for join requests; in-play request kinds remain open.
+Join request from a non-member (11). Not the same as the RTDB `requests` branch, which holds in-play requests from members. `{ aliasId, aliasKey, message?, status: 'open', createdAt }` (`aliasKey` is the key of the requester's own alias document; the rule checks that its `aliasId` field equals the claimed `aliasId`, so nobody can claim another player's audience), keys whitelisted. Any signed-in account, anonymous included (06: anonymous can join any session), creates one document keyed by their own uid on an operation whose `visibility` is `public`; invites reach private operations through the invite function. `message` is free text and therefore allowed **only for full accounts** (R: no messaging for tier 0). The invite function applies the same no-message rule for tier 0. A GM can add a uid to `memberUids` without a `members` document; that is acceptable because RTDB `members` is canonical. The requester cannot read it back (as in RTDB); the GM, while a handler, reads, updates `status`, and deletes. This closes the request field whitelist for join requests; in-play request kinds remain open.
 
 ### `operations/{opId}/transfers/{id}`
 
@@ -338,22 +338,23 @@ service cloud.firestore {
       match /joinRequests/{r} {
         // public operations only from clients; invites write here through the function
         allow create: if signedIn() && r == uid()
-          && request.resource.data.keys().hasOnly(['aliasId','message','status','createdAt'])
+          && request.resource.data.keys().hasOnly(['aliasId','aliasKey','message','status','createdAt'])
           && request.resource.data.status == 'open'
+          && doc('aliases/' + uid() + '/items/' + request.resource.data.aliasKey).data.aliasId == request.resource.data.aliasId
           && ('message' in request.resource.data ? isFull() : true)   // tier 0 cannot message
           && doc('operations/' + op).data.visibility == 'public'
           && doc('operations/' + op).data.status == 'open';
         allow get: if gmOf(op);
         allow list: if gmOf(op) && pageOk();
-        allow update: if gmOf(op) && request.resource.data.keys().hasOnly(['aliasId','message','status','createdAt'])
-          && !changes(['aliasId','message','createdAt']);
+        allow update: if gmOf(op) && request.resource.data.keys().hasOnly(['aliasId','aliasKey','message','status','createdAt'])
+          && !changes(['aliasId','aliasKey','message','createdAt']);
         allow delete: if gmOf(op);
       }
       match /transfers/{t} {
         allow create: if isFull() && request.resource.data.fromUid == uid()
           && request.resource.data.keys().hasOnly(['fromUid','aliasId','aliasKey','sourceOpId','status','createdAt'])
           && request.resource.data.status == 'offered'
-          && exists(/databases/$(database)/documents/aliases/$(uid())/items/$(request.resource.data.aliasKey));   // aliasKey = the alias document key
+          && doc('aliases/' + uid() + '/items/' + request.resource.data.aliasKey).data.aliasId == request.resource.data.aliasId;   // aliasKey = alias document key; binds the claimed id to the caller's own alias
         allow get: if isFull() && (resource.data.fromUid == uid() || opGm(op) == uid());
         allow list: if gmOf(op) && pageOk();
         allow update: if gmOf(op)
@@ -488,7 +489,7 @@ Deployed as `firebase/firestore.indexes.json` and `firebase/firestore.rules` whe
 Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to `/5`; tier 0 has empty lists (no data access). A missing document makes every level read fail closed.
 
 1. Anonymous account: creates `aliases/<uid>/items/anon` once; second create refused; other keys refused; cannot read `agents`, create `operations`, or read `libraryData`; can create a `joinRequests` document without `message` on a public operation, and is refused with `message`.
-2. Alias ids: two anonymous accounts both keyed `anon` have different `aliasId` fields; an alias update cannot change `aliasId`; (host-level) admission of a duplicate `aliasId` is refused.
+2. Alias ids: a join request or transfer carrying another player's `aliasId` is refused; two anonymous accounts both keyed `anon` have different `aliasId` fields; an alias update cannot change `aliasId`; (host-level) admission of a duplicate `aliasId` is refused.
 3. Tier gates: tier 3 cannot create an operation; tier 4 can. A lapsed handler (claim back to 3) cannot update the operation, write `members`, create an `invites` document or submit a `listingsPending` document, but can still read the operation, missions and archives (invites and join requests are GM-handler only).
 4. Owner isolation and whitelists: `agents` and `aliases` readable only by the owner; `ageBracket` and `badgeNumber` not editable; an extra key (for example `email`) is refused on `agents`, `aliases`, `profilesPending`, `joinRequests`, `transfers` (create and update), `listingsPending`, `packIndex`, `libraryPending`; `badgeNumbers` and `signInCodes` refused for everyone.
 5. Operation membership: non-member `get` and `list` refused; `gmUid` change refused; the GM cannot remove themself from `memberUids`; a client cannot set `status: 'archived'`; a player cannot add themselves; a `members` create without the matching `memberUids` entry is refused; a member reads only their own `members` entry; a requester cannot read their request; a join request on an archived or private operation is refused; the GM can delete an invite; array caps refused above 20 / 10 / 30 / 5.
@@ -496,7 +497,7 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 7. Archive audiences: GM reads all three audience kinds; a member reads `public` and only their own `alias:<aliasId>`; `list` refused; a missing member document gives a refusal, not an error.
 8. Library levels: with `tierLevels` `summaryLevels: [1,2]` a caller reads level 1-2 summaries and not level 3; `libraryData` follows `dataLevels`; `testing` items only for tier 5; owner cannot write `libraryPublic`; a holder of `verifier` or `moderator` can, and `admin` alone cannot; the public create is refused while the pending document still exists; revocation back to pending works.
 9. Pending then public for profiles, listings and packs; a non-moderator cannot make a pack `public`; pack delete works for owner and moderator.
-10. Transfers: only the alias owner creates (the `aliasKey` document must exist), only the destination GM (a handler) decides, a decided request cannot be flipped.
+10. Transfers: only the alias owner creates (`aliasKey` must name the caller's own alias document and its `aliasId` field must equal the claimed `aliasId`; a forged `aliasId` is refused), only the destination GM (a handler) decides, a decided request cannot be flipped.
 11. Pagination: list queries without `limit`, or with `limit > 50`, refused [V-49].
 12. Queries: each query in the index table run against emulator indexes, and one without its index returns `FAILED_PRECONDITION`.
 13. Claim refresh: tier change visible only after a forced token refresh [V-42][V-43].
@@ -514,4 +515,4 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 5. **Unauthenticated `get` on `profilesPublic/{badge}`**, redacted fields only; `list` stays signed-in.
 6. **Provisional array caps** (R sets the numbers): `memberUids` 20, `tags` 10, `keywords` 30, `packPins` 5.
 7. **Transfer-move function** for the move and clean-up only: transactional, checks the source operation's RTDB `meta` with admin REST (no live session), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
-8. **`signInCodes` TTL** as clean-up only, after checking RTDB `meta` for the same pattern; the function checks expiry in a transaction.
+8. **`signInCodes` TTL** as clean-up only. The function checks expiry in a transaction.
