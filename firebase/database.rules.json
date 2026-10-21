@@ -1,0 +1,101 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "operations": {
+      "$op": {
+        "meta": {
+          ".read": "auth != null && (data.child('gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('locked').val() !== true && newData.child('gm').val() === auth.uid && (!data.exists() || data.child('gm').val() === auth.uid)",
+          "gm": {
+            ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())"
+          }
+        },
+        "members": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/meta/gm').val() === auth.uid && root.child('operations/' + $op + '/meta/locked').val() !== true",
+            ".validate": "newData.hasChildren(['aliasId', 'joinedAt'])",
+            "aliasId": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]+$/)"
+            }
+          },
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
+        },
+        "requests": {
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid",
+          ".write": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid && root.child('operations/' + $op + '/meta/locked').val() !== true",
+          "$uid": {
+            "$push": {
+              ".write": "auth != null && auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists() && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists()",
+              ".validate": "newData.hasChildren(['id', 'kind', 'from']) && newData.child('from').val() === auth.uid"
+            }
+          }
+        },
+        "events": {
+          "$audience": {
+            ".read": "auth != null && (($audience === 'public' && root.child('operations/' + $op + '/members/' + auth.uid).exists()) || $audience === 'alias:' + root.child('operations/' + $op + '/members/' + auth.uid + '/aliasId').val())",
+            ".validate": "$audience.matches(/^(gm|public|alias:[A-Za-z0-9_-]+)$/)",
+            ".indexOn": [
+              "seq"
+            ],
+            "$push": {
+              ".write": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists()",
+              ".validate": "newData.hasChildren(['seq', 'body']) && newData.child('seq').isNumber()"
+            }
+          },
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
+        },
+        "textlog": {
+          "$audience": {
+            ".read": "auth != null && (($audience === 'public' && root.child('operations/' + $op + '/members/' + auth.uid).exists()) || $audience === 'alias:' + root.child('operations/' + $op + '/members/' + auth.uid + '/aliasId').val())",
+            ".validate": "$audience.matches(/^(gm|public|alias:[A-Za-z0-9_-]+)$/)",
+            ".indexOn": [
+              "seq"
+            ],
+            "$push": {
+              ".write": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists()",
+              ".validate": "newData.hasChildren(['seq', 'text']) && newData.child('seq').isNumber()"
+            }
+          },
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
+        },
+        "head": {
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid",
+          ".write": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid && root.child('operations/' + $op + '/meta/locked').val() !== true"
+        },
+        "phone": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            "$push": {
+              ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists() && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists() && newData.child('from').val() === auth.uid))"
+            }
+          },
+          ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
+        },
+        "signaling": {
+          "$uid": {
+            ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
+            ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists()))"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$op": {
+        ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && root.child('operations/' + $op + '/members/' + auth.uid).exists()"
+        }
+      }
+    },
+    "inbox": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$push": {
+          ".write": "auth != null && auth.uid === $uid && !newData.exists()"
+        }
+      }
+    }
+  }
+}
