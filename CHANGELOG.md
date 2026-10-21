@@ -33,6 +33,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Protocol envelope
 - `protocol_envelope` package (SDK only): envelope, eleven message types, refusal reasons, `hello` version negotiation (SemVer pre-releases accepted), and a JSON codec behind an `EnvelopeCodec` interface, with round-trip, malformed-input, negotiation and fixture tests.
 
+### UI
+- `packages/ui_kit` foundation: plain placeholder theme (`BardTheme`, light and dark; the dossier look waits for D), `DiceBreakdownView` with plain display data (exploded dice, modifiers, total vs DC, outcome; all numbers engine-supplied), `PerspectivePanel` scaffold bound to a `signals_flutter` list signal, widget tests, and developer notes in `docs/ui-kit.md`.
+
 ### Docs
 - Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
 - Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.
