@@ -80,7 +80,7 @@ Ruled before this review and unchanged: archived logs are frozen, not converted;
 
 ## Pending D
 
-R wants D's approval on these before they are designed in full. The proposals, with options and recommendations, are in [10-pending-d.md](10-pending-d.md) for R's meeting with D (Thursday 2026-10-22 at the earliest). Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
+R wants D's approval on these before they are designed in full. Every item to handle after R's meeting with D (Thursday 2026-10-22 at the earliest) has a card in [10-pending-d.md](10-pending-d.md): the decision it waits on, the options, the assumed default and the spec, code and pack edits under each option. The table below is the original five; 10 also covers the rulebook gaps, the X0 questions, narrator lines and name reveals (N1), and the feature-plan questions. Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
 
 | Item | What is undecided | Already fixed |
 |---|---|---|

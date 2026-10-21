@@ -194,7 +194,7 @@ Provisionally (R): D defines the currency name, prices, starting funds and incom
 
 ## Waiting on X0 (R's meeting with D)
 
-Under R's terms an operation is the whole campaign, but the spec still gives each operation (one session) its own event log. Which unit owns the log decides the items below, so they wait for R's meeting with D:
+Under R's terms an operation is the whole campaign, but the spec still gives each operation (one session) its own event log. Which unit owns the log decides the items below, so they wait for R's meeting with D (options and the edits under each: [10-pending-d.md](10-pending-d.md#operations-and-missions-x0)):
 
 - **Q24:** whether the event log belongs to the operation, stored in mission segments, or to each mission.
 - **Q5:** requests made between sittings (purchases, contact releases), and whether purchases may auto-confirm.
