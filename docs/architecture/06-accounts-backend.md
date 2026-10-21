@@ -141,7 +141,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ## Realtime Database model (live play)
 
-**P10c draft (Proposed), with its three open items ruled by R 2026-10-20.** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed proposal, which R reviews with this spec. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the three changes applied and the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). The changes are not in the probed file yet, so they are unproven until those tests run. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
+**P10c draft (Proposed), with its three open items ruled by R 2026-10-20.** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed proposal, which R reviews with this spec. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the three changes applied, the rejected `phoneDraft` path removed (R 2026-10-21) and the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). The changes are not in the probed file yet, so they are unproven until those tests run. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
 
 ```
 /operations/$op/meta                     gm uid, campaignId, engine version, packRef, status, locked, lastSeq
@@ -150,7 +150,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 /operations/$op/events/$audience/$push   { seq, body }; GM only; create-only; .indexOn seq
 /operations/$op/textlog/$audience/$push  { seq, text }; GM only; create-only; .indexOn seq
 /operations/$op/head                     head snapshot; GM only (read and write)
-/operations/$op/phone/$uid/$push         phone box per player: the player writes own box (from == $uid), the GM writes any box
+/operations/$op/phone/$uid/$push         phone box per player: player and GM messages; the player writes own box (from == $uid), the GM writes any box; cleared when the mission ends
 /operations/$op/signaling/$uid/...      WebRTC offer/answer/candidates (P2P mode only); written by that uid or the GM; frozen by locked (rulings 2, 3; unproven)
 /presence/$op/$uid                       own presence; members write own uid; members and GM read
 /inbox/$uid/$push                        in-app notifications (P14); owner reads and deletes; only functions write
@@ -176,7 +176,7 @@ After `meta/locked = true` the GM cannot append, write head, add members or unlo
 
 What probe 8.6 changed in the earlier draft:
 
-- **Phone is per player box** (`phone/$uid/$push`), not one `phone/$push` list "read by GM and sender". A client cannot list a parent it has no read on, so a sender could never list their own thread in the old shape [V-38]. Phone messages remain engine events (`PhoneMessageSent`, see [04-session.md](04-session.md#in-game-phone)). How the box and those events relate (Proposed: the box carries the player's outgoing messages to the GM, and the events in the audience branches stay the record) is not covered by R's 2026-10-20 rulings; Proposed, open.
+- **Phone is per player box** (`phone/$uid/$push`), not one `phone/$push` list "read by GM and sender". A client cannot list a parent it has no read on, so a sender could never list their own thread in the old shape [V-38]. Phone messages remain engine events (`PhoneMessageSent`, see [04-session.md](04-session.md#in-game-phone)). **Box contents and lifetime (Fixed, R 2026-10-21):** the GM's messages go into the box as well as the player's, and the box is cleared only when the mission ends (today's spec unit: the operation). Proposed: the `PhoneMessageSent` events in the audience branches stay the record; clearing is done by a function with admin REST after the archive is written, because rules let no client delete phone messages. Storage is not a concern: about 12 KB per 4-hour session at the estimate's profile (project library `architecture/rtdb-traffic-cost-estimate.md`, an approximation).
 - **The GM's read sits on each parent** (`members`, `requests`, `events`, `textlog`, `phone`). Read rules cascade downward, so child rules only handle players [V-38].
 - **Resync indexes:** `events/$audience` and `textlog/$audience` declare `.indexOn: ["seq"]`; `orderBy="seq"&startAt=N` and `limitToLast` then work for members. Catch-up by key needs no index (as in [V-33]). An unindexed `orderBy` is refused with 400 on REST [V-38].
 - **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
