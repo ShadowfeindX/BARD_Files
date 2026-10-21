@@ -82,6 +82,13 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('score-STR')), '0');
     await tester.tap(find.byKey(const ValueKey('agent-create')));
     await _settle(tester);
+    await tester.enterText(find.byKey(const ValueKey('score-DEX')), 'x');
+    await tester.tap(find.byKey(const ValueKey('agent-create')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('whole numbers'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('score-DEX')), '1');
+    await tester.tap(find.byKey(const ValueKey('agent-create')));
+    await _settle(tester);
     // A score below the pack's minimum is refused by the engine.
     expect(find.byKey(const ValueKey('add-agent-error')), findsOneWidget);
 

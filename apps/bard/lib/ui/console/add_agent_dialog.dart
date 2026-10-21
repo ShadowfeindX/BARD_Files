@@ -23,6 +23,7 @@ class _AddAgentDialogState extends State<AddAgentDialog> {
       a.key: TextEditingController(text: '${widget.model.creationLimits.min}'),
   };
   String? _error;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -34,15 +35,28 @@ class _AddAgentDialogState extends State<AddAgentDialog> {
   }
 
   Future<void> _create() async {
-    final scores = {
-      for (final e in _scores.entries) e.key: int.tryParse(e.value.text) ?? 0,
-    };
+    final scores = <String, int>{};
+    for (final e in _scores.entries) {
+      final value = int.tryParse(e.value.text.trim());
+      if (value == null) {
+        setState(() => _error = 'Scores must be whole numbers (${e.key}).');
+        return;
+      }
+      scores[e.key] = value;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     final error = await widget.model.addAgent(_name.text.trim(), scores);
     if (!mounted) return;
     if (error == null) {
       Navigator.of(context).pop();
     } else {
-      setState(() => _error = error);
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
     }
   }
 
@@ -91,7 +105,7 @@ class _AddAgentDialogState extends State<AddAgentDialog> {
         ),
         FilledButton(
           key: const ValueKey('agent-create'),
-          onPressed: _create,
+          onPressed: _busy ? null : _create,
           child: const Text('Create'),
         ),
       ],
