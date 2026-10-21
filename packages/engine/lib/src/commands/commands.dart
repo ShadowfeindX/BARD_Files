@@ -8,6 +8,7 @@ library;
 import '../actor.dart';
 import '../checks/check_types.dart';
 import '../equality.dart';
+import '../expr/condition.dart';
 import '../ids.dart';
 import '../immutable_map.dart';
 import '../state/operation_state.dart';
@@ -16,6 +17,7 @@ import '../visibility.dart';
 part 'character_commands.dart';
 part 'check_commands.dart';
 part 'condition_commands.dart';
+part 'messaging_commands.dart';
 part 'operation_commands.dart';
 part 'vitals_commands.dart';
 

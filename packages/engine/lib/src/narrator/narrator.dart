@@ -10,7 +10,10 @@ library;
 import '../checks/check_types.dart';
 import '../components/components.dart';
 import '../events/events.dart';
+import '../actor.dart';
+import '../expr/condition.dart';
 import '../expr/evaluate.dart';
+import '../expr/expr.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
 import '../state/operation_state.dart';
@@ -106,11 +109,59 @@ final class Narrator {
       ConditionApplied() =>
         '${_name(state, event.entity)} is now ${_condition(event.condition)}'
             '${was(event.overriddenFrom == null ? null : _condition(event.overriddenFrom!))}.',
+      BroadcastEvaluated() => _evaluated(state, event),
+      BroadcastDelivered() =>
+        forGm
+            ? 'Message to ${_aliases(state, event.visibility.aliases)}: '
+                  '"${event.text}"'
+            : '"${event.text}"',
       ConditionCleared() =>
         '${_name(state, event.entity)} is no longer '
             '${_condition(event.condition)}.',
     };
   }
+
+  String _evaluated(OperationState state, BroadcastEvaluated event) {
+    final recipients = event.recipients;
+    final who = recipients.isEmpty
+        ? 'nobody qualified'
+        : 'to ${_aliases(state, recipients)}';
+    return 'Broadcast "${event.text}" where ${_conditionText(event.condition)}'
+        ': $who (${recipients.length} of '
+        '${{for (final c in event.candidates) c.alias}.length}).';
+  }
+
+  /// The names of the agents [aliases] play, in the order given.
+  String _aliases(OperationState state, Set<AliasId> aliases) {
+    final names = <String>[];
+    for (final alias in aliases) {
+      final entity = state.stores
+          .all(Identity.componentType)
+          .entries
+          .where((e) => e.value.ownerAlias == alias)
+          .firstOrNull;
+      names.add(entity?.value.name ?? alias.value);
+    }
+    return names.join(', ');
+  }
+
+  String _conditionText(Condition condition) => switch (condition) {
+    Compare(:final op, :final left, :final right) =>
+      '${_exprText(left)} ${op.symbol} ${_exprText(right)}',
+  };
+
+  /// A short readable form of a formula for the GM's log.
+  String _exprText(Expr expr) => switch (expr) {
+    Const(:final value) => '${normalizeNumber(value)}',
+    Attr(:final key) => _attribute(key),
+    Var(:final key) => key,
+    Dice(:final count, :final sides) => '${count}d$sides',
+    Sum(:final terms) => '(${terms.map(_exprText).join(' + ')})',
+    KeepHighest(:final pool, :final keep) =>
+      'best $keep of (${pool.map(_exprText).join(', ')})',
+    Op(:final op, :final args) =>
+      '${op.name}(${args.map(_exprText).join(', ')})',
+  };
 
   String _resolved(OperationState state, CheckResolved event) {
     final b = event.breakdown;

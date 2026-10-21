@@ -36,6 +36,10 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Event narrator: a plain-text line per event, with GM, player and redacted lines by visibility.
 - The rulebook's three worked examples (page 10) run as tests, with test-only skills where the book's skill is unlisted or occult.
 
+### Messaging
+- Stat-gated broadcast: `BroadcastToQualifying(text, condition)` delivers the text only to aliases whose agent meets the condition (`BroadcastDelivered`, alias-only). A GM-only `BroadcastEvaluated` keeps the condition and each alias's result. The GM can preview recipients without sending.
+- Comparison conditions (`compare` with `lt le eq ne ge gt` over two formulas), with JSON decode and encode.
+
 ### Pack loader
 - `loadPack` validates and loads a rules pack from its files: manifest and `engineApi` check, one parser per pack file, unknown keys and unknown files as errors, cross-reference checks, every problem reported at once with file and JSON path.
 - `null` means pending D: a warning, never an error; `RulesPack.pendingPaths` lists every pending place so features that need them stay off, including dice whose `explode` is not ruled. `occult.json` is kept unvalidated (pending D).

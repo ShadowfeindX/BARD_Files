@@ -28,6 +28,7 @@ switch (decision) {
 | `state/` | `OperationState` (meta, ECS stores, pending requests and checks, RNG draw count), `ComponentStores` and `PendingState`. |
 | `checks/` | Value types of the check flow: ids, `Difficulty`, `CheckModifier`, `CheckSpec`, `CheckBreakdown`, `CheckOutcome`, `DrawRange`, `RollSourceKind`. |
 | `read_models/` | `DerivedStats`: derived stats and the `VitalsView` (Health and Sanity now), computed from attributes, never stored. |
+| `expr/condition.dart` | Comparison conditions for the stat-gated broadcast. |
 | `narrator/` | `Narrator`: plain-text log lines per event, with GM, player and redacted lines. |
 | `systems/` | One class per system. Each decides its own command sub-family and applies its own event sub-family. |
 | `expr/` | Dice expressions and formulas: nodes, evaluator with breakdown, JSON form, approved `var` keys. |
@@ -67,6 +68,23 @@ GM:      ClearCondition                                        → ConditionClea
 - `CheckResolved.enteredBy` is reserved with `source` (concern 7: who entered physical faces) and is always `null`.
 - `Vitals` stores losses (`damageTaken`, `sanityLost`), not current values, so maximums stay derived. `DerivedStats(pack).vitals(state, entity)` gives the current values, unclamped.
 - `Narrator(pack).narrate(state, event)` returns a `Narration`. A GM review edit ("changed by the Handler from 4") is in the GM's line only; players read the final value. The session picks the line per audience from the event's visibility: GM always `gm`; players allowed by `Public` or `AliasesOnly` get `player`; with `Redacted` every player gets `redacted`; `GmOnly` has no player line.
+
+## Stat-gated broadcast
+
+`BroadcastToQualifying(text, condition)` (11 §Messaging, approved by R) sends `text` only to aliases whose agent meets `condition`. The GM's engine decides, never the UI. It emits:
+
+- `BroadcastEvaluated`, always GM-only: the text, the condition and every alias's `BroadcastCandidate` (the values compared and whether they passed; `null` when the agent lacks a score, which does not qualify).
+- `BroadcastDelivered`, `AliasesOnly` with the qualifying aliases, carrying only the text. Left out when nobody qualifies.
+
+Agents owned by an alias are tested in creation order; GM-controlled entities never receive it. `engine.messaging.candidates(state, condition)` is the GM's preview of the same result without sending. A broadcast does not change state.
+
+Conditions (`lib/src/expr/condition.dart`) are data-only, like expressions:
+
+```json
+{"type": "compare", "op": "lt", "left": {"type": "attr", "key": "WIL"}, "right": {"type": "const", "value": 3}}
+```
+
+`op` is one of `lt le eq ne ge gt`; both sides are formulas (no dice, no `var`). Only `compare` exists.
 
 ## Expressions and formulas
 
@@ -118,6 +136,7 @@ From the gate review of the engine core (2026-10-21):
 - GM-entered consequences with a `visibility` the GM chooses (default `Public`); `ConditionApplied` is a consequence, `ConditionCleared` is not (it is a direct GM edit). Players do not see that a value was edited in review, only the final value.
 - The engine does not check that an alias owns the entity it acts for; authorization is the session's (04). Applying an active condition again, or clearing one that is not active, is rejected. A consequence's `check` id is recorded, not checked.
 - `Vitals` stores losses rather than current values; `Conditions` holds only ids for now. `DerivedKeys.health` and `DerivedKeys.sanity` (`health`, `sanity`) are engine vocabulary the vitals view reads.
+- Stat-gated broadcast: the two-event shape (a GM-only record holding the condition, plus a delivery holding only the text), event and value-type names, the `compare` JSON form and its six operators, an alias with several agents qualifying if any passes, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. Whether recipients may see who else received a message is open (11 §Messaging).
 - The narrator's English wording and line shapes. 01 says narration uses the pack's `strings/`, which has no narration templates yet; moving the wording there is open.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
 - An alias plays at most one agent in an operation (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.
