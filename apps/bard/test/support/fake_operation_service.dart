@@ -54,6 +54,33 @@ class FakeOperationService implements OperationService {
   ReadonlySignal<List<ReviewItem>> get reviewTray => _review;
 
   @override
+  CreationLimits get creationLimits => const CreationLimits(
+    points: 20,
+    min: 1,
+    max: 3,
+    attributes: [
+      AttributeOption(key: 'STR', name: 'Strength'),
+      AttributeOption(key: 'DEX', name: 'Dexterity'),
+    ],
+  );
+
+  @override
+  Future<String?> addAgent(String name, Map<String, int> scores) async {
+    if (name.trim().isEmpty) return 'A name is required.';
+    _agents.value = [
+      ..._agents.value,
+      AgentSheet(
+        id: 'agent${_agents.value.length}',
+        name: name,
+        attributes: scores,
+        health: 10,
+        sanity: 10,
+      ),
+    ];
+    return null;
+  }
+
+  @override
   ReadonlySignal<String?> get lastError => _error;
 
   @override

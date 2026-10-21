@@ -44,6 +44,13 @@ class ConsoleViewModel {
   /// The GM's log.
   ReadonlySignal<List<LogEntry>> get log => _service.gmLog;
 
+  /// The pack's agent creation limits.
+  CreationLimits get creationLimits => _service.creationLimits;
+
+  /// Adds an agent; returns the engine's refusal message, or null on success.
+  Future<String?> addAgent(String name, Map<String, int> scores) =>
+      _service.addAgent(name, scores);
+
   /// Resolves the selected request with the chosen skill and DC.
   Future<void> resolveSelected() async {
     final id = selectedRequest.value;

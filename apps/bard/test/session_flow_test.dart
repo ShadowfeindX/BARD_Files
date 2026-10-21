@@ -67,4 +67,40 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('add agent: the engine refuses bad scores, then accepts', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await tester.ensureVisible(find.byKey(const ValueKey('add-agent')));
+    await tester.tap(find.byKey(const ValueKey('add-agent')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('agent-name')),
+      'Agent Rook',
+    );
+    await tester.enterText(find.byKey(const ValueKey('score-STR')), '0');
+    await tester.tap(find.byKey(const ValueKey('agent-create')));
+    await _settle(tester);
+    // A score below the pack's minimum is refused by the engine.
+    expect(find.byKey(const ValueKey('add-agent-error')), findsOneWidget);
+
+    const scores = {
+      'STR': '3', 'DEX': '3', 'END': '2', 'PER': '2', 'INT': '2',
+      'WIS': '2', 'CHA': '2', 'WIL': '2', 'LCK': '2', //
+    };
+    for (final e in scores.entries) {
+      final field = find.byKey(ValueKey('score-${e.key}'));
+      await tester.ensureVisible(field);
+      await tester.enterText(field, e.value);
+    }
+    final create = find.byKey(const ValueKey('agent-create'));
+    await tester.ensureVisible(create);
+    await tester.tap(create);
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('add-agent-error')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('player-picker')));
+    await tester.pumpAndSettle();
+    expect(find.text('Agent Rook'), findsWidgets);
+  });
 }

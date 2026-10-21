@@ -4,6 +4,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
 import '../shared/log_entry_tile.dart';
+import 'add_agent_dialog.dart';
 import 'console_view_model.dart';
 
 /// GM console: request queue, check controls, review tray and the GM log.
@@ -38,6 +39,17 @@ class ConsoleView extends StatelessWidget {
               _ReviewTray(model: model),
               _SanityControl(model: model),
               _NoteField(model: model),
+              Card(
+                child: ListTile(
+                  key: const ValueKey('add-agent'),
+                  leading: const Icon(Icons.person_add),
+                  title: const Text('Add agent'),
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => AddAgentDialog(model: model),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

@@ -17,6 +17,13 @@ abstract interface class OperationService {
   /// Consequences held for GM review.
   ReadonlySignal<List<ReviewItem>> get reviewTray;
 
+  /// The pack's agent creation limits.
+  CreationLimits get creationLimits;
+
+  /// GM adds an agent with these attribute scores. Returns the engine's
+  /// refusal message, or null when the agent was created.
+  Future<String?> addAgent(String name, Map<String, int> scores);
+
   /// The last refusal or problem message, or null.
   ReadonlySignal<String?> get lastError;
 

@@ -157,3 +157,39 @@ class DifficultyOption {
   /// Target number for the category.
   final int dc;
 }
+
+/// An attribute the GM can score when creating an agent.
+class AttributeOption {
+  /// Creates an attribute option.
+  const AttributeOption({required this.key, required this.name});
+
+  /// Attribute key, for example `STR`.
+  final String key;
+
+  /// Display name.
+  final String name;
+}
+
+/// The pack's agent creation limits, shown to the GM. The engine enforces
+/// them; the UI only displays them.
+class CreationLimits {
+  /// Creates the limits.
+  const CreationLimits({
+    required this.points,
+    required this.min,
+    required this.max,
+    required this.attributes,
+  });
+
+  /// Points to spread across the attributes.
+  final int points;
+
+  /// Lowest score per attribute.
+  final int min;
+
+  /// Highest score per attribute.
+  final int max;
+
+  /// Attributes in display order.
+  final List<AttributeOption> attributes;
+}

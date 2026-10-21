@@ -30,6 +30,10 @@ cd apps/bard && flutter run -d linux   # or -d windows
 cd apps/bard && flutter test           # includes the flow tests on a real host
 ```
 
+## Adding agents
+
+`Add agent` in the console opens a dialog with the pack's creation limits (`OperationService.creationLimits`). The UI sends the scores through `CreateAgent` and shows the engine's refusal text; it validates nothing itself. Note the engine currently checks only the per-attribute range, not the total points.
+
 ## Demo data to replace
 
 `SessionOperationService` seeds two agents with a score spread and `proficient` skills, and uses the fixed `demoSeed`, so every launch rolls the same dice. These are demo values, not rules; a real new-operation flow and a per-operation seed replace them.

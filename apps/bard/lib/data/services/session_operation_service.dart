@@ -68,6 +68,7 @@ class SessionOperationService implements OperationService {
   final Signal<List<LogEntry>> _tableLog = signal(const []);
   final Map<String, Signal<List<LogEntry>>> _playerLogs = {};
   final Signal<String?> _error = signal(null);
+  int _nextAlias = 0;
   final List<TextEntry> _notes = [];
   final Map<String, int> _edits = {};
   List<LogEntry> _gmEvents = const [];
@@ -118,6 +119,29 @@ class SessionOperationService implements OperationService {
 
   @override
   ReadonlySignal<List<ReviewItem>> get reviewTray => _review;
+
+  @override
+  CreationLimits get creationLimits => CreationLimits(
+    points: _pack.attributeCreation.points,
+    min: _pack.attributeCreation.minPerAttribute,
+    max: _pack.attributeCreation.maxPerAttribute,
+    attributes: [
+      for (final a in _pack.attributes)
+        AttributeOption(key: a.key, name: a.name),
+    ],
+  );
+
+  @override
+  Future<String?> addAgent(String name, Map<String, int> scores) => _serial(
+    () async {
+      final alias = 'agent${_nextAlias++}';
+      final result = await _host.submit(
+        CreateAgent(name: name, attributes: scores, ownerAlias: AliasId(alias)),
+      );
+      await _refresh();
+      return result is Refusal ? result.message : null;
+    },
+  );
 
   @override
   ReadonlySignal<String?> get lastError => _error;
@@ -329,7 +353,7 @@ class SessionOperationService implements OperationService {
     _gmEvents = view(const GmPerspective(), null);
     _gmLog.value = [..._gmEvents, ..._notes];
     _tableLog.value = view(const TablePerspective(), null);
-    for (final alias in _demoAliases.keys) {
+    for (final alias in [for (final a in _agents.value) a.id]) {
       final log = _playerLogs.putIfAbsent(alias, () => signal(const []));
       log.value = view(PlayerPerspective(AliasId(alias)), alias);
     }
