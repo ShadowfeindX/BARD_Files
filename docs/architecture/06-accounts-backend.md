@@ -252,7 +252,7 @@ Ruled by R 2026-10-20 (P14). Dart Cloud Functions are experimental and may chang
 | Function | Does |
 |---|---|
 | Badge login | Verify badge id and secret (hash compare), `createCustomToken` (P9, conditional on probe 8.3) |
-| Roles | Set admin / moderator / tier custom claims, including the library verification claim |
+| Roles | Set admin / moderator / tier custom claims, including the library verification claim (token key `arbiter`, R 2026-10-21) |
 | Payment webhook | **Placeholder** until concern 6 (payments deferred): receive the provider's webhook (`onRequest`), set the tier claim |
 | Store receipts | **Placeholder** until concern 6: validate app-store receipts [U] |
 | Pack publishing helper | Assist publishing a pack version (index + Storage) |

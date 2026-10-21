@@ -14,12 +14,12 @@ This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chos
 | Page size can be capped in rules with `request.query.limit`. | Every `list` rule below calls `pageOk()`. | [V-49] |
 | Desktop has no live listeners; REST with `getIdToken()` on every request. | Collections are read by query or by id, never by subscription. Freshness comes from refetch. | [V-47] |
 | `FAILED_PRECONDITION` means a missing composite index. | Every query the app runs is in the index list below. | [V-43] |
-| Claim-based rules work after a forced token refresh. | `tier`, `verifier`, `moderator` claims are read from the token. A tier change takes effect after a forced token refresh (a plain refresh did not pick it up [V-42]). | [V-43] |
+| Claim-based rules work after a forced token refresh. | `tier`, `arbiter`, `moderator` claims are read from the token. A tier change takes effect after a forced token refresh (a plain refresh did not pick it up [V-42]). | [V-43] |
 | Standard edition: no full-text search. | Keyword and tag arrays, queried with `array-contains`. | FS4 |
 | Dart functions have no Firestore triggers. | Function work is HTTPS-only; clients call it explicitly. | [V-23] |
 | Archives are written by a function with `firebase_admin_sdk`. | Clients never write archive documents. | FS3 |
 
-Claims used by rules (set by the roles function only; the claim is the only copy of the tier): `tier` (0 to 5), `verifier` (the library verification claim, held by R and D, ruled in 06 Library and 11) and `moderator` (assigned later when more moderators are chosen, 11). The token key name for the verification claim is the one open naming question; `verifier` is a placeholder. `admin` is not used in content rules. What each tier may read is not a claim: it is the lookup document `tierLevels/{tier}` (`{ summaryLevels, dataLevels }`, entry levels 1-4; 11 "Per-tier lookup"), one `get`, so R and D change the map in the console without re-issuing claims or forcing token refreshes [V-42]. `[U]` Proposed. Anonymous accounts are tier 0 and have `firebase.sign_in_provider == 'anonymous'`.
+Claims used by rules (set by the roles function only; the claim is the only copy of the tier): `tier` (0 to 5), `arbiter` (the library verification claim, held by R and D, ruled in 06 Library and 11; token key named by R 2026-10-21) and `moderator` (assigned later when more moderators are chosen, 11). `admin` is not used in content rules. What each tier may read is not a claim: it is the lookup document `tierLevels/{tier}` (`{ summaryLevels, dataLevels }`, entry levels 1-4; 11 "Per-tier lookup"), one `get`, so R and D change the map in the console without re-issuing claims or forcing token refreshes [V-42]. `[U]` Proposed. Anonymous accounts are tier 0 and have `firebase.sign_in_provider == 'anonymous'`.
 
 ## Collections at a glance
 
@@ -237,7 +237,7 @@ service cloud.firestore {
     function tier()       { return request.auth.token.get('tier', 0); }
     function isHandler()  { return isFull() && tier() >= 4; }
     // R and D hold the verification claim; 'moderator' is assigned later (11). Not 'admin'.
-    function isModerator(){ return isFull() && (request.auth.token.get('verifier', false) == true
+    function isModerator(){ return isFull() && (request.auth.token.get('arbiter', false) == true
                                                 || request.auth.token.get('moderator', false) == true); }
     function pageOk()     { return request.query.limit <= 50; }
     function changes(fields) {
@@ -495,7 +495,7 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 5. Operation membership: non-member `get` and `list` refused; `gmUid` change refused; the GM cannot remove themself from `memberUids`; a client cannot set `status: 'archived'`; a player cannot add themselves; a `members` create without the matching `memberUids` entry is refused; a member reads only their own `members` entry; a requester cannot read their request; a join request on an archived or private operation is refused; the GM can delete an invite; array caps refused above 20 / 10 / 30 / 5.
 6. Listings: a full account cannot submit a `listingsPending` document under an operation it does not run.
 7. Archive audiences: GM reads all three audience kinds; a member reads `public` and only their own `alias:<aliasId>`; `list` refused; a missing member document gives a refusal, not an error.
-8. Library levels: with `tierLevels` `summaryLevels: [1,2]` a caller reads level 1-2 summaries and not level 3; `libraryData` follows `dataLevels`; `testing` items only for tier 5; owner cannot write `libraryPublic`; a holder of `verifier` or `moderator` can, and `admin` alone cannot; the public create is refused while the pending document still exists; revocation back to pending works.
+8. Library levels: with `tierLevels` `summaryLevels: [1,2]` a caller reads level 1-2 summaries and not level 3; `libraryData` follows `dataLevels`; `testing` items only for tier 5; owner cannot write `libraryPublic`; a holder of `arbiter` or `moderator` can, and `admin` alone cannot; the public create is refused while the pending document still exists; revocation back to pending works.
 9. Pending then public for profiles, listings and packs; a non-moderator cannot make a pack `public`; pack delete works for owner and moderator.
 10. Transfers: only the alias owner creates (`aliasKey` must name the caller's own alias document and its `aliasId` field must equal the claimed `aliasId`; a forged `aliasId` is refused), only the destination GM (a handler) decides, a decided request cannot be flipped.
 11. Pagination: list queries without `limit`, or with `limit > 50`, refused [V-49].
@@ -509,7 +509,7 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 **Proposed answers, for R to confirm together** (each follows an existing ruling where one is named):
 
 1. **Moderation by client write** under rules, extending the B3 and Library ruling in 06; a function only if the rules get awkward. Approval is one batch (write public, delete pending, checked with `existsAfter`).
-2. **Claims as ruled:** the verification claim (R and D) and a later `moderator` claim; no merge, `admin` is not used. Only the token key name of the verification claim is pending (`verifier` is a placeholder).
+2. **Claims as ruled:** the verification claim (R and D) and a later `moderator` claim; no merge, `admin` is not used. The verification claim's token key is `arbiter` (R, 2026-10-21).
 3. **One `createAgent` function** issues the badge number and creates `agents/{uid}` (implied by 11, badge numbers).
 4. **`tierLevels/{tier}` lookup document** for what each tier may read, instead of level claims: one `get`, and R and D change it without re-issuing claims.
 5. **Unauthenticated `get` on `profilesPublic/{badge}`**, redacted fields only; `list` stays signed-in.
