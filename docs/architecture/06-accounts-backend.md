@@ -141,7 +141,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ## Realtime Database model (live play)
 
-**P10c draft (Proposed, awaiting R's ruling).** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). Two weaknesses and one question are open for R (below). Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
+**P10c draft (Proposed), with its three open items ruled by R 2026-10-20.** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed proposal, which R reviews with this spec. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the three changes applied and the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). The changes are not in the probed file yet, so they are unproven until those tests run. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
 
 ```
 /operations/$op/meta                     gm uid, campaignId, engine version, packRef, status, locked, lastSeq
@@ -151,32 +151,32 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 /operations/$op/textlog/$audience/$push  { seq, text }; GM only; create-only; .indexOn seq
 /operations/$op/head                     head snapshot; GM only (read and write)
 /operations/$op/phone/$uid/$push         phone box per player: the player writes own box (from == $uid), the GM writes any box
-/operations/$op/signaling/$peer          WebRTC offer/answer/candidates (P2P mode only); members and GM
+/operations/$op/signaling/$uid/...      WebRTC offer/answer/candidates (P2P mode only); written by that uid or the GM; frozen by locked (rulings 2, 3; unproven)
 /presence/$op/$uid                       own presence; members write own uid; members and GM read
 /inbox/$uid/$push                        in-app notifications (P14); owner reads and deletes; only functions write
 ```
 
 `$audience` is `gm`, `public` or `alias:<aliasId>`, checked by a `.validate` pattern [V-38].
 
-Who can do what (all shown in the emulator [V-38]):
+Who can do what (shown in the emulator [V-38], except the `meta` and `signaling` changes from R's rulings, which are not in the probed rules file and are unproven until the rules tests run):
 
 | Path | GM | Member (player) | Others |
 |---|---|---|---|
-| `meta` | creates it (non-anonymous, naming itself `gm`), edits until locked; `gm` cannot change | reads | — |
+| `meta` | creates it (non-anonymous, naming itself `gm`), edits until locked; `gm` cannot change; never deletes (ruling 1; unproven) | reads | — |
 | `members` | reads all, writes entries until locked | reads own entry only, cannot list | — |
 | `requests` | reads and clears | creates under own uid with `from == auth.uid`; cannot read others | — |
 | `events`, `textlog` | reads every audience; appends, never overwrites or deletes | reads `public` and `alias:<own aliasId>` only | — |
 | `head` | reads and writes until locked | — | — |
 | `phone` | reads every box, delivers into any box | reads and writes own box | — |
-| `signaling` | reads and writes | reads and writes (see open item 2) | — |
+| `signaling` | reads (read scope Proposed, as probed); writes any uid's branch until locked | reads (as probed); writes own uid's branch until locked | — |
 | `presence/$op` | reads (writes own uid only if also a member) | reads; writes own uid | — |
 | `inbox/$uid` | — | owner reads and deletes | functions write (admin REST) |
 
-After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone; reads continue. Anonymous accounts can be members and write requests, and cannot create operations or write GM-only paths.
+After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone [V-38]; signaling is frozen too (ruling 3; unproven); presence stays writable, and the inbox is written only by functions, so the lock does not affect it; reads continue. Anonymous accounts can be members and write requests, and cannot create operations or write GM-only paths.
 
 What probe 8.6 changed in the earlier draft:
 
-- **Phone is per player box** (`phone/$uid/$push`), not one `phone/$push` list "read by GM and sender". A client cannot list a parent it has no read on, so a sender could never list their own thread in the old shape [V-38]. Phone messages remain engine events (`PhoneMessageSent`, see [04-session.md](04-session.md#in-game-phone)). How the box and those events relate (Proposed: the box carries the player's outgoing messages to the GM, and the events in the audience branches stay the record) is settled with the P10c ruling.
+- **Phone is per player box** (`phone/$uid/$push`), not one `phone/$push` list "read by GM and sender". A client cannot list a parent it has no read on, so a sender could never list their own thread in the old shape [V-38]. Phone messages remain engine events (`PhoneMessageSent`, see [04-session.md](04-session.md#in-game-phone)). How the box and those events relate (Proposed: the box carries the player's outgoing messages to the GM, and the events in the audience branches stay the record) is not covered by R's 2026-10-20 rulings; Proposed, open.
 - **The GM's read sits on each parent** (`members`, `requests`, `events`, `textlog`, `phone`). Read rules cascade downward, so child rules only handle players [V-38].
 - **Resync indexes:** `events/$audience` and `textlog/$audience` declare `.indexOn: ["seq"]`; `orderBy="seq"&startAt=N` and `limitToLast` then work for members. Catch-up by key needs no index (as in [V-33]). An unindexed `orderBy` is refused with 400 on REST [V-38].
 - **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
@@ -184,11 +184,13 @@ What probe 8.6 changed in the earlier draft:
 - **The one-alias rule is not in RTDB.** It is in Firestore (Held with the Firestore collections); RTDB only checks that a member entry carries one `aliasId` [V-38].
 - **Lookups per evaluation** are at most 3 `root.child` reads, under the limit of 10 the probe write-up cites for RTDB rules [U] (a static count, not a load test) [V-38].
 
-**Open for R (not decided):**
+### P10c rulings (R, 2026-10-20)
 
-1. **Deleting `meta`.** The GM can delete `meta` of an unlocked operation, and any full account can then recreate it naming itself GM [V-38]. Fix options: a no-delete rule on `meta` (status and lock are edited, never removed), or a tombstone. Recommendation: no-delete rule.
-2. **Signaling overwrite.** Any member can overwrite any `signaling/$peer`, including another player's offer [V-38]. Fix: key signaling by uid (`signaling/$uid/...`, written only by that uid or the GM). Only matters for P2P mode, which is built last (09-4).
-3. **Lock scope.** Presence, signaling and the inbox are not frozen by `meta/locked` [V-38]. Presence and the inbox should stay writable after archive; whether signaling is also locked is R's call.
+The probe found two weaknesses and one open question [V-38]. R's answer, verbatim: "I'll take your recommendations on P10c 1 and 2. Yes meta/locked should freeze." (the third item asked whether the lock also freezes signaling). None of the three changes is in the probed rules file yet; each is unproven until the rules tests run ([08-testing.md](08-testing.md#backend)).
+
+1. **No delete on `meta`.** In the prototype, the GM could delete `meta` of an unlocked operation, and any full account could then recreate it naming itself GM. Ruling: `meta` cannot be deleted; status and lock are edited, never removed.
+2. **Signaling keyed by uid.** In the prototype, any member could overwrite any `signaling/$peer`, including another player's offer. Ruling: signaling lives under `signaling/$uid/...`, written only by that uid or the GM. Read scope is unchanged from the probed rules (members and the GM). Only matters for P2P mode, which is built last (09-4).
+3. **Lock freezes signaling.** `meta/locked = true` also freezes signaling writes. Presence stays writable after archive (as recommended); the inbox is written only by functions, so the lock does not touch it.
 
 Not covered by the probe (carry to implementation): rules deployed to a real project with signed tokens, custom claims in RTDB rules, member removal, GM `meta` edits after archive, payload size limits, load, and `firebase_dart` listeners against these rules [V-38].
 
@@ -279,7 +281,7 @@ Ruled by R 2026-10-20. Credentialed probes can run in the cloud or on R's PC. Fu
 | done | 8.1b functions read/write RTDB over REST, callable by URL (FS3, B6) | Done [V-33] |
 | done | FS3 least IAM role for RTDB from functions | Done by impersonation [V-46]; not run from a deployed function |
 | done | B5 token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |
-| 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; P10c drafted above, two weaknesses open for R |
+| 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; P10c ruled (see above) |
 | 2 | 8.5 anonymous upgrade, Windows and Linux | Done [V-39] |
 | 3 | 8.3 real custom token, Windows and Linux | Done [V-41] |
 | 4 | 8.4 custom-claim pickup | Done on Linux [V-42]; Windows not run |
