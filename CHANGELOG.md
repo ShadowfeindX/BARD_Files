@@ -33,6 +33,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - GM-entered consequences: `ApplyDamage`, `ApplySanityLoss`, `ApplyCondition` and `ClearCondition`, with `Vitals` and `Conditions` components. Damage, sanity loss and applied conditions are marked as consequences for the GM review gate; an edited amount or condition keeps the original in `overriddenFrom`.
 - Derived-stat read model (`DerivedStats`) with current Health and Sanity.
 - Event narrator: a plain-text line per event, with GM, player and redacted lines by visibility.
+- The rulebook's three worked examples (page 10) run as tests, with test-only skills where the book's skill is unlisted or occult.
 
 ### Pack loader
 - `loadPack` validates and loads a rules pack from its files: manifest and `engineApi` check, one parser per pack file, unknown keys and unknown files as errors, cross-reference checks, every problem reported at once with file and JSON path.
