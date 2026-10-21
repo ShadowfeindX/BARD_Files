@@ -28,7 +28,7 @@ switch (decision) {
 | `state/` | `OperationState` (meta, ECS stores, RNG draw count) and `ComponentStores`. |
 | `systems/` | One class per system. Each decides its own command sub-family and applies its own event sub-family. |
 | `expr/` | Dice expressions and formulas: nodes, evaluator with breakdown, JSON form, approved `var` keys. |
-| `pack/` | `RulesPack`, the in-memory pack. The loader that reads pack files comes with the pack loader work. |
+| `pack/` | `RulesPack`; `files/` holds one parser plus value types per pack file; `load/` holds `loadPack`, the issue log, the pending-D marker and the content hash. See [packs.md](packs.md). |
 
 All state is immutable. `ImmutableMap` is copy-on-write; it can be swapped for a structurally shared map later without changing its API.
 

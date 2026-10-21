@@ -1,13 +1,30 @@
 /// The values half of the game: what a pack supplies to the engine.
 ///
-/// This is the in-memory form only. Reading and validating pack files is the
-/// pack loader's job (02 §Loading and validation); this file holds the parts
-/// the engine core reads today and grows as systems are added. The pack shape
-/// is Provisional, pending D (02 §Pack structure).
+/// This is the in-memory form. `loadPack` builds it from pack files (02
+/// §Loading and validation); the value types of each file live beside that
+/// file's parser in `files/`. The pack shape is Provisional, pending D (02
+/// §Pack structure).
 library;
 
 import '../equality.dart';
-import '../expr/expr.dart';
+import 'files/advancement.dart';
+import 'files/attributes.dart';
+import 'files/conditions.dart';
+import 'files/damage.dart';
+import 'files/derived.dart';
+import 'files/difficulty.dart';
+import 'files/disorders.dart';
+import 'files/items.dart';
+import 'files/manifest.dart';
+import 'files/npcs.dart';
+import 'files/proficiency.dart';
+import 'files/ranges.dart';
+import 'files/sanity_events.dart';
+import 'files/skills.dart';
+import 'files/strings.dart';
+import 'files/techniques.dart';
+import 'files/threats.dart';
+import 'files/vehicles.dart';
 
 /// Identifies one exact pack: what an operation pins (02 §Operations pin
 /// packs).
@@ -42,190 +59,65 @@ final class PackRef {
   String toString() => 'PackRef($id@$version, $contentHash)';
 }
 
-/// One attribute the pack declares (`STR`, `DEX`, ...).
-final class AttributeDef {
-  /// Creates an attribute definition.
-  const AttributeDef({required this.key, required this.name});
-
-  /// Key used in components and formulas.
-  final String key;
-
-  /// Display name.
-  final String name;
-
-  @override
-  bool operator ==(Object other) =>
-      other is AttributeDef && other.key == key && other.name == name;
-
-  @override
-  int get hashCode => Object.hash(AttributeDef, key, name);
-}
-
-/// Limits on attribute scores when an agent is created (rulebook §3).
-final class AttributeCreation {
-  /// Creates creation limits.
-  const AttributeCreation({
-    required this.points,
-    required this.minPerAttribute,
-    required this.maxPerAttribute,
-  });
-
-  /// Points to distribute.
-  ///
-  /// Not enforced yet: whether the scores must add up to exactly this or at
-  /// most this is not ruled.
-  final int points;
-
-  /// Lowest score allowed at creation.
-  final int minPerAttribute;
-
-  /// Highest score allowed at creation.
-  final int maxPerAttribute;
-
-  @override
-  bool operator ==(Object other) =>
-      other is AttributeCreation &&
-      other.points == points &&
-      other.minPerAttribute == minPerAttribute &&
-      other.maxPerAttribute == maxPerAttribute;
-
-  @override
-  int get hashCode =>
-      Object.hash(AttributeCreation, points, minPerAttribute, maxPerAttribute);
-}
-
-/// One proficiency tier (`untrained`, `proficient`, `expert`).
-final class ProficiencyTier {
-  /// Creates a tier.
-  const ProficiencyTier({required this.key, required this.name, this.bonus});
-
-  /// Key stored in the `Skills` component.
-  final String key;
-
-  /// Display name.
-  final String name;
-
-  /// Extra dice the tier adds to a check (G16); `null` = no bonus.
-  final Expr? bonus;
-
-  @override
-  bool operator ==(Object other) =>
-      other is ProficiencyTier &&
-      other.key == key &&
-      other.name == name &&
-      other.bonus == bonus;
-
-  @override
-  int get hashCode => Object.hash(ProficiencyTier, key, name, bonus);
-}
-
-/// One of the pack's skill categories. Organizational only (F3).
-final class SkillCategory {
-  /// Creates a category.
-  const SkillCategory({required this.key, required this.name});
-
-  /// Key used by skills.
-  final String key;
-
-  /// Display name.
-  final String name;
-
-  @override
-  bool operator ==(Object other) =>
-      other is SkillCategory && other.key == key && other.name == name;
-
-  @override
-  int get hashCode => Object.hash(SkillCategory, key, name);
-}
-
-/// One skill: name, description, category and attribute (F3).
-final class SkillDef {
-  /// Creates a skill definition.
-  const SkillDef({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.category,
-    required this.attribute,
-  });
-
-  /// Key stored in the `Skills` component.
-  final String id;
-
-  /// Display name.
-  final String name;
-
-  /// Display description.
-  final String description;
-
-  /// [SkillCategory.key], or `null` while the pack's author has not ruled.
-  final String? category;
-
-  /// [AttributeDef.key], or `null` while the pack's author has not ruled.
-  final String? attribute;
-
-  @override
-  bool operator ==(Object other) =>
-      other is SkillDef &&
-      other.id == id &&
-      other.name == name &&
-      other.description == description &&
-      other.category == category &&
-      other.attribute == attribute;
-
-  @override
-  int get hashCode =>
-      Object.hash(SkillDef, id, name, description, category, attribute);
-}
-
-/// A stat the engine computes from attributes, such as Health (rulebook §3).
-final class DerivedStat {
-  /// Creates a derived stat.
-  const DerivedStat({
-    required this.key,
-    required this.name,
-    required this.formula,
-  });
-
-  /// Key used by read models.
-  final String key;
-
-  /// Display name.
-  final String name;
-
-  /// Formula over attributes; never rolls dice.
-  final Expr formula;
-
-  @override
-  bool operator ==(Object other) =>
-      other is DerivedStat &&
-      other.key == key &&
-      other.name == name &&
-      other.formula == formula;
-
-  @override
-  int get hashCode => Object.hash(DerivedStat, key, name, formula);
-}
-
 /// An immutable, validated rules pack bound to one `Engine`.
 final class RulesPack {
-  /// Creates a pack from already-validated parts.
+  /// Creates a pack from already-validated parts. Only the parts the engine
+  /// core needs are required; the rest default to empty.
   RulesPack({
     required this.ref,
+    this.manifest,
     required List<AttributeDef> attributes,
     required this.attributeCreation,
+    this.advancementCap,
     required List<ProficiencyTier> proficiencyTiers,
+    this.proficiencyCreation,
     required List<SkillCategory> skillCategories,
     required List<SkillDef> skills,
     required List<DerivedStat> derived,
+    List<DifficultyCategory> difficultyCategories = const [],
+    this.checkRules,
+    List<ConditionDef> conditions = const [],
+    this.disorders,
+    List<SanityEvent> sanityEvents = const [],
+    List<DamageCategory> damageCategories = const [],
+    List<VehiclePerformance> vehiclePerformance = const [],
+    List<VehicleDurability> vehicleDurability = const [],
+    List<RangeBand> rangeBands = const [],
+    List<AdvancementCost> advancementCosts = const [],
+    List<HumanThreatClass> humanThreats = const [],
+    List<SupernaturalThreatClass> supernaturalThreats = const [],
+    List<ItemTemplate> items = const [],
+    List<TechniqueTemplate> techniques = const [],
+    List<NpcTemplate> npcs = const [],
+    Map<String, PackStrings> strings = const {},
+    this.occultPending,
+    Set<String> pendingPaths = const {},
   }) : attributes = List.unmodifiable(attributes),
        proficiencyTiers = List.unmodifiable(proficiencyTiers),
        skillCategories = List.unmodifiable(skillCategories),
        skills = List.unmodifiable(skills),
-       derived = List.unmodifiable(derived);
+       derived = List.unmodifiable(derived),
+       difficultyCategories = List.unmodifiable(difficultyCategories),
+       conditions = List.unmodifiable(conditions),
+       sanityEvents = List.unmodifiable(sanityEvents),
+       damageCategories = List.unmodifiable(damageCategories),
+       vehiclePerformance = List.unmodifiable(vehiclePerformance),
+       vehicleDurability = List.unmodifiable(vehicleDurability),
+       rangeBands = List.unmodifiable(rangeBands),
+       advancementCosts = List.unmodifiable(advancementCosts),
+       humanThreats = List.unmodifiable(humanThreats),
+       supernaturalThreats = List.unmodifiable(supernaturalThreats),
+       items = List.unmodifiable(items),
+       techniques = List.unmodifiable(techniques),
+       npcs = List.unmodifiable(npcs),
+       strings = Map.unmodifiable(strings),
+       pendingPaths = Set.unmodifiable(pendingPaths);
 
   /// Which pack this is.
   final PackRef ref;
+
+  /// The manifest, or `null` for a pack built in code.
+  final PackManifest? manifest;
 
   /// Attributes in pack order.
   final List<AttributeDef> attributes;
@@ -233,8 +125,14 @@ final class RulesPack {
   /// Attribute limits at agent creation.
   final AttributeCreation attributeCreation;
 
+  /// Highest score advancement may reach.
+  final int? advancementCap;
+
   /// Proficiency tiers in pack order.
   final List<ProficiencyTier> proficiencyTiers;
+
+  /// Skills per tier picked at creation.
+  final ProficiencyCreation? proficiencyCreation;
 
   /// Skill categories in pack order.
   final List<SkillCategory> skillCategories;
@@ -244,6 +142,60 @@ final class RulesPack {
 
   /// Derived stats in pack order.
   final List<DerivedStat> derived;
+
+  /// Difficulty categories in pack order.
+  final List<DifficultyCategory> difficultyCategories;
+
+  /// Check values (primary die, partial success, ...).
+  final CheckRules? checkRules;
+
+  /// Condition and affliction templates.
+  final List<ConditionDef> conditions;
+
+  /// The disorder table.
+  final DisorderTable? disorders;
+
+  /// The sanity loss table.
+  final List<SanityEvent> sanityEvents;
+
+  /// Weapon damage categories.
+  final List<DamageCategory> damageCategories;
+
+  /// Vehicle performance categories.
+  final List<VehiclePerformance> vehiclePerformance;
+
+  /// Vehicle durability categories.
+  final List<VehicleDurability> vehicleDurability;
+
+  /// Range bands.
+  final List<RangeBand> rangeBands;
+
+  /// Advancement purchases.
+  final List<AdvancementCost> advancementCosts;
+
+  /// Human threat classes.
+  final List<HumanThreatClass> humanThreats;
+
+  /// Supernatural threat classes.
+  final List<SupernaturalThreatClass> supernaturalThreats;
+
+  /// Item templates, by file name order.
+  final List<ItemTemplate> items;
+
+  /// Techniques, by file name order.
+  final List<TechniqueTemplate> techniques;
+
+  /// NPC templates, by file name order.
+  final List<NpcTemplate> npcs;
+
+  /// Display text by language code.
+  final Map<String, PackStrings> strings;
+
+  /// `occult.json` as raw JSON. The occult system is pending D (C5/G6, F3), so it is kept but not validated or used.
+  final Object? occultPending;
+
+  /// Every value marked pending D, as `file: path`. A feature that needs one of these stays off.
+  final Set<String> pendingPaths;
 
   /// The attribute with [key], or `null`.
   AttributeDef? attribute(String key) => _find(attributes, (a) => a.key, key);
@@ -265,30 +217,76 @@ final class RulesPack {
     return null;
   }
 
+  /// Equality ignores [occultPending], which is unvalidated raw JSON.
   @override
   bool operator ==(Object other) =>
       other is RulesPack &&
       other.ref == ref &&
+      other.manifest == manifest &&
       other.attributeCreation == attributeCreation &&
+      other.advancementCap == advancementCap &&
+      other.proficiencyCreation == proficiencyCreation &&
+      other.checkRules == checkRules &&
+      other.disorders == disorders &&
       listEquals(other.attributes, attributes) &&
       listEquals(other.proficiencyTiers, proficiencyTiers) &&
       listEquals(other.skillCategories, skillCategories) &&
       listEquals(other.skills, skills) &&
-      listEquals(other.derived, derived);
+      listEquals(other.derived, derived) &&
+      listEquals(other.difficultyCategories, difficultyCategories) &&
+      listEquals(other.conditions, conditions) &&
+      listEquals(other.sanityEvents, sanityEvents) &&
+      listEquals(other.damageCategories, damageCategories) &&
+      listEquals(other.vehiclePerformance, vehiclePerformance) &&
+      listEquals(other.vehicleDurability, vehicleDurability) &&
+      listEquals(other.rangeBands, rangeBands) &&
+      listEquals(other.advancementCosts, advancementCosts) &&
+      listEquals(other.humanThreats, humanThreats) &&
+      listEquals(other.supernaturalThreats, supernaturalThreats) &&
+      listEquals(other.items, items) &&
+      listEquals(other.techniques, techniques) &&
+      listEquals(other.npcs, npcs) &&
+      _mapEquals(other.strings, strings) &&
+      other.pendingPaths.length == pendingPaths.length &&
+      other.pendingPaths.containsAll(pendingPaths);
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     ref,
+    manifest,
     attributeCreation,
+    advancementCap,
+    proficiencyCreation,
+    checkRules,
+    disorders,
     Object.hashAll(attributes),
     Object.hashAll(proficiencyTiers),
     Object.hashAll(skillCategories),
     Object.hashAll(skills),
     Object.hashAll(derived),
-  );
+    Object.hashAll(difficultyCategories),
+    Object.hashAll(conditions),
+    Object.hashAll(sanityEvents),
+    Object.hashAll(damageCategories),
+    Object.hashAll(vehiclePerformance),
+    Object.hashAll(vehicleDurability),
+    Object.hashAll(rangeBands),
+    Object.hashAll(advancementCosts),
+    Object.hashAll(humanThreats),
+    Object.hashAll(supernaturalThreats),
+    Object.hashAll(items),
+    Object.hashAll(techniques),
+    Object.hashAll(npcs),
+    Object.hashAllUnordered(strings.keys),
+    Object.hashAllUnordered(pendingPaths),
+  ]);
 
   @override
   String toString() =>
       'RulesPack(${ref.id}@${ref.version}, '
       '${attributes.length} attributes, ${skills.length} skills)';
 }
+
+bool _mapEquals(Map<String, Object?> a, Map<String, Object?> b) =>
+    a.length == b.length &&
+    a.entries.every((e) => b.containsKey(e.key) && b[e.key] == e.value);

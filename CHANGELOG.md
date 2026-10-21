@@ -27,6 +27,15 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, numbers bounded to the range the VM and the web agree on, and only the two approved `var` keys.
 - `RulesPack` in-memory pack type (attributes, creation limits, proficiency tiers, skills, derived formulas).
 
+### Pack loader
+- `loadPack` validates and loads a rules pack from its files: manifest and `engineApi` check, one parser per pack file, unknown keys and unknown files as errors, cross-reference checks, every problem reported at once with file and JSON path.
+- `null` means pending D: a warning, never an error; `RulesPack.pendingPaths` lists every pending place so features that need them stay off. `occult.json` is kept unvalidated (pending D).
+- Deprecation records (`deprecated`, `deprecatedFields`) are validated and reported as warnings; `replacedBy` targets must exist.
+- Content hash over canonical JSON (`sha256:<hex>`), with SHA-256 written in pure Dart; a manifest's written hash must match.
+- `RulesPack` now carries every provisional pack file: difficulty and check rules, conditions, disorders, sanity events, damage, vehicles, ranges, advancement, threats, items, techniques, NPCs and strings.
+- Command-line validator: `dart run engine:validate_pack <packDir>`.
+- Developer guide page `docs/developer-guide/packs.md`.
+
 ### Session
 - `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
 - Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
