@@ -5,3 +5,4 @@ How to set up, build and extend the B.A.R.D. Files platform. It is updated in th
 | Page | What it covers |
 |---|---|
 | [setup.md](setup.md) | Toolchain, first build, the checks CI runs, workspace layout, adding a package |
+| [engine.md](engine.md) | Engine core: commands, events, components, state, expressions, RNG; how to add a command, event or component |

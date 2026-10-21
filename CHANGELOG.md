@@ -13,6 +13,17 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Dependency table in 00-overview.md: `backend` row gains `sembast`/`sembast_web` (plan decision 3) and `firebase_core`; dev tooling (`flutter_lints`, `test`, `flutter_test`) allowed in every package.
 - Developer guide: `docs/developer-guide/` with a setup page.
 
+### Engine
+- Engine core in `packages/engine`: sealed `Command` and `Event` families grouped per system; `OperationState` with immutable ECS stores (`Identity`, `Attributes`, `Skills`); `Engine` with `decide`, `evolve` and `replay`; `Decision` (`Accepted` / `Rejected` with a `Rejection` code and message).
+- First commands: `StartOperation` (genesis `OperationStarted` pins engine version, pack and settings) and `CreateAgent` (`AgentCreated`; attribute and skill keys and per-attribute creation limits checked against the pack).
+- `Rng` and `IdSource` interfaces, `ScriptedRng` for tests, `SequentialIdSource`.
+- Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, and the two approved `var` placements.
+- `RulesPack` in-memory pack type (attributes, creation limits, proficiency tiers, skills, derived formulas).
+
+### Session
+- `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
+- Known-seed vectors from the reference C implementation, run on the VM and the web; CI runs engine and session tests on Node.js too.
+
 ### Docs
 - Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
 - Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.

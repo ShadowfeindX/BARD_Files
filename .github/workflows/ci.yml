@@ -40,3 +40,10 @@ jobs:
 
       - name: Tests
         run: bash tool/test_all.sh
+
+      # Known-seed RNG vectors and engine tests must also pass on the web
+      # (P5; 01-engine.md RNG): Node.js is preinstalled on the runner.
+      - name: Web tests (engine, session)
+        run: |
+          (cd packages/engine && dart test -p node)
+          (cd packages/session && dart test -p node)
