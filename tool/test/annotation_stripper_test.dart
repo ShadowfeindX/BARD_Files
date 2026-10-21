@@ -80,6 +80,40 @@ void main() {
     });
   });
 
+  group('markers and guards', () {
+    test('an underscore marker object is removed and reported', () {
+      final report = StripReport();
+      final out = stripAnnotations({
+        'attribute': null,
+        '_attributePlaceholder': {'placeholder': true, 'gap': 'G15'},
+        '_flag': true,
+      }, report);
+      expect(out, {'attribute': null});
+      expect(report.markers, [r'$._attributePlaceholder']);
+      expect(report.pending, isEmpty);
+    });
+
+    test('an output folder that overlaps the source is refused', () {
+      final dir = Directory.systemTemp.createTempSync('strip_guard');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final source = Directory('${dir.path}/pack/sub')
+        ..createSync(recursive: true);
+      File('${source.path}/a.json').writeAsStringSync('{"v":1}');
+      for (final target in [
+        source,
+        Directory('${dir.path}/pack'),
+        Directory('${source.path}/inner'),
+      ]) {
+        expect(
+          () => stripPack(source, target),
+          throwsArgumentError,
+          reason: target.path,
+        );
+      }
+      expect(File('${source.path}/a.json').readAsStringSync(), '{"v":1}');
+    });
+  });
+
   group('checkPack', () {
     late Directory dir;
     late Directory source;

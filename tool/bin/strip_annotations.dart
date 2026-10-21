@@ -30,7 +30,14 @@ void main(List<String> args) {
   }
   final target = Directory(paths[1]);
   if (check) {
-    final problems = checkPack(source, target);
+    final List<String> problems;
+    try {
+      problems = checkPack(source, target);
+    } on FormatException catch (e) {
+      stderr.writeln('malformed JSON: ${e.message}');
+      exitCode = 65;
+      return;
+    }
     if (problems.isEmpty) {
       stdout.writeln('${target.path} is current');
       return;
@@ -43,7 +50,18 @@ void main(List<String> args) {
     exitCode = 1;
     return;
   }
-  final reports = stripPack(source, target);
+  final Map<String, StripReport> reports;
+  try {
+    reports = stripPack(source, target);
+  } on ArgumentError catch (e) {
+    stderr.writeln('${e.message}');
+    exitCode = 64;
+    return;
+  } on FormatException catch (e) {
+    stderr.writeln('malformed JSON: ${e.message}');
+    exitCode = 65;
+    return;
+  }
   var removed = 0;
   var pending = 0;
   for (final MapEntry(key: file, value: report) in reports.entries) {
@@ -51,6 +69,9 @@ void main(List<String> args) {
     pending += report.pending.length;
     for (final path in report.pending) {
       stdout.writeln('$file: $path is pending D (null)');
+    }
+    for (final path in report.markers) {
+      stdout.writeln('$file: $path is an annotation marker and was removed');
     }
     for (final path in report.suspected) {
       stdout.writeln('$file: $path looks like an annotation but was kept');

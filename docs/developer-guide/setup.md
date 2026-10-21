@@ -21,7 +21,7 @@ On Windows use the matching `windows` archive from the same storage path and add
 
 ## First build
 
-The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before running or testing an app. See [content_core/README.md](../../packages/content_core/README.md).
+The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist). See [content_core/README.md](../../packages/content_core/README.md).
 
 From the repository root:
 

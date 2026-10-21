@@ -6,14 +6,14 @@ D's default rules pack, as data under `assets/`. No logic and no dependencies (`
 
 It is a copy of the `example-core` sample pack from the project library (source: `packs/example-core/` in the project library; its own `README.md` is kept beside it as the guided tour for D). **D's pack replaces it** once D approves the pack shape (P3, pending D); the file list, field names and values may all change then. No values were invented. The only edit to the copy is renaming the four `*Placeholder` annotation keys to start with `_` (R's ruling, below).
 
-- A value of `null` means **pending D** (see the gaps in the library's `rulebook/rulebook-gaps.md`). The pack loader reports each one as a warning, not an error; the feature that needs the value stays off and the UI labels it as pending.
+- A value of `null` means **pending D** (see the gaps in the library's `rulebook/rulebook-gaps.md`). The pack loader (`feature/pack-loader`, not on this branch yet) reports each one as a warning, not an error; the feature that needs the value stays off and the UI labels it as pending.
 - `example-operation` (the operation-tier sample) is not part of this package.
 
 ## Annotations and the shipped pack
 
 The files in `assets/example-core/` are the **authoring source**. They carry annotations for D and R: the keys `note`, `source`, `openItems`, `placeholder`, `gap`, any key ending in `Note`, and any key starting with `_` (R, 2026-10-21). Annotations are stripped before the pack ships (`02-rules-packs.md`, Authoring annotations).
 
-An object that held nothing but annotations (a `{placeholder, gap, note}` marker) becomes `null`. That is the single pending-D signal; the loader never sees a `{}` standing in for "undecided". A `note` inside a `deprecated` record is data and is kept.
+An object that held nothing but annotations (a `{placeholder, gap, note}` marker) becomes `null`. An underscore-prefixed marker key such as `_attributePlaceholder` is removed with its value (its sibling is already `null`) and listed in the build output. That is the single pending-D signal; the loader never sees a `{}` standing in for "undecided". A `note` inside a `deprecated` record is data and is kept.
 
 The shipped pack is **generated**, not committed:
 

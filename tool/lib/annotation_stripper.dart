@@ -27,6 +27,12 @@ class StripReport {
   /// list, so they were kept. Review these by hand.
   final suspected = <String>[];
 
+  /// JSON paths of annotation keys whose value was an object that held only
+  /// annotations (a `_...Placeholder` marker). They are removed with the key,
+  /// not turned into `null`; the sibling value already is `null`. Listed so
+  /// the build never drops a marker silently.
+  final markers = <String>[];
+
   /// Number of keys removed.
   int removed = 0;
 }
@@ -63,6 +69,9 @@ Object? stripAnnotations(
     }
     if (isAnnotationKey(key)) {
       report.removed++;
+      if (entry.value case Map(isNotEmpty: true)) {
+        report.markers.add('$path.$key');
+      }
       continue;
     }
     if (_looksLikeAnnotation.hasMatch(key)) report.suspected.add('$path.$key');
@@ -119,6 +128,15 @@ Map<String, StrippedFile> stripPackFiles(Directory source) {
 /// there, so files removed from the source disappear from the output.
 /// Returns one report per file, keyed by path relative to [source].
 Map<String, StripReport> stripPack(Directory source, Directory target) {
+  final src = source.absolute.path.replaceAll(r'\', '/');
+  final dst = target.absolute.path.replaceAll(r'\', '/');
+  // The target is deleted first, so it must never be, hold or sit inside the
+  // authoring source.
+  if (_inside(src, dst) || _inside(dst, src)) {
+    throw ArgumentError(
+      'output folder ${target.path} overlaps the source ${source.path}',
+    );
+  }
   final files = stripPackFiles(source);
   if (target.existsSync()) target.deleteSync(recursive: true);
   for (final MapEntry(key: relative, value: file) in files.entries) {
@@ -155,4 +173,11 @@ List<String> checkPack(Directory source, Directory target) {
       if (!expected.containsKey(relative))
         '$relative is not in the source pack',
   ];
+}
+
+/// Whether [inner] is [outer] or lies inside it (forward-slash paths).
+bool _inside(String outer, String inner) {
+  final a = outer.endsWith('/') ? outer : '$outer/';
+  final b = inner.endsWith('/') ? inner : '$inner/';
+  return b.startsWith(a);
 }
