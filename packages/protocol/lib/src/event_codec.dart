@@ -332,12 +332,14 @@ Event decodeEvent(Object? json) {
           actor: actor,
         );
       case 'phoneMessageSent':
+        final from = decodeParty(map.object('from'));
+        final to = decodeParty(map.object('to'));
         return PhoneMessageSent(
-          from: decodeParty(map.object('from')),
-          to: decodeParty(map.object('to')),
-          text: map.string('text'),
+          from: from,
+          to: to,
+          text: decodePhoneText(map),
           actor: actor,
-          visibility: visibility(),
+          visibility: decodePhoneVisibility(visibilityJson, from, to),
         );
       case 'broadcastDelivered':
         return BroadcastDelivered(

@@ -91,6 +91,10 @@ void main() {
       final t = table();
       expect(reject(t, send(valeParty, gm, '  ')), RejectionCode.invalidValue);
       expect(
+        reject(t, send(valeParty, gm, '\u200B \u2060\uFEFF')),
+        RejectionCode.invalidValue,
+      );
+      expect(
         reject(t, send(valeParty, gm, 'x' * (maxPhoneTextUnits + 1))),
         RejectionCode.invalidValue,
       );

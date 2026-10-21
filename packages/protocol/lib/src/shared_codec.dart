@@ -91,6 +91,39 @@ PhoneParty decodeParty(JsonMap json) => switch (json.string('kind')) {
   ),
 };
 
+/// Reads phone message text; throws [ProtocolFormatException] when it is empty
+/// or longer than [maxPhoneTextUnits].
+String decodePhoneText(JsonMap json) {
+  final text = json.string('text');
+  if (text.isEmpty || text.length > maxPhoneTextUnits) {
+    throw const ProtocolFormatException(
+      'phone text must be 1 to $maxPhoneTextUnits UTF-16 units',
+    );
+  }
+  return text;
+}
+
+/// Decodes a phone message's visibility and checks it is exactly the alias
+/// parties of [from] and [to], the rule the engine applies when it decides.
+AliasesOnly decodePhoneVisibility(
+  JsonMap json,
+  PhoneParty from,
+  PhoneParty to,
+) {
+  final visibility = decodeAliasesOnly(json);
+  final expected = {
+    for (final party in [from, to])
+      if (party is PhoneAlias) party.alias,
+  };
+  if (visibility.aliases.length != expected.length ||
+      !visibility.aliases.containsAll(expected)) {
+    throw const ProtocolFormatException(
+      'phone message visibility must be the aliases of its parties',
+    );
+  }
+  return visibility;
+}
+
 /// Encodes the visibility as JSON.
 JsonMap encodeVisibility(Visibility visibility) => switch (visibility) {
   Public() => {'kind': 'public'},

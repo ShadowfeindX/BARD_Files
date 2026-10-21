@@ -48,6 +48,7 @@ class PhonePanel extends StatefulWidget {
     required this.onSend,
     this.maxLength = 2000,
     this.sendDisabledReason,
+    this.notice,
     this.emptyText = 'No messages yet.',
   });
 
@@ -64,6 +65,10 @@ class PhonePanel extends StatefulWidget {
   /// When not null the compose box is replaced by this text (for example
   /// anonymous accounts, which may not message).
   final String? sendDisabledReason;
+
+  /// Optional line above the compose box, for example telling a player that
+  /// the Handler can read every message.
+  final String? notice;
 
   /// Shown when there are no threads.
   final String emptyText;
@@ -91,14 +96,24 @@ class _PhonePanelState extends State<PhonePanel> {
   // Dart's String.length counts UTF-16 code units, the unit the cap uses.
   int get _length => _controller.text.length;
 
+  /// The thread that is open: the selected one while it still exists, else the
+  /// first. Read fresh each time so a thread that disappears can never be the
+  /// recipient of a send.
+  PhoneThreadData? get _open {
+    final threads = widget.threads.peek();
+    return threads.where((t) => t.id == _selected).firstOrNull ??
+        threads.firstOrNull;
+  }
+
   bool get _canSend =>
-      _selected != null &&
+      _open != null &&
       _controller.text.trim().isNotEmpty &&
       _length <= widget.maxLength;
 
   void _send() {
-    if (!_canSend) return;
-    widget.onSend(_selected!, _controller.text);
+    final open = _open;
+    if (open == null || !_canSend) return;
+    widget.onSend(open.id, _controller.text);
     _controller.clear();
   }
 
@@ -111,7 +126,6 @@ class _PhonePanelState extends State<PhonePanel> {
         final open =
             threads.where((t) => t.id == _selected).firstOrNull ??
             threads.first;
-        _selected = open.id;
         return Row(
           children: [
             SizedBox(width: 160, child: _threadList(threads, open)),
@@ -159,7 +173,10 @@ class _PhonePanelState extends State<PhonePanel> {
                           : scheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(m.text),
+                    child: Semantics(
+                      label: m.fromMe ? 'You said' : '${open.title} said',
+                      child: Text(m.text),
+                    ),
                   ),
                 ),
             ],
@@ -168,8 +185,14 @@ class _PhonePanelState extends State<PhonePanel> {
         const Divider(height: 1),
         if (widget.sendDisabledReason case final reason?)
           Padding(padding: const EdgeInsets.all(12), child: Text(reason))
-        else
+        else ...[
+          if (widget.notice case final notice?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Text(notice, style: Theme.of(context).textTheme.bodySmall),
+            ),
           _compose(context),
+        ],
       ],
     );
   }

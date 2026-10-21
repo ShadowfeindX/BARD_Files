@@ -243,7 +243,7 @@ Command decodeCommand(Object? json) {
         return SendPhoneMessage(
           from: decodeParty(map.object('from')),
           to: decodeParty(map.object('to')),
-          text: map.string('text'),
+          text: decodePhoneText(map),
           actor: actor,
         );
       case 'broadcastToQualifying':

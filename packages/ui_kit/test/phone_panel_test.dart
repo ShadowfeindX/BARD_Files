@@ -125,4 +125,18 @@ void main() {
     await t.pump();
     expect(find.text('Careful'), findsOneWidget);
   });
+
+  testWidgets('a vanished thread is never the send target', (t) async {
+    final threads = signal(_threads);
+    final sent = <(String, String)>[];
+    await t.pumpWidget(_panel(threads, (id, text) => sent.add((id, text))));
+    await t.tap(find.text('Hall'));
+    await t.pump();
+    await t.enterText(find.byType(TextField), 'Hello');
+    threads.value = [_threads.first];
+    await t.pump();
+    await t.tap(find.byIcon(Icons.send));
+    await t.pump();
+    expect(sent, [('gm', 'Hello')]);
+  });
 }

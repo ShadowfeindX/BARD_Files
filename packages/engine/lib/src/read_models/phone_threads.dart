@@ -53,7 +53,9 @@ final class PhoneConversation {
 /// With [viewer] null the result is the Handler's view: every conversation,
 /// with its parties in the order they first spoke. With a [viewer] alias it is
 /// that player's view: only conversations they are part of, with `a` set to
-/// the viewer. A conversation between the same two parties is one thread
+/// the viewer. [log] must already be the events the viewer may see (the
+/// session's per-perspective filter); this groups by party, it does not
+/// check visibility. A conversation between the same two parties is one thread
 /// whichever way a message went.
 List<PhoneConversation> phoneConversations(
   Iterable<Event> log, {

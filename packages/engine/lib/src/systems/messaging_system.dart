@@ -100,7 +100,7 @@ final class MessagingSystem {
 
   Decision _phone(OperationState state, SendPhoneMessage command) {
     final text = command.text;
-    if (text.trim().isEmpty) {
+    if (_isBlank(text)) {
       return _reject(RejectionCode.invalidValue, 'The message is empty.');
     }
     if (text.length > maxPhoneTextUnits) {
@@ -172,4 +172,9 @@ final class MessagingSystem {
 
   Decision _reject(RejectionCode code, String message) =>
       Rejected(Rejection(code, message));
+
+  /// Whether [text] shows nothing: only whitespace and invisible format
+  /// characters (zero-width space, joiners, word joiner, byte-order mark).
+  bool _isBlank(String text) =>
+      text.replaceAll(RegExp('[\u200B-\u200D\u2060\uFEFF]'), '').trim().isEmpty;
 }
