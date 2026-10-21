@@ -1,6 +1,6 @@
 name: engine
 description: "Pure-Dart game engine: rules computation, no I/O."
-version: 0.0.0
+version: 1.0.0-dev.1
 publish_to: none
 resolution: workspace
 

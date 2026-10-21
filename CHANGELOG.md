@@ -20,6 +20,17 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - `firebase/rtdb_rules_test/analysis_options.yaml` stops the analyzer inheriting the root options in that standalone folder (fixes a package-resolution warning on Windows).
 - Developer guide: `docs/developer-guide/` with a setup page.
 
+### Engine
+- Engine core in `packages/engine`: sealed `Command` and `Event` families grouped per system; `OperationState` with immutable ECS stores (`Identity`, `Attributes`, `Skills`); `Engine` with `decide`, `evolve` and `replay`; `Decision` (`Accepted` / `Rejected` with a `Rejection` code and message); an engine refuses to decide for an operation that pinned a different pack; `Visibility` with `Public`, `GmOnly`, `AliasesOnly` and `Redacted`.
+- First commands: `StartOperation` (genesis `OperationStarted` pins engine version, pack and settings) and `CreateAgent` (`AgentCreated`; attribute and skill keys and per-attribute creation limits checked against the pack).
+- `Rng` and `IdSource` interfaces, `ScriptedRng` for tests, `SequentialIdSource`.
+- Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, numbers bounded to the range the VM and the web agree on, and only the two approved `var` keys.
+- `RulesPack` in-memory pack type (attributes, creation limits, proficiency tiers, skills, derived formulas).
+
+### Session
+- `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
+- Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
+
 ### Docs
 - Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
 - Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.
