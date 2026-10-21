@@ -17,7 +17,7 @@ final event = decodeEvent(encodeEvent(event));
 - Formula values (terms, condition results) are plain JSON numbers and a whole-number double reads back as the integer, as in the engine. Integer fields (`amount`, `dc`, draw positions, attribute scores, die sides) accept integers only.
 - Nesting deeper than 64 levels is refused, so hostile input cannot overflow the stack. Terms the engine would refuse (zero-sided dice, faces outside the die, empty sums, wrong operator arity) are refused, as is a `broadcastEvaluated` that is not `gmOnly`.
 - Attribute and skill maps are written with sorted keys, so equal values always encode to the same text.
-- Not checked here: duplicate JSON keys (the last wins) and empty ids; the session validates ids against the operation. `source: "entered"` decodes, because the field is reserved room for physical dice (concern 7); nothing produces it yet.
+- Not checked here: duplicate JSON keys (they follow `dart:convert`: the last one wins) and empty ids; the session validates ids against the operation. `source: "entered"` decodes, because the field is reserved room for physical dice (concern 7); nothing produces it yet.
 - Aliases in a visibility list are sorted, so the same event always encodes to the same text.
 
 ## Types
