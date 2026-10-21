@@ -43,6 +43,7 @@ class FakeOperationService implements OperationService {
   final Signal<List<LogEntry>> _tableLog = signal(const []);
   final Map<String, Signal<List<LogEntry>>> _playerLogs = {};
   final Map<String, String> _reviewAgent = {};
+  final Signal<String?> _error = signal(null);
 
   @override
   ReadonlySignal<List<AgentSheet>> get agents => _agents;
@@ -52,6 +53,9 @@ class FakeOperationService implements OperationService {
 
   @override
   ReadonlySignal<List<ReviewItem>> get reviewTray => _review;
+
+  @override
+  ReadonlySignal<String?> get lastError => _error;
 
   @override
   final List<SkillOption> skills = const [
@@ -88,7 +92,7 @@ class FakeOperationService implements OperationService {
   AgentSheet _agent(String id) => _agents.value.firstWhere((a) => a.id == id);
 
   @override
-  void requestAction(String agentId, String description) {
+  Future<void> requestAction(String agentId, String description) async {
     final agent = _agent(agentId);
     final id = 'req${_nextId++}';
     _requests.value = [
@@ -122,7 +126,11 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void resolveRequest(String requestId, String skillId, String difficultyKey) {
+  Future<void> resolveRequest(
+    String requestId,
+    String skillId,
+    String difficultyKey,
+  ) async {
     final request = _requests.value.firstWhere((r) => r.id == requestId);
     final agent = _agent(request.agentId);
     final skill = skills.firstWhere((s) => s.id == skillId);
@@ -163,7 +171,7 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void declineRequest(String requestId) {
+  Future<void> declineRequest(String requestId) async {
     final request = _requests.value.firstWhere((r) => r.id == requestId);
     _setStatus(requestId, RequestStatus.declined);
     _append(_gmLog, const TextEntry('The Handler declined the request.'));
@@ -174,7 +182,7 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void proposeSanityLoss(String agentId, int amount) {
+  Future<void> proposeSanityLoss(String agentId, int amount) async {
     final agent = _agent(agentId);
     final id = 'rev${_nextId++}';
     _reviewAgent[id] = agentId;
@@ -194,7 +202,7 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void editReview(String reviewId, int amount) {
+  Future<void> editReview(String reviewId, int amount) async {
     _review.value = [
       for (final r in _review.value)
         if (r.id == reviewId)
@@ -211,7 +219,7 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void confirmReview(String reviewId) {
+  Future<void> confirmReview(String reviewId) async {
     final item = _review.value.firstWhere((r) => r.id == reviewId);
     final agentId = _reviewAgent.remove(reviewId)!;
     _review.value = [
@@ -245,6 +253,6 @@ class FakeOperationService implements OperationService {
   }
 
   @override
-  void addGmNote(String text) =>
+  Future<void> addGmNote(String text) async =>
       _append(_gmLog, TextEntry('GM note: $text', gmNote: true));
 }

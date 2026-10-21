@@ -32,6 +32,7 @@ class ConsoleView extends StatelessWidget {
           flex: 2,
           child: ListView(
             children: [
+              _ErrorBanner(model: model),
               _RequestQueue(model: model),
               _CheckControls(model: model),
               _ReviewTray(model: model),
@@ -100,26 +101,34 @@ class _CheckControls extends StatelessWidget {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                DropdownButton<String>(
-                  key: const ValueKey('skill-picker'),
-                  value: model.skillId.value,
-                  items: [
-                    for (final s in model.skills)
-                      DropdownMenuItem(value: s.id, child: Text(s.name)),
-                  ],
-                  onChanged: (v) => model.skillId.value = v!,
+                SizedBox(
+                  width: 220,
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    key: const ValueKey('skill-picker'),
+                    value: model.skillId.value,
+                    items: [
+                      for (final s in model.skills)
+                        DropdownMenuItem(value: s.id, child: Text(s.name)),
+                    ],
+                    onChanged: (v) => model.skillId.value = v!,
+                  ),
                 ),
-                DropdownButton<String>(
-                  key: const ValueKey('difficulty-picker'),
-                  value: model.difficultyKey.value,
-                  items: [
-                    for (final d in model.difficulties)
-                      DropdownMenuItem(
-                        value: d.key,
-                        child: Text('${d.name} (DC ${d.dc})'),
-                      ),
-                  ],
-                  onChanged: (v) => model.difficultyKey.value = v!,
+                SizedBox(
+                  width: 220,
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    key: const ValueKey('difficulty-picker'),
+                    value: model.difficultyKey.value,
+                    items: [
+                      for (final d in model.difficulties)
+                        DropdownMenuItem(
+                          value: d.key,
+                          child: Text('${d.name} (DC ${d.dc})'),
+                        ),
+                    ],
+                    onChanged: (v) => model.difficultyKey.value = v!,
+                  ),
                 ),
                 FilledButton(
                   key: const ValueKey('resolve'),
@@ -322,6 +331,30 @@ class _NoteFieldState extends State<_NoteField> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.model});
+
+  final ConsoleViewModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    return SignalBuilder(
+      builder: (context) {
+        final error = model.lastError.value;
+        if (error == null) return const SizedBox.shrink();
+        return Card(
+          color: Theme.of(context).colorScheme.errorContainer,
+          child: ListTile(
+            key: const ValueKey('error-banner'),
+            leading: const Icon(Icons.error_outline),
+            title: Text(error),
+          ),
+        );
+      },
     );
   }
 }

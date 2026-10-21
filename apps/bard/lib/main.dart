@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import 'app/composition.dart';
 import 'app/routes.dart';
 
-/// Entry point. Runs on the in-memory fake until the session host is wired in.
-void main() {
-  runApp(BardApp(composition: Composition.fake()));
+/// Entry point. Opens an in-process operation over the shipped pack.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(BardApp(composition: await Composition.inProcess(rootBundle)));
 }
 
 /// Root widget of the bard app.

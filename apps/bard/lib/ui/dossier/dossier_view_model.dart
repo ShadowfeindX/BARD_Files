@@ -24,9 +24,9 @@ class DossierViewModel {
   ReadonlySignal<List<LogEntry>> get log => _service.playerLog(agentId);
 
   /// Sends an action request; blank text is ignored.
-  void requestAction(String description) {
+  Future<void> requestAction(String description) async {
     final text = description.trim();
     if (text.isEmpty) return;
-    _service.requestAction(agentId, text);
+    await _service.requestAction(agentId, text);
   }
 }

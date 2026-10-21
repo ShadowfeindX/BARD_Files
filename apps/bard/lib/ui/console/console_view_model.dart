@@ -38,35 +38,39 @@ class ConsoleViewModel {
   /// Consequences held for review.
   ReadonlySignal<List<ReviewItem>> get reviewTray => _service.reviewTray;
 
+  /// The last refusal or problem, or null.
+  ReadonlySignal<String?> get lastError => _service.lastError;
+
   /// The GM's log.
   ReadonlySignal<List<LogEntry>> get log => _service.gmLog;
 
   /// Resolves the selected request with the chosen skill and DC.
-  void resolveSelected() {
+  Future<void> resolveSelected() async {
     final id = selectedRequest.value;
     if (id == null) return;
-    _service.resolveRequest(id, skillId.value, difficultyKey.value);
     selectedRequest.value = null;
+    await _service.resolveRequest(id, skillId.value, difficultyKey.value);
   }
 
   /// Declines the selected request.
-  void declineSelected() {
+  Future<void> declineSelected() async {
     final id = selectedRequest.value;
     if (id == null) return;
-    _service.declineRequest(id);
     selectedRequest.value = null;
+    await _service.declineRequest(id);
   }
 
   /// Holds a Sanity loss of [amount] for [agentId] in the review tray.
-  void proposeSanityLoss(String agentId, int amount) =>
+  Future<void> proposeSanityLoss(String agentId, int amount) =>
       _service.proposeSanityLoss(agentId, amount);
 
   /// Edits a held amount.
-  void editReview(String id, int amount) => _service.editReview(id, amount);
+  Future<void> editReview(String id, int amount) =>
+      _service.editReview(id, amount);
 
   /// Confirms a held consequence.
-  void confirmReview(String id) => _service.confirmReview(id);
+  Future<void> confirmReview(String id) => _service.confirmReview(id);
 
   /// Adds a private GM note.
-  void addNote(String text) => _service.addGmNote(text);
+  Future<void> addNote(String text) => _service.addGmNote(text);
 }

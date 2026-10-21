@@ -17,6 +17,9 @@ abstract interface class OperationService {
   /// Consequences held for GM review.
   ReadonlySignal<List<ReviewItem>> get reviewTray;
 
+  /// The last refusal or problem message, or null.
+  ReadonlySignal<String?> get lastError;
+
   /// Skills the GM can require checks for.
   List<SkillOption> get skills;
 
@@ -33,23 +36,27 @@ abstract interface class OperationService {
   ReadonlySignal<List<LogEntry>> playerLog(String agentId);
 
   /// Player asks to act.
-  void requestAction(String agentId, String description);
+  Future<void> requestAction(String agentId, String description);
 
   /// GM requires and resolves a check for a request.
-  void resolveRequest(String requestId, String skillId, String difficultyKey);
+  Future<void> resolveRequest(
+    String requestId,
+    String skillId,
+    String difficultyKey,
+  );
 
   /// GM declines a request.
-  void declineRequest(String requestId);
+  Future<void> declineRequest(String requestId);
 
   /// GM proposes a Sanity loss; it waits in the review tray.
-  void proposeSanityLoss(String agentId, int amount);
+  Future<void> proposeSanityLoss(String agentId, int amount);
 
   /// GM edits a held amount.
-  void editReview(String reviewId, int amount);
+  Future<void> editReview(String reviewId, int amount);
 
   /// GM confirms a held consequence; the player then sees it.
-  void confirmReview(String reviewId);
+  Future<void> confirmReview(String reviewId);
 
   /// GM adds a private note.
-  void addGmNote(String text);
+  Future<void> addGmNote(String text);
 }
