@@ -50,8 +50,10 @@ class SessionOperationService implements OperationService {
     );
     final service = SessionOperationService._(host, store, pack);
     await service._seed();
-    host.states.listen((_) => unawaited(service._refresh()));
-    host.pendingChanges.listen((_) => unawaited(service._refresh()));
+    host.states.listen((_) => unawaited(service._serial(service._refresh)));
+    host.pendingChanges.listen(
+      (_) => unawaited(service._serial(service._refresh)),
+    );
     return service;
   }
 
@@ -151,6 +153,16 @@ class SessionOperationService implements OperationService {
 
   // --- commands ----------------------------------------------------------
 
+  /// Runs UI commands and refreshes one at a time, so two quick taps cannot
+  /// interleave (a second confirm must see the first one's result).
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> _serial<T>(Future<T> Function() action) {
+    final next = _tail.then((_) => action());
+    _tail = next.then((_) {}, onError: (Object _) {});
+    return next;
+  }
+
   Future<SubmitResult> _submit(Command command) async {
     final result = await _host.submit(command);
     _error.value = result is Refusal ? result.message : null;
@@ -159,7 +171,36 @@ class SessionOperationService implements OperationService {
   }
 
   @override
-  Future<void> requestAction(String agentId, String description) async {
+  Future<void> requestAction(String agentId, String description) =>
+      _serial(() => _requestAction(agentId, description));
+
+  @override
+  Future<void> resolveRequest(
+    String requestId,
+    String skillId,
+    String difficultyKey,
+  ) => _serial(() => _resolveRequest(requestId, skillId, difficultyKey));
+
+  @override
+  Future<void> declineRequest(String requestId) =>
+      _serial(() => _declineRequest(requestId));
+
+  @override
+  Future<void> proposeSanityLoss(String agentId, int amount) =>
+      _serial(() => _proposeSanityLoss(agentId, amount));
+
+  @override
+  Future<void> editReview(String reviewId, int amount) =>
+      _serial(() => _editReview(reviewId, amount));
+
+  @override
+  Future<void> confirmReview(String reviewId) =>
+      _serial(() => _confirmReview(reviewId));
+
+  @override
+  Future<void> addGmNote(String text) => _serial(() => _addGmNote(text));
+
+  Future<void> _requestAction(String agentId, String description) async {
     await _submit(
       RequestAction(
         entity: _entityOf(agentId),
@@ -169,8 +210,7 @@ class SessionOperationService implements OperationService {
     );
   }
 
-  @override
-  Future<void> resolveRequest(
+  Future<void> _resolveRequest(
     String requestId,
     String skillId,
     String difficultyKey,
@@ -196,12 +236,10 @@ class SessionOperationService implements OperationService {
     }
   }
 
-  @override
-  Future<void> declineRequest(String requestId) =>
+  Future<void> _declineRequest(String requestId) =>
       _submit(DeclineRequest(request: RequestId(requestId)));
 
-  @override
-  Future<void> proposeSanityLoss(String agentId, int amount) => _submit(
+  Future<void> _proposeSanityLoss(String agentId, int amount) => _submit(
     ApplySanityLoss(
       entity: _entityOf(agentId),
       amount: amount,
@@ -209,27 +247,26 @@ class SessionOperationService implements OperationService {
     ),
   );
 
-  @override
-  Future<void> editReview(String reviewId, int amount) async {
+  Future<void> _editReview(String reviewId, int amount) async {
     _edits[reviewId] = amount;
     await _refresh();
   }
 
-  @override
-  Future<void> confirmReview(String reviewId) async {
+  Future<void> _confirmReview(String reviewId) async {
     final batches = _host.pending;
     if (batches.isEmpty) return;
     if (_batchId(batches.first) != reviewId) {
       _error.value = 'Confirm held items in the order they were held.';
       return;
     }
-    final amount = _edits.remove(reviewId);
+    final amount = _edits[reviewId];
     try {
       await _host.confirmPending(
         edit: amount == null
             ? null
             : (e) => e is SanityLost ? e.withAmount(amount) : e,
       );
+      _edits.remove(reviewId);
       _error.value = null;
     } on ArgumentError catch (e) {
       _error.value = '${e.message}';
@@ -237,15 +274,17 @@ class SessionOperationService implements OperationService {
     await _refresh();
   }
 
-  @override
-  Future<void> addGmNote(String text) async {
+  Future<void> _addGmNote(String text) async {
     _notes.add(TextEntry('GM note: $text', gmNote: true));
     await _refresh();
   }
 
   // --- projection --------------------------------------------------------
 
-  static String _batchId(PendingBatch b) => 'batch${identityHashCode(b)}';
+  final Expando<String> _batchIds = Expando<String>();
+  int _nextBatch = 0;
+
+  String _batchId(PendingBatch b) => _batchIds[b] ??= 'batch${_nextBatch++}';
 
   Future<void> _refresh() async {
     final state = _host.state;
@@ -327,12 +366,12 @@ class SessionOperationService implements OperationService {
         TextEntry(line.variants['redacted'] ?? 'The Handler did something.'),
       ],
       Delivery.full => [
-        _full(projectFor(event, perspective), line, perspective, alias, state),
+        ?_full(projectFor(event, perspective), line, perspective, alias, state),
       ],
     };
   }
 
-  LogEntry _full(
+  LogEntry? _full(
     Event event,
     TextLogLine line,
     Perspective perspective,
@@ -346,7 +385,7 @@ class SessionOperationService implements OperationService {
       PlayerPerspective() => v['alias:$alias'] ?? v['public'],
       TablePerspective() => v['public'],
     };
-    return TextEntry(text ?? v['gm'] ?? '');
+    return text == null ? null : TextEntry(text);
   }
 
   DiceBreakdownData _breakdown(CheckResolved event, OperationState state) {

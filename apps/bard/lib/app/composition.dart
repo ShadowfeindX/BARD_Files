@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 
 import '../data/pack_assets.dart';
-import '../data/services/fake_operation_service.dart';
 import '../data/services/operation_service.dart';
 import '../data/services/session_operation_service.dart';
 
@@ -9,10 +8,6 @@ import '../data/services/session_operation_service.dart';
 class Composition {
   /// Creates a composition over [operation].
   const Composition({required this.operation});
-
-  /// Composition backed by the in-memory fake, for widget tests of the UI
-  /// alone.
-  factory Composition.fake() => Composition(operation: FakeOperationService());
 
   /// Composition backed by a real host over the shipped pack, in "in person,
   /// one device" mode.

@@ -1,14 +1,13 @@
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-import '../models.dart';
-import 'operation_service.dart';
+import 'package:bard/data/models.dart';
+import 'package:bard/data/services/operation_service.dart';
 
-/// In-memory stand-in for the session, used until the session host is wired
-/// in. It follows the same visibility shape as the engine (rolls public,
+/// In-memory stand-in for the session, for widget tests of the UI alone. It follows the same visibility shape as the engine (rolls public,
 /// consequences held for review, GM notes private) but applies no game rules
 /// of its own beyond a fixed fixture: scripted dice, exploding primary die and
-/// the example pack's DC table and partial band.
+/// a subset of the example pack's DC table and its partial band.
 class FakeOperationService implements OperationService {
   /// Creates the fake with two agents. [dice] is the scripted die sequence;
   /// it repeats when exhausted.
@@ -60,7 +59,7 @@ class FakeOperationService implements OperationService {
   @override
   final List<SkillOption> skills = const [
     SkillOption(id: 'firearms', name: 'Firearms', attribute: 'DEX'),
-    SkillOption(id: 'investigation', name: 'Investigation', attribute: 'PER'),
+    SkillOption(id: 'research', name: 'Research', attribute: 'PER'),
   ];
 
   @override

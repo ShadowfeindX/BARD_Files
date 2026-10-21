@@ -68,6 +68,13 @@ class ConsoleViewModel {
   Future<void> editReview(String id, int amount) =>
       _service.editReview(id, amount);
 
+  /// Raises or lowers a held amount by [delta], never below zero.
+  Future<void> adjustReview(String id, int delta) async {
+    final item = reviewTray.value.firstWhere((r) => r.id == id);
+    final next = item.amount + delta;
+    if (next >= 0) await _service.editReview(id, next);
+  }
+
   /// Confirms a held consequence.
   Future<void> confirmReview(String id) => _service.confirmReview(id);
 

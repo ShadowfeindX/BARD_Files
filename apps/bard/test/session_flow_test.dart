@@ -54,7 +54,7 @@ void main() {
     expect(find.textContaining('Sanity loss 2'), findsOneWidget);
     expect(find.textContaining('loses 2 Sanity'), findsNothing);
 
-    await tester.tap(find.byType(IconButton).first); // lower by one
+    await tester.tap(find.byTooltip('Lower by 1'));
     await _settle(tester);
     expect(find.text('Proposed 2'), findsOneWidget);
 

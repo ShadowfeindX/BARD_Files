@@ -187,15 +187,14 @@ class _ReviewTray extends StatelessWidget {
                         tooltip: 'Lower by 1',
                         icon: const Icon(Icons.remove),
                         onPressed: item.amount > 0
-                            ? () => model.editReview(item.id, item.amount - 1)
+                            ? () => model.adjustReview(item.id, -1)
                             : null,
                       ),
                       IconButton(
                         key: ValueKey('review-inc-${item.id}'),
                         tooltip: 'Raise by 1',
                         icon: const Icon(Icons.add),
-                        onPressed: () =>
-                            model.editReview(item.id, item.amount + 1),
+                        onPressed: () => model.adjustReview(item.id, 1),
                       ),
                       FilledButton(
                         key: ValueKey('review-confirm-${item.id}'),
