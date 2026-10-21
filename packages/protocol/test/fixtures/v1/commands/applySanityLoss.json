@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "type": "applySanityLoss",
+  "actor": {
+    "kind": "gm"
+  },
+  "entity": "e1",
+  "amount": 3,
+  "check": null,
+  "visibility": {
+    "kind": "public"
+  }
+}

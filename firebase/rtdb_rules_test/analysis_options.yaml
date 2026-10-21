@@ -1,0 +1,4 @@
+# Standalone emulator checks, not a workspace member. Without this file the
+# analyzer walks up to the root analysis_options.yaml, whose lint package does
+# not resolve from this folder's own package config (warning seen on Windows).
+analyzer: {}

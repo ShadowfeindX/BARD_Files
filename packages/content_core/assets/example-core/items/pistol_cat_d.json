@@ -1,0 +1,13 @@
+{
+  "id": "pistol_cat_d",
+  "name": "Pistol (example)",
+  "kind": "weapon",
+  "description": "[D to write]",
+  "damageCategory": "D",
+  "rangeBands": {
+    "placeholder": true,
+    "gap": "G10",
+    "note": "Which bands a weapon allows is not specified; shape only."
+  },
+  "note": "Example of an item entry. 'Cat-D pistol' is the only weapon detail the book gives (human class D, p35). Real items are D's and GMs'."
+}

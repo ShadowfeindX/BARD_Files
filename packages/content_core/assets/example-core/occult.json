@@ -1,0 +1,123 @@
+{
+  "castMagic": {
+    "status": "OPEN. Everything in this block is a set of options for D. Nothing here is decided.",
+    "rollKind": {
+      "placeholder": true,
+      "gap": "F3 part 1",
+      "note": "Whether casting is one roll kind is still to be reviewed with D."
+    },
+    "rollKindProposal": "cast_magic: one roll; the GM sets the DC and describes the effect; no spell list",
+    "rollFormula": "1d6 + [attribute: see options] + skill bonus + modifiers",
+    "attributeOptions": [
+      {
+        "id": "A",
+        "attribute": "WIL",
+        "where": "older 1.3.1 casting flow (1d6 + WIL); Agent Dossier puts Ritual Magic, Exorcism and similar skills under WIL; p29 asks for a Willpower proficiency as a prerequisite"
+      },
+      {
+        "id": "B",
+        "attribute": "WIL or INT",
+        "where": "p29 'Occult Action Check'"
+      },
+      {
+        "id": "C",
+        "attribute": "WIS or INT",
+        "where": "p29 'Casting & Rituals' and p30 casting flow step 3"
+      },
+      {
+        "id": "D",
+        "attribute": "the attribute of the skill the player names",
+        "where": "suggestion in the coverage report (section 9, item 2), not in the book"
+      }
+    ],
+    "chosenAttribute": {
+      "placeholder": true,
+      "gap": "G6/C5",
+      "note": "Awaits D. Meeting Thursday 2026-10-22 at the earliest."
+    }
+  },
+  "sanityCostByCategory": [
+    {
+      "category": "F",
+      "min": 1,
+      "max": 1,
+      "note": "fumble only"
+    },
+    {
+      "category": "E",
+      "min": 1,
+      "max": 2
+    },
+    {
+      "category": "D",
+      "min": 2,
+      "max": 3
+    },
+    {
+      "category": "C",
+      "min": 3,
+      "max": 5
+    },
+    {
+      "category": "B",
+      "min": 5,
+      "max": 7
+    },
+    {
+      "category": "A",
+      "min": 7,
+      "max": 10
+    },
+    {
+      "category": "S",
+      "min": 10,
+      "max": 15
+    },
+    {
+      "category": "OMEGA",
+      "printedAs": "Instant collapse (0 sanity)",
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Handler decides; printed text is only a default."
+    }
+  ],
+  "sanityCostSource": "Rulebook p30",
+  "sanityCheckOptions": {
+    "placeholder": true,
+    "gap": "G6",
+    "note": "Roll the sanity check on every cast (p30 step 5) or only after a success (older 1.3.1)? Who pays in a group cast? Which category counts for a focus item?"
+  },
+  "ritualDefaults": {
+    "status": "Optional GM-described defaults. Whether any of this stays in the engine depends on the occult review with D (F3 part 1).",
+    "timePerBaseDcPoint": "1 hour",
+    "participantCheck": {
+      "check": "Occult check",
+      "dc": 10,
+      "bonusToCaster": 1
+    },
+    "focusItem": {
+      "bonus": {
+        "type": "dice",
+        "count": 1,
+        "sides": 6,
+        "explode": null
+      },
+      "extraSanityCostPerCategoryAboveD": 2
+    },
+    "source": "Rulebook p29"
+  },
+  "openItems": [
+    {
+      "gap": "G6",
+      "summary": "Casting attribute, sanity timing, group casting, focus item category, proficiency prerequisite."
+    },
+    {
+      "gap": "G5",
+      "summary": "Range picking within sanity cost."
+    },
+    {
+      "gap": "G3",
+      "summary": "Whether the focus-item die explodes (explode is null)."
+    }
+  ]
+}

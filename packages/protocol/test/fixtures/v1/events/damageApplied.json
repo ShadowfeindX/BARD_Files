@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "type": "damageApplied",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "entity": "e1",
+  "amount": 3,
+  "overriddenFrom": 4,
+  "check": "c1"
+}

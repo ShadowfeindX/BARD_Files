@@ -1,0 +1,67 @@
+{
+  "fromMajor": 1,
+  "toMajor": 2,
+  "migrator": "1to2-example-0.1.0",
+  "unchanged": [
+    {
+      "origin": 2,
+      "note": "component payload unchanged"
+    },
+    {
+      "origin": 3,
+      "note": "component payload unchanged"
+    },
+    {
+      "origin": 4,
+      "type": "ActionRequested"
+    },
+    {
+      "origin": 5,
+      "type": "CheckRequired"
+    },
+    {
+      "origin": 12,
+      "type": "PhoneMessageSent"
+    }
+  ],
+  "transformed": [
+    {
+      "origin": 1,
+      "change": "pack ref replaced by migrated pack; engine field set to 2.0.0"
+    },
+    {
+      "origin": 6,
+      "change": "mods→modifiers (src string→source object), draws→rng{start,end}, outcome string→{band,margin}, advantage derived from dice roles"
+    },
+    {
+      "origin": 7,
+      "change": "mods→modifiers (src string→source object), draws→rng{start,end}, outcome string→{band,margin}, advantage derived from dice roles"
+    },
+    {
+      "origin": 8,
+      "change": "outcome string→{band,margin}; margin null (override has no roll)"
+    },
+    {
+      "origin": 9,
+      "change": "DamageApplied→VitalsChanged(vital=health, delta, cause)"
+    },
+    {
+      "origin": 10,
+      "change": "duration int→{unit,n}"
+    },
+    {
+      "origin": 11,
+      "change": "SanityLost→VitalsChanged(vital=sanity, delta, cause)"
+    }
+  ],
+  "dropped": [],
+  "needsDecision": [
+    {
+      "origin": 10,
+      "field": "source",
+      "reason": "engine 2 requires ConditionApplied.source; engine 1 never recorded it",
+      "default": "{kind: unknown}",
+      "gmMayEdit": true
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+# Dart / Flutter generated output (CLAUDE.md §7: never commit build output)
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+**/ephemeral/
+**/generated_plugin_registrant.*
+**/Flutter/GeneratedPluginRegistrant.*
+**/.gradle/
+**/local.properties
+**/gradle-wrapper.jar
+*.iml
+.idea/
+
+# Firebase emulator output
+firebase-debug.log
+ui-debug.log
+database-debug.log
+
+# Generated rules-pack assets (built by tool/build_pack.sh)
+packages/content_core/assets/generated/

@@ -1,0 +1,110 @@
+{
+  "derived": [
+    {
+      "key": "health",
+      "name": "Health",
+      "formula": {
+        "type": "op",
+        "op": "mul",
+        "args": [
+          {
+            "type": "attr",
+            "key": "END"
+          },
+          {
+            "type": "attr",
+            "key": "LCK"
+          }
+        ]
+      },
+      "source": "Rulebook p13 (END × LCK)"
+    },
+    {
+      "key": "sanity",
+      "name": "Sanity",
+      "formula": {
+        "type": "op",
+        "op": "mul",
+        "args": [
+          {
+            "type": "attr",
+            "key": "WIS"
+          },
+          {
+            "type": "attr",
+            "key": "LCK"
+          }
+        ]
+      },
+      "source": "Rulebook p13 (WIS × LCK)"
+    },
+    {
+      "key": "evasion",
+      "name": "Evasion",
+      "formula": {
+        "type": "op",
+        "op": "add",
+        "args": [
+          {
+            "type": "attr",
+            "key": "DEX"
+          },
+          {
+            "type": "attr",
+            "key": "LCK"
+          }
+        ]
+      },
+      "source": "Rulebook p13"
+    },
+    {
+      "key": "initiativeBonus",
+      "name": "Initiative Bonus",
+      "formula": {
+        "type": "op",
+        "op": "add",
+        "args": [
+          {
+            "type": "attr",
+            "key": "DEX"
+          },
+          {
+            "type": "attr",
+            "key": "LCK"
+          }
+        ]
+      },
+      "source": "Rulebook p13"
+    },
+    {
+      "key": "reactionsPerRound",
+      "name": "Reactions per round",
+      "formula": {
+        "type": "attr",
+        "key": "DEX"
+      },
+      "source": "Rulebook p25"
+    },
+    {
+      "key": "damageReduction",
+      "name": "Damage Reduction",
+      "formula": {
+        "type": "attr",
+        "key": "END"
+      },
+      "armorModifierAdded": {
+        "placeholder": true,
+        "gap": "G8",
+        "note": "Book says DR = END + armor modifier (static), but the older books rolled 1d6 + END + armor, and there are no armor values yet."
+      },
+      "source": "Rulebook p27"
+    }
+  ],
+  "storedModifiersAllowed": "Permanent upgrades (for example Formidable +3 Health) are stored as explicit modifiers on the character, not written into these formulas.",
+  "openItems": [
+    {
+      "gap": "G8",
+      "summary": "Armor and damage reduction."
+    }
+  ]
+}

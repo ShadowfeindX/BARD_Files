@@ -1,0 +1,20 @@
+{
+  "v": 1,
+  "type": "broadcastToQualifying",
+  "actor": {
+    "kind": "gm"
+  },
+  "text": "A low groaning voice.",
+  "condition": {
+    "type": "compare",
+    "op": "lt",
+    "left": {
+      "type": "attr",
+      "key": "WIL"
+    },
+    "right": {
+      "type": "const",
+      "value": 3
+    }
+  }
+}

@@ -77,7 +77,7 @@ followed by the migrated snapshot as its initial state. The migrator transforms 
    - **this cannot be undone or recovered.**
 
    The GM must take a deliberate action to proceed (Fixed, P13): tick "I understand this information cannot be recovered" and type the operation's name. A single tap never confirms it; a widget test covers this.
-6. On confirmation the archive is written to Firestore and then the operation is locked. The archived operation (frozen event log, text log and final head snapshot) is written by the `archiveOperation` HTTPS function (FS3), chunked into a subcollection to stay under Firestore's 1 MiB per-document limit (FS5). After the archive write succeeds, the GM client sets the RTDB `meta/locked` flag. The new operation is then created. The original N data is kept until the GM deletes it.
+6. On confirmation the operation is locked, then the archive is written to Firestore, then the live data is cleaned up (R 2026-10-21). The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived operation (frozen event log, text log and final head snapshot) is then written by the `archiveOperation` HTTPS function (FS3), chunked into a subcollection to stay under Firestore's 1 MiB per-document limit (FS5); a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new operation is then created. The original N data is kept until the GM deletes it.
 
 Players do nothing. When they next join, they receive the new operation under N+1 and see a notice in the log that history before the migration is archived text (Proposed).
 

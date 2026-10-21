@@ -1,0 +1,25 @@
+{
+  "v": 1,
+  "type": "checkRequired",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "check": "c1",
+  "spec": {
+    "entity": "e1",
+    "attribute": "DEX",
+    "skill": "firearms",
+    "category": "C",
+    "dc": 10,
+    "modifiers": [
+      {
+        "label": "Cover",
+        "value": -2
+      }
+    ],
+    "request": "r1"
+  }
+}

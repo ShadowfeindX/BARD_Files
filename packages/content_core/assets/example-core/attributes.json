@@ -1,0 +1,57 @@
+{
+  "attributes": [
+    {
+      "key": "STR",
+      "name": "Strength",
+      "descriptionKey": "attr.STR.description"
+    },
+    {
+      "key": "DEX",
+      "name": "Dexterity",
+      "descriptionKey": "attr.DEX.description"
+    },
+    {
+      "key": "END",
+      "name": "Endurance",
+      "descriptionKey": "attr.END.description"
+    },
+    {
+      "key": "PER",
+      "name": "Perception",
+      "descriptionKey": "attr.PER.description"
+    },
+    {
+      "key": "INT",
+      "name": "Intelligence",
+      "descriptionKey": "attr.INT.description"
+    },
+    {
+      "key": "WIS",
+      "name": "Wisdom",
+      "descriptionKey": "attr.WIS.description"
+    },
+    {
+      "key": "CHA",
+      "name": "Charisma",
+      "descriptionKey": "attr.CHA.description"
+    },
+    {
+      "key": "WIL",
+      "name": "Willpower",
+      "descriptionKey": "attr.WIL.description"
+    },
+    {
+      "key": "LCK",
+      "name": "Luck",
+      "descriptionKey": "attr.LCK.description"
+    }
+  ],
+  "creation": {
+    "points": 20,
+    "minPerAttribute": 1,
+    "maxPerAttribute": 3,
+    "source": "Rulebook p13"
+  },
+  "advancementCap": 10,
+  "openItems": []
+}

@@ -1,0 +1,57 @@
+{
+  "rollDie": null,
+  "rollDieNote": {
+    "placeholder": true,
+    "gap": "G5",
+    "note": "The book never says a failed Disorder Check rolls 1d6 on this table (the older 1.3.1 book did). The die is left empty (null) rather than assumed. Six rows suggest 1d6."
+  },
+  "disorderCheck": {
+    "attribute": "WIL",
+    "dc": 10,
+    "when": [
+      "sanity below 50% of max",
+      "after a Sanity check fumble",
+      "Handler calls for it"
+    ],
+    "source": "Rulebook p17"
+  },
+  "table": [
+    {
+      "roll": 1,
+      "name": "Parinoia",
+      "effect": "CHA checks -3 with non-team NPCs"
+    },
+    {
+      "roll": 2,
+      "name": "Phobia",
+      "effect": "Checks -2 during Phobia trigger"
+    },
+    {
+      "roll": 3,
+      "name": "Obsessive Behavior",
+      "effect": "-1 to all actions during compulsion"
+    },
+    {
+      "roll": 4,
+      "name": "Flashbacks/Ect.",
+      "effect": "DC 8 WIL or lose turn when exposed to trigger"
+    },
+    {
+      "roll": 5,
+      "name": "Night Terrors",
+      "effect": "DC 8 WIL to sleep; failure -1 to all actions until properly rested"
+    },
+    {
+      "roll": 6,
+      "name": "Amnesia/Ect.",
+      "effect": "-1 to -3 to INT skills depending on severity and task"
+    }
+  ],
+  "typoNote": "Names and effects are copied exactly as printed, typos included (Parinoia, Ect.). D fixes wording here.",
+  "openItems": [
+    {
+      "gap": "G5",
+      "summary": "Disorder roll, duration and stacking are not stated."
+    }
+  ]
+}

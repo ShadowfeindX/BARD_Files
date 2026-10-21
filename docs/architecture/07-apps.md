@@ -4,7 +4,7 @@
 
 | App | Platforms (Fixed scope) | Who | Role |
 |---|---|---|---|
-| `apps/bard` | all Flutter targets; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is player-only (W1, see below) |
+| `apps/bard` | v1: Windows and Linux desktop, plus the player-only web build; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is player-only (W1, see below) |
 | `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins operations the main app hosts |
 | `apps/functions` | Firebase, HTTPS-only Dart Cloud Functions (experimental) | none directly | Badge login, role claims, payment webhook, store receipt validation, push, pack publishing helper (P14). Depends only on `protocol_envelope` (F4), never on the engine. No relay: Realtime Database is the relay |
 
@@ -32,7 +32,7 @@ lib/
 - View models talk to repositories; repositories wrap services. The `session` package is used through a service, so view models never see actors or transports.
 - View models expose **commands** (Flutter guide terminology for user-intent callbacks [V-2]). A command such as `requestLockpick()` turns into an engine command sent through the session. It never computes an outcome.
 - **State management (09-1, Fixed; ruled by R 2026-10-20):** Dart Signals, through `signals_flutter` 7.1.0 (publisher rodydavis.com; Flutter bindings over `signals_core`) in `apps/` and `ui_kit` [V-29]. The umbrella `signals` package is not used; the engine stays SDK-only. View models expose signals, and views read them.
-- **Routing (09-2, Fixed):** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The canonical join link is `bard://join/<op>?alias=<id>`, which every target can register; https links come later where supported. Verified live on Linux and Windows [V-30]. Untested: macOS and the iOS verification-file rules. Android and iOS https links need `assetlinks.json` / `apple-app-site-association`.
+- **Routing (09-2, Fixed):** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The canonical join link is `bard://join/<op>?alias=<id>`, which every target can register; https links come later where supported. Verified live on Linux and Windows [V-30]. Android https links, when added, need `assetlinks.json`.
 - **Persistence (09-3, Fixed):** sembast (+ `sembast_web` for web player caches) behind the session's `EventStore`, see [04-session.md](04-session.md#interfaces-the-session-depends-on).
 - Package versions are re-verified on pub.dev before each enters a pubspec (F5).
 
@@ -61,7 +61,8 @@ Theme (the "Top Secret" dossier look), typography, the dice-breakdown widget, pe
 - No `Platform.isX` checks in shared code; they throw on the web [V-12].
 - Hosting capabilities differ by platform (the web build cannot host, see [04-session.md](04-session.md#play-modes)). The UI asks the session which transports are available instead of checking the platform itself.
 
-- Desktop builds reach Firebase through `firebase_dart`: probed on Windows and Linux (Linux required in v1); macOS unproven ([06-accounts-backend.md](06-accounts-backend.md#stack-fixed-adopted-by-r)). Push notifications are in-app only on Windows and Linux.
+- Desktop builds reach Firebase through `firebase_dart`: probed on Windows and Linux, the v1 desktop targets ([06-accounts-backend.md](06-accounts-backend.md#stack-fixed-adopted-by-r)). Push notifications are in-app only on Windows and Linux.
+- **Windows identity.** The Windows runner's company and product names decide where `flutter_secure_storage` keeps the auth-box key (`%APPDATA%\<company>\<product>\`) [V-44]. They are set once before the first release and not changed, or every user is signed out (B5).
 
 ### Web build role (W1, Fixed for now; ruled by R 2026-10-20)
 

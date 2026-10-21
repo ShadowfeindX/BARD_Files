@@ -19,13 +19,15 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
 | [09-open-decisions.md](09-open-decisions.md) | **Decisions record** of R's rulings, plus what is still pending D, held for a probe, or deferred |
 | [10-pending-d.md](10-pending-d.md) | Proposals waiting on D: occult attribute and system, pack shape, web hosting, physical dice |
+| [11-supplemental-features.md](11-supplemental-features.md) | D's supplemental features as ruled by R: fictional profiles, clearance tiers, public badge and sign-in code, invite links, stat-gated broadcast, moderation, panic button, companion app; items waiting on the operation/mission model |
+| [12-firestore-collections.md](12-firestore-collections.md) | **Firestore collections** (Proposed): names, document shapes, draft rules, composite indexes, emulator test plan, questions for R |
 | [verification.md](verification.md) | Every Dart / Flutter / Firebase claim in this spec and the source it was checked against |
 
 ## Conventions in this spec
 
 - **Fixed** marks a decision R has already made. It is recorded, not argued.
 - **Pending D** marks an item R wants D's approval on before it is designed in full. See [09-open-decisions.md](09-open-decisions.md#pending-d).
-- **Held** marks an item waiting on a probe. See [09-open-decisions.md](09-open-decisions.md#held).
+- **Held** marks an item waiting on a probe or on R's ruling of a probe-based draft. See [09-open-decisions.md](09-open-decisions.md#held).
 - **Provisional** marks existing design text kept as a starting point for a Pending D item.
 - **Proposed** marks a design detail R has not ruled on individually. It is not load-bearing.
 - Item ids (P1, F2, FS3, B5, W1 and so on) trace each ruling to [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20).
@@ -40,7 +42,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | Agent | A player's account. Owns one or more aliases. |
 | Alias | A character identity belonging to an agent, locked to one campaign at a time. |
 | Campaign | A long-running game run by one GM, made of operations. |
-| Operation | One gameplay session (the rulebook's "mission"). Has its own event log. |
+| Operation | A whole campaign; persists across missions and has its own event log. A mission is a segment of play inside an operation ([11](11-supplemental-features.md)). |
 | Handler / GM | The rulebook calls the GM the Handler. This spec uses GM. |
 | Command | A request to change the game ("attack this target", "require a check"). May be rejected. |
 | Event | A fact that happened ("check resolved: 11, success"). Never changes once written. |

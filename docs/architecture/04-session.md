@@ -49,7 +49,7 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
 - **Auto-confirm** is a per-operation GM setting. With it on, a pending batch is confirmed without waiting for the GM.
 - **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
-- **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast 3.9.0 has no fsync or flush [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
+- **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
 - **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-operation interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (W1, below), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
@@ -110,6 +110,20 @@ Every interface has an in-memory implementation in `session` itself, used by tes
 
 **Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per operation, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long operation is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
 
+### Event entries (Proposed)
+
+The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+
+| Entry | Sent when | JSON |
+|---|---|---|
+| full | the recipient may read the event | `{"seq": n, "event": {...}}`, plus `"req": "<requestId>"` for the agent whose request caused it (this is the acknowledgement of a request; redacted and hidden entries carry it too) |
+| redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
+| hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
+
+A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is); the alternative, per-recipient gaps, would break the consecutive-`seq` rule. To be confirmed by R.
+
+Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
+
 ## Play modes
 
 All modes run the same loop; they differ only in which `Transport` and whether a `RelayActor` is attached.
@@ -149,10 +163,11 @@ The backend copy is a mirror, never a second authority. If the backend holds eve
 
 Players can send in-world text messages ("phone") that are forwarded to the GM (Fixed).
 
-- Sending is a command: `SendPhoneMessage(fromAlias, to, body)` where `to` is the GM, an NPC entity, or another alias.
-- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]` (the GM always sees it). Messages to an NPC go to the GM, who answers **as** that NPC with `SendPhoneMessage(fromNpc, ...)`.
+- Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields **Proposed**). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
+- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box at mission end is the archive function's job (P17) and waits on Q24; the engine has no such event.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
+- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box only when the "mission" ends are R's rulings (2026-10-21, P17); the mission-to-spec-unit mapping waits on Q24, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives
 

@@ -1,0 +1,4 @@
+# Emulator and Dart tool output, including the lockfile pub writes (generated, never committed).
+*-debug.log
+.dart_tool/
+rtdb_rules_test/pubspec.lock
