@@ -242,22 +242,21 @@ void main() {
         rig = await Rig.create();
         await rig.start();
         final ann = await rig.join('ann', 'hall');
+        // Every frame to the host arrives twice (at-least-once delivery).
+        // An alias plays one agent, so a second delivery that was decided
+        // again would be rejected rather than stored: the seq proves
+        // nothing there, so count the events instead.
+        rig.network.filter = (toHost, frame) =>
+            toHost ? [frame, frame] : [frame];
         final id = await ann.request(rig.agent('Hall', owner: 'hall'));
         await pumpEventQueue();
-        expect(rig.host.lastSeq, 2);
+        expect(rig.host.lastSeq, 2, reason: 'duplicated frame decided once');
         expect(
           ann.pendingRequests,
           isEmpty,
           reason: 'acknowledged by the events',
         );
         expect(id, isNotEmpty);
-
-        // The same frame again (at-least-once delivery).
-        rig.network.filter = (toHost, frame) =>
-            toHost ? [frame, frame] : [frame];
-        await ann.request(rig.agent('Second', owner: 'hall'));
-        await pumpEventQueue();
-        expect(rig.host.lastSeq, 3, reason: 'duplicated frame decided once');
       },
     );
 
@@ -552,10 +551,11 @@ void main() {
       rig.network.filter = (toHost, frame) =>
           !toHost && ++frames == 1 ? [] : [frame];
       await rig.host.submit(rig.agent('One', owner: 'hall'));
-      await rig.host.submit(rig.agent('Two', owner: 'hall'));
+      await rig.host.submit(rig.agent('Two', owner: 'vale'));
       await pumpEventQueue();
       expect(ann.lastSeq, 3);
-      expect(ann.state.stores.entities, hasLength(2));
+      // Vale's agent is not Ann's to see: its seq arrives, its state does not.
+      expect(ann.state.stores.entities, hasLength(1));
     });
 
     test('out-of-order and duplicated frames converge', () async {
@@ -574,8 +574,13 @@ void main() {
         if (count == 2) return [frame, frame, ...held];
         return [frame];
       };
-      for (final name in ['One', 'Two', 'Three']) {
-        await rig.host.submit(rig.agent(name, owner: 'hall'));
+      // An alias plays one agent, so each agent has its own owner.
+      for (final (name, owner) in [
+        ('One', 'hall'),
+        ('Two', 'vale'),
+        ('Three', 'zed'),
+      ]) {
+        await rig.host.submit(rig.agent(name, owner: owner));
       }
       await pumpEventQueue();
       expect(ann.lastSeq, 4);
@@ -711,7 +716,9 @@ void main() {
       final b = await second.request(rig.agent('Two', owner: 'hall'));
       await pumpEventQueue();
       expect(b, isNot(a));
-      expect(rig.host.lastSeq, 3);
+      // The second request is refused (the alias already plays an agent);
+      // what matters here is that the fresh participant used a fresh id.
+      expect(rig.host.lastSeq, 2);
     });
 
     test(
