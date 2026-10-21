@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:ui_kit/ui_kit.dart';
 
-/// Entry point. Placeholder shell; the UI workstream replaces it.
+import 'app/composition.dart';
+import 'app/routes.dart';
+
+/// Entry point. Runs on the in-memory fake until the session host is wired in.
 void main() {
-  runApp(const BardApp());
+  runApp(BardApp(composition: Composition.fake()));
 }
 
 /// Root widget of the bard app.
-class BardApp extends StatelessWidget {
-  /// Creates the root widget.
-  const BardApp({super.key});
+class BardApp extends StatefulWidget {
+  /// Creates the app over [composition].
+  const BardApp({super.key, required this.composition});
+
+  /// Injected services.
+  final Composition composition;
+
+  @override
+  State<BardApp> createState() => _BardAppState();
+}
+
+class _BardAppState extends State<BardApp> {
+  late final _router = buildRouter(widget.composition);
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp.router(
       title: 'B.A.R.D. Files',
-      home: Scaffold(body: Center(child: Text('B.A.R.D. Files'))),
+      theme: BardTheme.light(),
+      darkTheme: BardTheme.dark(),
+      routerConfig: _router,
     );
   }
 }
