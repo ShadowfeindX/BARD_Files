@@ -11,6 +11,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - `tool/` checks: dependency-rule check (layer table, unlisted pubspecs, transitive graph of `apps/functions`) and exact-pin check, with unit tests; `tool/check_all.sh` and `tool/test_all.sh` run them locally.
 - GitHub Actions CI on Linux (Proposed in 08-testing.md, approved as plan decision 5): format, analyze, dependency rules, exact pins, tests.
 - Dependency table in 00-overview.md: `backend` row gains `sembast`/`sembast_web` (plan decision 3) and `firebase_core`; dev tooling (`flutter_lints`, `test`, `flutter_test`) allowed in every package.
+- `firebase/rtdb_rules_test/analysis_options.yaml` stops the analyzer inheriting the root options in that standalone folder (fixes a package-resolution warning on Windows).
 - Developer guide: `docs/developer-guide/` with a setup page.
 
 ### Docs
