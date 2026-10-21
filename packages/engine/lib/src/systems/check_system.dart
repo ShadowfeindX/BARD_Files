@@ -248,7 +248,23 @@ final class CheckSystem {
         ),
       );
     }
+    if (dc.abs() > maxEnteredValue) {
+      return _Invalid(
+        Rejection(
+          RejectionCode.invalidValue,
+          'The DC $dc is outside ±$maxEnteredValue.',
+        ),
+      );
+    }
     for (final modifier in command.modifiers) {
+      if (modifier.value.abs() > maxEnteredValue) {
+        return _Invalid(
+          Rejection(
+            RejectionCode.invalidValue,
+            'The modifier "${modifier.label}" is outside ±$maxEnteredValue.',
+          ),
+        );
+      }
       if (modifier.label.trim().isEmpty) {
         return const _Invalid(
           Rejection(

@@ -195,6 +195,27 @@ void main() {
         code(
           RequireCheck(
             entity: vale,
+            attribute: 'DEX',
+            difficulty: const FixedDifficulty(maxEnteredValue + 1),
+          ),
+        ),
+        RejectionCode.invalidValue,
+      );
+      expect(
+        code(
+          RequireCheck(
+            entity: vale,
+            attribute: 'DEX',
+            difficulty: const FixedDifficulty(5),
+            modifiers: const [CheckModifier('Huge', -maxEnteredValue - 1)],
+          ),
+        ),
+        RejectionCode.invalidValue,
+      );
+      expect(
+        code(
+          RequireCheck(
+            entity: vale,
             attribute: 'OCC',
             difficulty: const FixedDifficulty(5),
           ),

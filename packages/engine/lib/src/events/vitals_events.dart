@@ -38,10 +38,15 @@ final class DamageApplied extends VitalsEvent implements Consequence {
 
   /// Returns the event as the GM edited it in review: [newAmount], with the
   /// original amount kept in [overriddenFrom]. Throws an [ArgumentError]
-  /// when [newAmount] is negative, as the command would reject it.
+  /// when [newAmount] is negative or above `maxEnteredValue`, as the command
+  /// would reject it.
   DamageApplied withAmount(int newAmount) {
-    if (newAmount < 0) {
-      throw ArgumentError.value(newAmount, 'newAmount', 'must be 0 or more');
+    if (newAmount < 0 || newAmount > maxEnteredValue) {
+      throw ArgumentError.value(
+        newAmount,
+        'newAmount',
+        'must be between 0 and $maxEnteredValue',
+      );
     }
     return DamageApplied(
       entity: entity,
@@ -112,10 +117,15 @@ final class SanityLost extends VitalsEvent implements Consequence {
 
   /// Returns the event as the GM edited it in review: [newAmount], with the
   /// original amount kept in [overriddenFrom]. Throws an [ArgumentError]
-  /// when [newAmount] is negative, as the command would reject it.
+  /// when [newAmount] is negative or above `maxEnteredValue`, as the command
+  /// would reject it.
   SanityLost withAmount(int newAmount) {
-    if (newAmount < 0) {
-      throw ArgumentError.value(newAmount, 'newAmount', 'must be 0 or more');
+    if (newAmount < 0 || newAmount > maxEnteredValue) {
+      throw ArgumentError.value(
+        newAmount,
+        'newAmount',
+        'must be between 0 and $maxEnteredValue',
+      );
     }
     return SanityLost(
       entity: entity,

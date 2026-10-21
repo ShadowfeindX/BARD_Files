@@ -1,3 +1,4 @@
+import '../checks/check_types.dart';
 import '../commands/commands.dart';
 import '../components/components.dart';
 import '../decision.dart';
@@ -71,11 +72,11 @@ final class VitalsSystem {
         ),
       );
     }
-    if (amount < 0) {
+    if (amount < 0 || amount > maxEnteredValue) {
       return Rejected(
         Rejection(
           RejectionCode.invalidValue,
-          'The amount is $amount; it must be 0 or more.',
+          'The amount is $amount; it must be between 0 and $maxEnteredValue.',
         ),
       );
     }

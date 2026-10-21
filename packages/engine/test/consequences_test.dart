@@ -71,6 +71,23 @@ void main() {
         ),
         RejectionCode.invalidValue,
       );
+      expect(
+        rejection(
+          table.decide(
+            const ApplyDamage(entity: vale, amount: maxEnteredValue + 1),
+          ),
+        ),
+        RejectionCode.invalidValue,
+      );
+      expect(
+        () => const SanityLost(
+          entity: vale,
+          amount: 1,
+          actor: GmActor(),
+          visibility: Public(),
+        ).withAmount(maxEnteredValue + 1),
+        throwsArgumentError,
+      );
     });
   });
 

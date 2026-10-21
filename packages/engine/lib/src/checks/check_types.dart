@@ -40,6 +40,15 @@ final class CategoryDifficulty extends Difficulty {
   String toString() => 'CategoryDifficulty($category)';
 }
 
+/// The largest magnitude the engine accepts for a number the GM types in:
+/// a fixed DC, a modifier, a damage or sanity amount. Proposed.
+///
+/// A check total and an accumulated loss are sums of these. Keeping each part
+/// within 32 bits keeps every sum far below 2^53, so the same value results
+/// on the VM and the web [V-14], and an absurd entry is refused before any
+/// die is drawn (draw-count invariant).
+const int maxEnteredValue = 2147483647;
+
 /// A DC the GM states outright, for example a Cat-Ω value the Handler sets
 /// (G12) or a DC no category matches.
 final class FixedDifficulty extends Difficulty {
