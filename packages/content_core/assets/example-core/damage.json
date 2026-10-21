@@ -1,0 +1,104 @@
+{
+  "categories": [
+    {
+      "key": "F",
+      "name": "Cat-F",
+      "dice": {
+        "type": "dice",
+        "count": 1,
+        "sides": 6,
+        "explode": null
+      },
+      "min": null
+    },
+    {
+      "key": "E",
+      "name": "Cat-E",
+      "dice": {
+        "type": "dice",
+        "count": 1,
+        "sides": 8,
+        "explode": null
+      },
+      "min": 1
+    },
+    {
+      "key": "D",
+      "name": "Cat-D",
+      "dice": {
+        "type": "dice",
+        "count": 1,
+        "sides": 10,
+        "explode": null
+      },
+      "min": 2
+    },
+    {
+      "key": "C",
+      "name": "Cat-C",
+      "dice": {
+        "type": "dice",
+        "count": 1,
+        "sides": 12,
+        "explode": null
+      },
+      "min": 3
+    },
+    {
+      "key": "B",
+      "name": "Cat-B",
+      "dice": {
+        "type": "dice",
+        "count": 2,
+        "sides": 6,
+        "explode": null
+      },
+      "min": 5
+    },
+    {
+      "key": "A",
+      "name": "Cat-A",
+      "dice": {
+        "type": "dice",
+        "count": 2,
+        "sides": 8,
+        "explode": null
+      },
+      "min": 7
+    },
+    {
+      "key": "S",
+      "name": "Cat-S",
+      "dice": {
+        "type": "dice",
+        "count": 2,
+        "sides": 10,
+        "explode": null
+      },
+      "min": 9
+    },
+    {
+      "key": "OMEGA",
+      "name": "Cat-Ω",
+      "dice": null,
+      "min": 11,
+      "minOpenEnded": true,
+      "printedAs": "∞, MIN 11+",
+      "placeholder": true,
+      "gap": "G12 (ruled by R: the Handler decides)",
+      "note": "Handler decides Omega values (R). Printed figures are only a default."
+    }
+  ],
+  "appliesTo": "Weapons used by player characters (R). Enemies and NPCs carry their own values.",
+  "source": "Rulebook p21",
+  "openItems": [
+    {
+      "gap": "G3",
+      "summary": "Whether damage dice explode (the character sheet says yes, capped at MIN)."
+    },
+    {
+      "gap": "G9",
+      "summary": "What MIN means, and whether STR adds to melee damage."
+    }
+  ]
+}

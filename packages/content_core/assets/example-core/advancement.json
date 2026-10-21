@@ -1,0 +1,102 @@
+{
+  "costs": [
+    {
+      "key": "new_proficient",
+      "name": "New Proficient Skill",
+      "xp": 10,
+      "grants": {
+        "type": "dice",
+        "count": 1,
+        "sides": 4,
+        "explode": null
+      }
+    },
+    {
+      "key": "upgrade_expert",
+      "name": "Upgrade to Expert",
+      "xp": 20,
+      "grants": {
+        "type": "dice",
+        "count": 1,
+        "sides": 6,
+        "explode": null
+      }
+    },
+    {
+      "key": "attribute_plus_one",
+      "name": "Attribute +1 (max 10)",
+      "xp": {
+        "type": "op",
+        "op": "mul",
+        "args": [
+          {
+            "type": "const",
+            "value": 10
+          },
+          {
+            "type": "var",
+            "key": "newScore"
+          }
+        ]
+      },
+      "xpNote": "new score × 10"
+    },
+    {
+      "key": "heal_long_term",
+      "name": "Heal Long-Term Affliction/Disorder",
+      "xp": 10,
+      "note": "via treatment"
+    },
+    {
+      "key": "artifact_clearance_limited",
+      "name": "Request Artifact Clearance (Limited)",
+      "xp": 25,
+      "effect": {
+        "placeholder": true,
+        "gap": "G14",
+        "note": "The book does not say what this changes."
+      }
+    },
+    {
+      "key": "tough_hide",
+      "name": "Tough Hide (+1 DR)",
+      "xp": 50,
+      "repeat": {
+        "placeholder": true,
+        "gap": "G14",
+        "note": "'Single use': once per character or repeatable?"
+      }
+    },
+    {
+      "key": "formidable",
+      "name": "Formidable (+3 Health)",
+      "xp": 50,
+      "repeat": {
+        "placeholder": true,
+        "gap": "G14",
+        "note": "Same question."
+      }
+    },
+    {
+      "key": "unshakeable",
+      "name": "Unshakeable (+3 Sanity)",
+      "xp": 50,
+      "repeat": {
+        "placeholder": true,
+        "gap": "G14",
+        "note": "Same question."
+      }
+    }
+  ],
+  "source": "Rulebook p31",
+  "openItems": [
+    {
+      "gap": "G14",
+      "summary": "Single-use purchases and Artifact Clearance."
+    },
+    {
+      "gap": "G3",
+      "summary": "Whether the proficiency dice granted here explode (explode is null)."
+    }
+  ]
+}

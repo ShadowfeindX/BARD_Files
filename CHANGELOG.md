@@ -4,6 +4,11 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Content
+- `content_core` carries the `example-core` sample pack from the project library as the provisional pack (`assets/example-core/`, copied unchanged). `null` values stay `null` (pending D: G1, G3, G5, G9, G15); D's pack replaces it.
+- Annotation stripper `tool/bin/strip_annotations.dart` (`note`, `source`, `openItems`, `placeholder`, `gap`, `*Note`), with tests; reports objects emptied by stripping and annotation-like keys outside the spec list instead of removing them silently.
+- `packages/content_core/README.md`: states the pack is provisional, what `null` means, and how to strip.
+
 ### Workspace
 - Pub workspace with package and app stubs named per the spec: `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, `content_core`, `backend`, `ui_kit`, `apps/bard`, `apps/companion`, `apps/functions`, plus `tool/`.
 - Toolchain pinned to Flutter 3.47.7 / Dart 3.13.5; external dependencies pinned exactly (`signals_flutter` 7.1.0, `go_router` 18.1.1, `app_links` 7.2.2, `yaml` 3.1.4, `flutter_lints` 6.0.0, `test` 1.31.1).

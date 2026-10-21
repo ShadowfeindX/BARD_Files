@@ -1,0 +1,149 @@
+{
+  "categories": [
+    {
+      "key": "physical",
+      "name": "Physical"
+    },
+    {
+      "key": "investigation",
+      "name": "Investigation"
+    },
+    {
+      "key": "technical",
+      "name": "Technical"
+    },
+    {
+      "key": "social",
+      "name": "Social"
+    },
+    {
+      "key": "supernatural",
+      "name": "Supernatural"
+    }
+  ],
+  "categoriesNote": "Exactly five. Organizational only, no effect on any roll (R's ruling).",
+  "attributeSource": "Default attributes come from the Agent Dossier P-01-B (evidence, not canon). D confirms each.",
+  "skills": [
+    {
+      "id": "firearms",
+      "name": "Firearms",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "physical",
+      "attribute": "DEX"
+    },
+    {
+      "id": "stealth",
+      "name": "Stealth",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "physical",
+      "attribute": "DEX"
+    },
+    {
+      "id": "hand_to_hand",
+      "name": "Hand-to-Hand Combat",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "physical",
+      "attribute": "STR"
+    },
+    {
+      "id": "research",
+      "name": "Research",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "investigation",
+      "attribute": "INT"
+    },
+    {
+      "id": "forensics",
+      "name": "Forensics",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "investigation",
+      "attribute": "PER"
+    },
+    {
+      "id": "occult_lore",
+      "name": "Occult Lore",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "investigation",
+      "attribute": "INT"
+    },
+    {
+      "id": "medical_treatment",
+      "name": "Medical Treatment",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "technical",
+      "attribute": "END"
+    },
+    {
+      "id": "alchemy",
+      "name": "Alchemy",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "technical",
+      "attribute": "INT"
+    },
+    {
+      "id": "persuasion",
+      "name": "Persuasion",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "social",
+      "attribute": "CHA"
+    },
+    {
+      "id": "insight",
+      "name": "Insight",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "social",
+      "attribute": null,
+      "attributePlaceholder": {
+        "placeholder": true,
+        "gap": "G15",
+        "note": "No attribute on the dossier. The older 2.1 draft suggests WIS. D decides."
+      }
+    },
+    {
+      "id": "arcane_knowledge",
+      "name": "Arcane Knowledge",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "supernatural",
+      "attribute": "INT"
+    },
+    {
+      "id": "ritual_magic",
+      "name": "Ritual Magic",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": "supernatural",
+      "attribute": "WIL"
+    },
+    {
+      "id": "mind_shielding",
+      "name": "Mind Shielding",
+      "description": "[D to write: the canonical book has no skill descriptions]",
+      "category": null,
+      "attribute": "WIL",
+      "categoryPlaceholder": {
+        "placeholder": true,
+        "gap": "G15",
+        "note": "Named as a prerequisite on p29 but missing from the p19 skill list. D picks the category."
+      }
+    },
+    {
+      "id": "example_old_skill",
+      "name": "Example Old Skill (illustrative deprecation, not real content)",
+      "description": "Shows how a pack marks an entry as going away.",
+      "category": "social",
+      "attribute": "CHA",
+      "deprecated": {
+        "since": "0.0.1",
+        "replacedBy": "skill:persuasion",
+        "removeIn": 1,
+        "note": "Illustrative placeholder, not a real rules change."
+      }
+    }
+  ],
+  "notShownHere": "The book lists 45 skills; this sample has 13 real ones. The Occult-Action-Check asterisk on some skills is not a field: the book leaves it to the Handler.",
+  "openItems": [
+    {
+      "gap": "G15",
+      "summary": "Skill list reconciliation: Mind Shielding, three missing attributes, paired skills."
+    }
+  ]
+}

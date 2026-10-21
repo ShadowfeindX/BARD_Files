@@ -1,0 +1,13 @@
+{
+  "id": "cult_footsoldier",
+  "name": "Cult Footsoldier",
+  "description": "[D to write]",
+  "threatClass": "human:E",
+  "attributes": null,
+  "attributesPlaceholder": {
+    "placeholder": true,
+    "gap": "G11",
+    "note": "An NPC needs attribute numbers or an Evasion/attack value to act. The book gives class totals only."
+  },
+  "note": "'Cult Footsoldier' is a named example for class E on p36 of the book. Health, DR and skills come from the class row in threats.json."
+}

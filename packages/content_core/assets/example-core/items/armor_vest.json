@@ -1,0 +1,13 @@
+{
+  "id": "armor_vest",
+  "name": "Armor Vest (example)",
+  "kind": "armor",
+  "description": "[D to write]",
+  "drModifier": null,
+  "drModifierPlaceholder": {
+    "placeholder": true,
+    "gap": "G8",
+    "note": "Armor has no values in the book. D chooses categories and numbers."
+  },
+  "note": "Shows the open armor question as a missing number, not an invented one."
+}

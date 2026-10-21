@@ -1,0 +1,14 @@
+{
+  "language": "en",
+  "attr.STR.description": "[copy from rulebook p13]",
+  "attr.DEX.description": "[copy from rulebook p13]",
+  "attr.END.description": "[copy from rulebook p13]",
+  "attr.PER.description": "[copy from rulebook p13]",
+  "attr.INT.description": "[copy from rulebook p13]",
+  "attr.WIS.description": "[copy from rulebook p13]",
+  "attr.CHA.description": "[copy from rulebook p13]",
+  "attr.WIL.description": "[copy from rulebook p13]",
+  "attr.LCK.description": "[copy from rulebook p13]",
+  "category.OMEGA": "Cat-Ω",
+  "_note": "Display text lives here so wording can change without touching rules. Full narration templates for the log are future work."
+}

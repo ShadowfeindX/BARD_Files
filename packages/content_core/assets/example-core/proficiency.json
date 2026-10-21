@@ -1,0 +1,41 @@
+{
+  "tiers": [
+    {
+      "key": "untrained",
+      "name": "Untrained",
+      "bonus": null
+    },
+    {
+      "key": "proficient",
+      "name": "Proficient",
+      "bonus": {
+        "type": "dice",
+        "count": 1,
+        "sides": 4,
+        "explode": null
+      }
+    },
+    {
+      "key": "expert",
+      "name": "Expert",
+      "bonus": {
+        "type": "dice",
+        "count": 1,
+        "sides": 6,
+        "explode": null
+      }
+    }
+  ],
+  "creation": {
+    "proficient": 3,
+    "expert": 1,
+    "source": "Rulebook p13"
+  },
+  "decided": "Proficiency is an extra die (R, G16): +1d4 Proficient, +1d6 Expert. The older flat +3/+5 is stale.",
+  "openItems": [
+    {
+      "gap": "G3",
+      "summary": "Whether the proficiency die can explode. Book p11 says it does not. Every explode flag that is null in this pack means 'D has not ruled' (G3)."
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "categories": [
+    {
+      "key": "F",
+      "name": "Cat-F",
+      "dc": 3
+    },
+    {
+      "key": "E",
+      "name": "Cat-E",
+      "dc": 5
+    },
+    {
+      "key": "D",
+      "name": "Cat-D",
+      "dc": 7
+    },
+    {
+      "key": "C",
+      "name": "Cat-C",
+      "dc": 10
+    },
+    {
+      "key": "B",
+      "name": "Cat-B",
+      "dc": 13
+    },
+    {
+      "key": "A",
+      "name": "Cat-A",
+      "dc": 17
+    },
+    {
+      "key": "S",
+      "name": "Cat-S",
+      "dc": 21
+    },
+    {
+      "key": "OMEGA",
+      "name": "Cat-Ω",
+      "dc": 25
+    }
+  ],
+  "checkRules": {
+    "primaryDie": {
+      "type": "dice",
+      "count": 1,
+      "sides": 6,
+      "explode": true
+    },
+    "partialSuccess": {
+      "withinPointsBelowDc": 2,
+      "source": "Rulebook p11"
+    },
+    "fumble": {
+      "atOrBelowFractionOfDc": 0.25,
+      "source": "Rulebook p11",
+      "basis": {
+        "placeholder": true,
+        "gap": "G1",
+        "note": "Not decided: does 25% apply to the die alone or the final total, and how is it rounded?"
+      }
+    },
+    "luckAdvantage": {
+      "extraPrimaryDiceFrom": "LCK",
+      "keep": "bestTotal",
+      "grantedBy": {
+        "placeholder": true,
+        "gap": "G2",
+        "note": "The book never says what grants advantage, and never defines disadvantage."
+      }
+    },
+    "assistance": {
+      "gateCategory": "D",
+      "bonus": {
+        "type": "sum",
+        "terms": [
+          {
+            "type": "dice",
+            "count": 1,
+            "sides": 6,
+            "explode": null
+          },
+          {
+            "type": "var",
+            "key": "helperSkillBonus"
+          }
+        ]
+      },
+      "cap": {
+        "placeholder": true,
+        "gap": "G4",
+        "note": "No limit on helpers in the book; D may want one."
+      },
+      "source": "Rulebook p10"
+    },
+    "_shapeNote": "The spec says these values come from the pack but does not yet name the file. They sit here as a proposal; D and R can move them."
+  },
+  "openItems": [
+    {
+      "gap": "G13",
+      "summary": "The book also uses old names (Tough DC 9, Moderate, Advanced, Extreme 21). DC 9 is not a category above, so those uses are not represented."
+    },
+    {
+      "gap": "G3",
+      "summary": "Which dice explode. Only the primary die is marked here, as printed on p11."
+    },
+    {
+      "gap": "G1",
+      "summary": "Fumble basis."
+    },
+    {
+      "gap": "G2",
+      "summary": "Advantage and disadvantage."
+    },
+    {
+      "gap": "G4",
+      "summary": "Assistance cap."
+    }
+  ]
+}

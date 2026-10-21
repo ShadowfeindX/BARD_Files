@@ -1,0 +1,27 @@
+{
+  "conditions": [
+    {
+      "id": "bleeding",
+      "name": "Bleeding",
+      "kind": "condition",
+      "description": "[D to write]",
+      "effects": []
+    },
+    {
+      "id": "stunned",
+      "name": "Stunned",
+      "kind": "condition",
+      "description": "[D to write]",
+      "effects": []
+    },
+    {
+      "id": "broken_bones",
+      "name": "Broken Bones",
+      "kind": "affliction",
+      "description": "[D to write]",
+      "effects": []
+    }
+  ],
+  "note": "The book names these as examples (p15) with no numbers. Shape only: name, description, optional numeric effects. GMs add their own.",
+  "openItems": []
+}
