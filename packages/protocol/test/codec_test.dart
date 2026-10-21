@@ -461,7 +461,7 @@ void main() {
           from: 'al_vale',
         ),
       );
-      final back = (codec.decode(frame).message as Request).command;
+      final back = (codec.decode(frame).message as envelope.Request).command;
       expect(decodeCommand(back), sampleCommands['applyDamage']);
     });
   });
