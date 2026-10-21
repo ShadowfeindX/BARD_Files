@@ -167,12 +167,12 @@ Who can do what (shown in the emulator [V-38], except the `meta` and `signaling`
 | `requests` | reads and clears | creates under own uid with `from == auth.uid`; cannot read requests at all, own included | — |
 | `events`, `textlog` | reads every audience; appends, never overwrites or deletes | reads `public` and `alias:<own aliasId>` only | — |
 | `head` | reads and writes until locked | — | — |
-| `phone` | reads every box, delivers into any box | reads and writes own box | — |
+| `phone` | reads every box, delivers into any box | reads own box, appends to it (create-only: no client edits or deletes a message) | — |
 | `signaling` | reads (as probed); writes any uid's branch until locked | reads (as probed); writes own uid's branch until locked | — |
 | `presence/$op` | reads (writes own uid only if also a member) | reads; writes own uid | — |
 | `inbox/$uid` | — | owner reads and deletes | functions write (admin REST) |
 
-After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone [V-38]; signaling is frozen too (ruling 3; unproven); presence stays writable, and the inbox is written only by functions, so the lock does not affect it; reads continue. Anonymous accounts can be members and write requests, and cannot create operations or write GM-only paths.
+After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone [V-38]; signaling is frozen too (ruling 3; unproven); presence stays writable while the lock holds (the post-archive clean-up below then deletes it), and the inbox is written only by functions, so the lock does not affect it; reads continue. Anonymous accounts can be members and write requests, and cannot create operations or write GM-only paths.
 
 What probe 8.6 changed in the earlier draft:
 
@@ -190,7 +190,7 @@ The probe found two weaknesses and one open question [V-38]. R's answer, verbati
 
 1. **No delete on `meta`.** In the prototype, the GM could delete `meta` of an unlocked operation, and any full account could then recreate it naming itself GM. Ruling: `meta` cannot be deleted; status and lock are edited, never removed.
 2. **Signaling keyed by uid.** In the prototype, any member could overwrite any `signaling/$peer`, including another player's offer. Ruling: signaling lives under `signaling/$uid/...`, written only by that uid or the GM. Read scope is unchanged from the probed rules (members and the GM). Only matters for P2P mode, which is built last (09-4).
-3. **Lock freezes signaling.** `meta/locked = true` also freezes signaling writes. Presence stays writable after archive (as recommended); the inbox is written only by functions, so the lock does not touch it.
+3. **Lock freezes signaling.** `meta/locked = true` also freezes signaling writes. Presence stays writable under the lock (as recommended) until the post-archive clean-up deletes it; the inbox is written only by functions, so the lock does not touch it.
 
 Not covered by the probe (carry to implementation): rules deployed to a real project with signed tokens, custom claims in RTDB rules, member removal, GM `meta` edits after archive, payload size limits, load, and `firebase_dart` listeners against these rules [V-38].
 

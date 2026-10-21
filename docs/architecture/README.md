@@ -40,7 +40,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | Agent | A player's account. Owns one or more aliases. |
 | Alias | A character identity belonging to an agent, locked to one campaign at a time. |
 | Campaign | A long-running game run by one GM, made of operations. |
-| Operation | One gameplay session (the rulebook's "mission"). Has its own event log. |
+| Operation | A whole campaign; persists across missions and has its own event log. A mission is a segment of play inside an operation ([11](11-supplemental-features.md)). |
 | Handler / GM | The rulebook calls the GM the Handler. This spec uses GM. |
 | Command | A request to change the game ("attack this target", "require a check"). May be rejected. |
 | Event | A fact that happened ("check resolved: 11, success"). Never changes once written. |
