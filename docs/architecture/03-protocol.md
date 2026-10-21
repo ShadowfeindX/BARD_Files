@@ -62,11 +62,11 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 | Message | Body |
 |---|---|
 | `hello` | `agentId`, `aliasId?`, `kind?` (`full` default, or `anonymous`, as in 06's account model; advisory, the host decides from the verified identity), `authProof?`, `lastSeq` (0 if none) |
-| `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`), `events?` (from the snapshot's `seq + 1`, or the client's `lastSeq + 1` without a snapshot) |
+| `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`) and `events?` (both allowed by the message; the session host sends neither yet and follows the welcome with `events` frames from the client's `lastSeq + 1`) |
 | `refused` | `reason`, `message?`, and one of `protocolMajor` / `engineMajor` / `requiredEngine` that matches the reason |
 | `request` | `requestId`, `command` |
 | `rejected` | `requestId`, `code`, `message?` |
-| `events` | `events` (non-empty). The envelope `seq` is the first event's `seq`; the rest are consecutive |
+| `events` | `events` (non-empty): one entry per event, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`. Entry shapes are in [04-session.md](04-session.md#event-entries-proposed) |
 | `resync` | `lastSeq` |
 | `textlog` | `archive` (archived operation id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
 | `presence` | `status`: `online`, `away` or `typing` |

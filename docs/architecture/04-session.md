@@ -110,6 +110,20 @@ Every interface has an in-memory implementation in `session` itself, used by tes
 
 **Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per operation, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long operation is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
 
+### Event entries (Proposed)
+
+The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+
+| Entry | Sent when | JSON |
+|---|---|---|
+| full | the recipient may read the event | `{"seq": n, "event": {...}}`, plus `"req": "<requestId>"` for the agent whose request caused it (this is the acknowledgement of a request; redacted and hidden entries carry it too) |
+| redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
+| hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
+
+A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is); the alternative, per-recipient gaps, would break the consecutive-`seq` rule. To be confirmed by R.
+
+Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
+
 ## Play modes
 
 All modes run the same loop; they differ only in which `Transport` and whether a `RelayActor` is attached.

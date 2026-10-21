@@ -56,9 +56,20 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Command-line validator: `dart run engine:validate_pack <packDir>`, run on the generated pack (`tool/build_pack.sh`); the provisional pack loads with no errors. The engine tests load the generated pack too, so the old `*Placeholder` slots are gone from the parsers.
 - Developer guide page `docs/developer-guide/packs.md`.
 
+### Protocol envelope
+- `protocol_envelope` package (SDK only): envelope, eleven message types, refusal reasons, `hello` version negotiation (SemVer pre-releases accepted), and a JSON codec behind an `EnvelopeCodec` interface, with round-trip, malformed-input, negotiation and fixture tests.
+
 ### Session
 - `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
 - Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
+- `OperationHost`: the GM's canonical loop (authorize, dedupe by request id, decide, hold consequences for review, stamp `seq`, store, filter per perspective, broadcast), with the F2 review gate (`confirmPending` with edit, or auto-confirm), perspective views (GM, player, table), and reopening from the store.
+- `OperationParticipant`: non-canonical engine fed by filtered entries, request retry after reconnect, `resync` on a gap, redacted and hidden entries recorded without evolving.
+- Authorization on the identity verified at `hello` (never the envelope `from`); admission refusals (not invited, banned, alias locked, anonymous second alias); anonymous accounts cannot host.
+- Entity ids never repeat after a reopen; RNG draws made by rejected or held commands are persisted so a reopen cannot reuse them; a retried request is recognised across a reopen (stored events record their origin); participant request ids are unique per session.
+- Known gaps are listed in `docs/developer-guide/session.md` (admission not persisted until the store lands, sequential broadcast inside the commit).
+- The host holds exactly the engine's `Consequence` events for review and constrains review edits to the same consequence and entity; players receive a projection of each event (no `overriddenFrom`, multi-alias events narrowed to the viewer); text-log lines come from the engine `Narrator` per audience; redacted and hidden entries acknowledge the sender's request.
+- Interfaces with in-memory implementations: `Transport`/`Link` (with a frame filter for tests), `EventStore`, `Clock`; `Mailbox`; `ConnectionActor`.
+- `EngineCodec` interface in `protocol`, which also re-exports `protocol_envelope`; `PackRef` in the envelope renamed `PackPin` to avoid clashing with the engine's.
 
 ### Protocol codecs
 - `protocol` package: hand-written JSON codecs (`encodeCommand`/`decodeCommand`, `encodeEvent`/`decodeEvent`) for every engine command and event, including the stat-gated broadcast; versioned shapes (`v`), stable `type` names, 1:1 with the full event (per-perspective stripping stays in the session).
