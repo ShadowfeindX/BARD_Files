@@ -480,15 +480,46 @@ void main() {
       expect(() => table.decide(ResolveCheck(check: check)), throwsStateError);
     });
 
-    test('an RNG out of step with the state is refused before drawing', () {
+    test('an RNG ahead of the state rolls on from where it is', () {
       final table = Table(faces: [1, 1, 1]);
       final check = requireOnly(table, firearms());
-      table.rng.rollDie(6); // Drawn outside the engine.
+      table.rng.rollDie(6); // Drawn but recorded nowhere (a held batch).
+      final events = table.run(ResolveCheck(check: check));
+      final resolved = events.whereType<CheckResolved>().single;
+      expect(resolved.draws.start, 1);
+      expect(table.state.rng.drawCount, resolved.draws.end);
+    });
+
+    test('an RNG behind the state is refused before drawing', () {
+      final table = Table(faces: [1, 1, 1, 1]);
+      table.run(ResolveCheck(check: requireOnly(table, firearms())));
+      final check = requireOnly(table, firearms());
+      final behind = ScriptedRng([1, 1]);
       expect(
-        rejection(table.decide(ResolveCheck(check: check))),
+        rejection(
+          table.engine.decide(
+            table.state,
+            ResolveCheck(check: check),
+            behind,
+            SequentialIdSource(start: 100),
+          ),
+        ),
         RejectionCode.rngOutOfSync,
       );
-      expect(table.rng.drawCount, 1);
+      expect(behind.drawCount, 0);
+    });
+
+    test('a rolling event with a lower range never moves the count back', () {
+      final table = Table(faces: [1, 1, 1, 1]);
+      final first = table
+          .run(ResolveCheck(check: requireOnly(table, firearms())))
+          .whereType<CheckResolved>()
+          .single;
+      table.run(ResolveCheck(check: requireOnly(table, firearms())));
+      final count = table.state.rng.drawCount;
+      expect(count, greaterThan(first.draws.end));
+      // Confirming an older batch after later rolls.
+      expect(table.engine.evolve(table.state, first).rng.drawCount, count);
     });
   });
 }

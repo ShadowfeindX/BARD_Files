@@ -93,8 +93,9 @@ final class Engine {
   /// Applies [event] to [state]. Total and deterministic: no RNG, no ids, no
   /// failure path. Every client runs it.
   ///
-  /// A [RollingEvent] also sets the draw count to the end of its range, here
-  /// in one place for every rolling event.
+  /// A [RollingEvent] also sets the draw count to the end of its range when
+  /// that is past the current count, here in one place for every rolling
+  /// event. The count never moves back.
   OperationState evolve(OperationState state, Event event) {
     final next = switch (event) {
       OperationEvent() => _operation.evolve(state, event),
@@ -104,9 +105,10 @@ final class Engine {
       ConditionEvent() => _condition.evolve(state, event),
     };
     return switch (event) {
-      RollingEvent(:final draws) => next.copyWith(
-        rng: RngState(drawCount: draws.end),
-      ),
+      // The highest end so far: a held consequence batch confirmed after
+      // later rolls has a lower range, and must not move the count back.
+      RollingEvent(:final draws) when draws.end > next.rng.drawCount =>
+        next.copyWith(rng: RngState(drawCount: draws.end)),
       _ => next,
     };
   }

@@ -76,8 +76,8 @@ enum RejectionCode {
   /// rules).
   unavailable,
 
-  /// The RNG handed to `decide` is not at the draw count the state records,
-  /// so a roll would not be auditable. Nothing was drawn.
+  /// The RNG handed to `decide` is behind the draw count the state records,
+  /// so a roll would reuse dice already recorded. Nothing was drawn.
   rngOutOfSync,
 }
 

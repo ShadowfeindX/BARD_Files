@@ -296,12 +296,15 @@ final class CheckSystem {
 
   /// Checks everything a roll needs, without drawing.
   _Checked<_Roll> _prepareRoll(OperationState state, CheckSpec spec, Rng rng) {
+    // The RNG may be ahead of the state: draws used by a consequence batch
+    // still held for review, or recorded by the host before a crash, are
+    // never handed out again. Behind would reuse dice, so it is refused.
     final expected = state.rng.drawCount;
-    if (rng.drawCount != expected) {
+    if (rng.drawCount < expected) {
       return _Invalid(
         Rejection(
           RejectionCode.rngOutOfSync,
-          'The RNG is at draw ${rng.drawCount} but the operation is at '
+          'The RNG is at draw ${rng.drawCount}, behind the operation at '
           'draw $expected.',
         ),
       );
