@@ -91,7 +91,7 @@ void main() {
       final t = table();
       expect(reject(t, send(valeParty, gm, '  ')), RejectionCode.invalidValue);
       expect(
-        reject(t, send(valeParty, gm, '\u200B \u2060\uFEFF')),
+        reject(t, send(valeParty, gm, '\u200B \u2060\uFEFF\u00AD\u202E\u3164')),
         RejectionCode.invalidValue,
       );
       expect(
@@ -116,22 +116,22 @@ void main() {
       const asVale = AliasActor(Table.valeAlias);
       expect(
         reject(t, send(hallParty, gm, 'x', actor: asVale)),
-        RejectionCode.unavailable,
+        RejectionCode.invalidValue,
       );
       expect(
         reject(t, send(gm, hallParty, 'x', actor: asVale)),
-        RejectionCode.unavailable,
+        RejectionCode.invalidValue,
       );
       expect(
         reject(t, send(watcherParty, hallParty, 'x', actor: asVale)),
-        RejectionCode.unavailable,
+        RejectionCode.invalidValue,
       );
     });
 
     test('the Handler cannot send as a player', () {
       expect(
         reject(table(), send(valeParty, gm, 'x', actor: const GmActor())),
-        RejectionCode.unavailable,
+        RejectionCode.invalidValue,
       );
     });
 

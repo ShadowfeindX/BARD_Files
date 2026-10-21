@@ -139,4 +139,11 @@ void main() {
     await t.pump();
     expect(sent, [('gm', 'Hello')]);
   });
+
+  testWidgets('invisible-only text cannot be sent', (t) async {
+    await t.pumpWidget(_panel(signal(_threads), (_, _) {}));
+    await t.enterText(find.byType(TextField), '\u200B\u00AD\u3164 \u202E');
+    await t.pump();
+    expect(_sendButton(t).onPressed, isNull);
+  });
 }

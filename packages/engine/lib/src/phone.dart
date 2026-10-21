@@ -64,3 +64,12 @@ final class PhoneNpc extends PhoneParty {
   @override
   String toString() => 'PhoneNpc(${entity.value})';
 }
+
+/// Characters that show nothing: zero-width space and joiners, word joiner,
+/// byte-order mark, soft hyphen, bidi marks and embeddings, invisible math
+/// operators, Hangul fillers and variation selectors. Text made only of these
+/// and whitespace counts as empty. The UI mirrors this list.
+final RegExp invisiblePhoneChars = RegExp(
+  '[\u00AD\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064'
+  '\u3164\uFE00-\uFE0F\uFEFF\uFFA0]',
+);

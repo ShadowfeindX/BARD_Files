@@ -121,7 +121,7 @@ final class MessagingSystem {
     };
     if (!allowed) {
       return _reject(
-        RejectionCode.unavailable,
+        RejectionCode.invalidValue,
         '${command.actor} cannot send as $from.',
       );
     }
@@ -139,7 +139,10 @@ final class MessagingSystem {
     }
     for (final party in [from, to]) {
       if (!_exists(state, party)) {
-        return _reject(RejectionCode.unknownEntity, 'Unknown party $party.');
+        return _reject(
+          RejectionCode.unknownEntity,
+          'That recipient is not available.',
+        );
       }
     }
     final aliases = {
@@ -174,7 +177,8 @@ final class MessagingSystem {
       Rejected(Rejection(code, message));
 
   /// Whether [text] shows nothing: only whitespace and invisible format
-  /// characters (zero-width space, joiners, word joiner, byte-order mark).
+  /// characters. An explicit list rather than `\p{Cf}`, which can differ by
+  /// Unicode version between the VM and JS.
   bool _isBlank(String text) =>
-      text.replaceAll(RegExp('[\u200B-\u200D\u2060\uFEFF]'), '').trim().isEmpty;
+      text.replaceAll(invisiblePhoneChars, '').trim().isEmpty;
 }

@@ -33,6 +33,14 @@ class PhoneThreadData {
   final List<PhoneMessageData> messages;
 }
 
+/// Mirrors the engine's `invisiblePhoneChars` (ui_kit cannot import the
+/// engine): text made only of these and whitespace is refused, so Send stays
+/// off for it.
+final _invisible = RegExp(
+  '[\u00AD\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064'
+  '\u3164\uFE00-\uFE0F\uFEFF\uFFA0]',
+);
+
 /// The in-game phone: a thread list, the open thread and a compose box.
 ///
 /// It shows what it is given and sends nothing itself: [onSend] reports the
@@ -107,7 +115,7 @@ class _PhonePanelState extends State<PhonePanel> {
 
   bool get _canSend =>
       _open != null &&
-      _controller.text.trim().isNotEmpty &&
+      _controller.text.replaceAll(_invisible, '').trim().isNotEmpty &&
       _length <= widget.maxLength;
 
   void _send() {
