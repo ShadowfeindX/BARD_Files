@@ -4,7 +4,9 @@ import '../decision.dart';
 import '../events/events.dart';
 import '../expr/condition.dart';
 import '../expr/evaluate.dart';
+import '../actor.dart';
 import '../pack/rules_pack.dart';
+import '../phone.dart';
 import '../state/operation_state.dart';
 import '../visibility.dart';
 
@@ -24,12 +26,15 @@ final class MessagingSystem {
   Decision decide(OperationState state, MessagingCommand command) =>
       switch (command) {
         BroadcastToQualifying() => _broadcast(state, command),
+        SendPhoneMessage() => _phone(state, command),
       };
 
   /// Applies a [MessagingEvent].
   OperationState evolve(OperationState state, MessagingEvent event) =>
       switch (event) {
-        BroadcastEvaluated() || BroadcastDelivered() => state,
+        BroadcastEvaluated() ||
+        BroadcastDelivered() ||
+        PhoneMessageSent() => state,
       };
 
   /// Every alias's result against [condition], without sending anything.
@@ -92,4 +97,88 @@ final class MessagingSystem {
         ),
     ]);
   }
+
+  Decision _phone(OperationState state, SendPhoneMessage command) {
+    final text = command.text;
+    if (_isBlank(text)) {
+      return _reject(RejectionCode.invalidValue, 'The message is empty.');
+    }
+    if (text.length > maxPhoneTextUnits) {
+      return _reject(
+        RejectionCode.invalidValue,
+        'The message is longer than $maxPhoneTextUnits characters.',
+      );
+    }
+    final from = command.from;
+    final to = command.to;
+    // The sender must be the actor: a player speaks only as their own alias,
+    // the Handler only as themselves or a GM-run entity.
+    final allowed = switch ((command.actor, from)) {
+      (AliasActor(:final alias), PhoneAlias(alias: final sender)) =>
+        alias == sender,
+      (GmActor(), PhoneGm() || PhoneNpc()) => true,
+      _ => false,
+    };
+    if (!allowed) {
+      return _reject(
+        RejectionCode.invalidValue,
+        '${command.actor} cannot send as $from.',
+      );
+    }
+    // Who may talk to whom: aliases to anyone but themselves; the Handler and
+    // GM-run entities only to aliases.
+    final pairing = switch ((from, to)) {
+      (PhoneAlias(:final alias), PhoneAlias(alias: final other)) =>
+        alias != other,
+      (PhoneAlias(), _) => true,
+      (_, PhoneAlias()) => true,
+      _ => false,
+    };
+    if (!pairing) {
+      return _reject(RejectionCode.invalidValue, '$from cannot message $to.');
+    }
+    for (final party in [from, to]) {
+      if (!_exists(state, party)) {
+        return _reject(
+          RejectionCode.unknownEntity,
+          'That recipient is not available.',
+        );
+      }
+    }
+    final aliases = {
+      for (final party in [from, to])
+        if (party is PhoneAlias) party.alias,
+    };
+    return Accepted([
+      PhoneMessageSent(
+        from: from,
+        to: to,
+        text: text,
+        actor: command.actor,
+        visibility: AliasesOnly(aliases),
+      ),
+    ]);
+  }
+
+  bool _exists(OperationState state, PhoneParty party) {
+    final identities = state.stores.all(Identity.componentType);
+    return switch (party) {
+      PhoneGm() => true,
+      PhoneAlias(:final alias) => identities.values.any(
+        (i) => i.ownerAlias == alias,
+      ),
+      PhoneNpc(:final entity) =>
+        identities[entity]?.ownerAlias == null &&
+            identities.containsKey(entity),
+    };
+  }
+
+  Decision _reject(RejectionCode code, String message) =>
+      Rejected(Rejection(code, message));
+
+  /// Whether [text] shows nothing: only whitespace and invisible format
+  /// characters. An explicit list rather than `\p{Cf}`, which can differ by
+  /// Unicode version between the VM and JS.
+  bool _isBlank(String text) =>
+      text.replaceAll(invisiblePhoneChars, '').trim().isEmpty;
 }

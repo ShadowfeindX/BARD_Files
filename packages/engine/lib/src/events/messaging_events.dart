@@ -131,3 +131,50 @@ final class BroadcastDelivered extends MessagingEvent {
   @override
   String toString() => 'BroadcastDelivered("$text", $visibility)';
 }
+
+/// A phone message sent (04 §In-game phone).
+///
+/// Visible to the sending and receiving aliases; the GM sees every message.
+/// The record is the log entry, so messages survive reconnects and can be
+/// referenced later.
+final class PhoneMessageSent extends MessagingEvent {
+  /// Creates the event.
+  const PhoneMessageSent({
+    required this.from,
+    required this.to,
+    required this.text,
+    required this.actor,
+    required this.visibility,
+  });
+
+  /// The sender.
+  final PhoneParty from;
+
+  /// The recipient.
+  final PhoneParty to;
+
+  /// The message.
+  final String text;
+
+  @override
+  final Actor actor;
+
+  @override
+  final Visibility visibility;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PhoneMessageSent &&
+      other.from == from &&
+      other.to == to &&
+      other.text == text &&
+      other.actor == actor &&
+      other.visibility == visibility;
+
+  @override
+  int get hashCode =>
+      Object.hash(PhoneMessageSent, from, to, text, actor, visibility);
+
+  @override
+  String toString() => 'PhoneMessageSent($from to $to)';
+}

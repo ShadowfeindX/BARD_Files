@@ -1,0 +1,1 @@
+{"p":1,"e":"1.4.0","op":"op_01J8Z3","from":"gm","type":"welcome","body":{"settings":{"autoConfirm":false},"pack":{"id":"core","version":"0.1.0","contentHash":"sha256:ab"},"snapshot":{"seq":1000,"state":{"entities":[]}},"events":[{"seq":1001,"type":"x"}]}}

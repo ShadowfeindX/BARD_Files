@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "declineRequest",
+  "actor": {
+    "kind": "gm"
+  },
+  "request": "r1",
+  "reason": "Not now"
+}

@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "type": "requestAction",
+  "actor": {
+    "kind": "alias",
+    "alias": "al_vale"
+  },
+  "entity": "e1",
+  "description": "Shoot the lock",
+  "suggestedSkill": "firearms"
+}

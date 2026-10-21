@@ -1,0 +1,259 @@
+import 'package:engine/engine.dart';
+import 'package:protocol_envelope/protocol_envelope.dart';
+
+import 'json_read.dart';
+import 'shared_codec.dart';
+
+const _commandTypes = {
+  'startOperation',
+  'createAgent',
+  'requestAction',
+  'declineRequest',
+  'requireCheck',
+  'resolveCheck',
+  'applyCondition',
+  'clearCondition',
+  'applyDamage',
+  'applySanityLoss',
+  'broadcastToQualifying',
+  'sendPhoneMessage',
+};
+
+/// Encodes an engine [Command] as JSON for the `request` message body.
+///
+/// Every command carries `v` (shape version), `type` (a stable name, the
+/// class name in lower camel case), the `actor` and its own fields. Hand
+/// written, no code generation (P6).
+JsonMap encodeCommand(Command command) {
+  final body = switch (command) {
+    StartOperation(:final operationId, :final settings) => (
+      'startOperation',
+      {'operationId': operationId, 'settings': encodeSettings(settings)},
+    ),
+    CreateAgent(
+      :final name,
+      :final attributes,
+      :final skills,
+      :final ownerAlias,
+    ) =>
+      (
+        'createAgent',
+        {
+          'name': name,
+          'attributes': sortedKeys(attributes.asMap()),
+          'skills': sortedKeys(skills.asMap()),
+          'ownerAlias': ownerAlias?.value,
+        },
+      ),
+    RequestAction(:final entity, :final description, :final suggestedSkill) => (
+      'requestAction',
+      {
+        'entity': entity.value,
+        'description': description,
+        'suggestedSkill': suggestedSkill,
+      },
+    ),
+    DeclineRequest(:final request, :final reason) => (
+      'declineRequest',
+      {'request': request.value, 'reason': reason},
+    ),
+    RequireCheck(
+      :final entity,
+      :final attribute,
+      :final skill,
+      :final difficulty,
+      :final modifiers,
+      :final request,
+      :final visibility,
+    ) =>
+      (
+        'requireCheck',
+        {
+          'entity': entity.value,
+          'attribute': attribute,
+          'skill': skill,
+          'difficulty': encodeDifficulty(difficulty),
+          'modifiers': encodeModifiers(modifiers),
+          'request': request?.value,
+          'visibility': encodeVisibility(visibility),
+        },
+      ),
+    ResolveCheck(:final check) => ('resolveCheck', {'check': check.value}),
+    ApplyCondition(
+      :final entity,
+      :final condition,
+      :final check,
+      :final visibility,
+    ) =>
+      (
+        'applyCondition',
+        {
+          'entity': entity.value,
+          'condition': condition,
+          'check': check?.value,
+          'visibility': encodeVisibility(visibility),
+        },
+      ),
+    ClearCondition(:final entity, :final condition, :final visibility) => (
+      'clearCondition',
+      {
+        'entity': entity.value,
+        'condition': condition,
+        'visibility': encodeVisibility(visibility),
+      },
+    ),
+    ApplyDamage(
+      :final entity,
+      :final amount,
+      :final check,
+      :final visibility,
+    ) =>
+      (
+        'applyDamage',
+        {
+          'entity': entity.value,
+          'amount': amount,
+          'check': check?.value,
+          'visibility': encodeVisibility(visibility),
+        },
+      ),
+    ApplySanityLoss(
+      :final entity,
+      :final amount,
+      :final check,
+      :final visibility,
+    ) =>
+      (
+        'applySanityLoss',
+        {
+          'entity': entity.value,
+          'amount': amount,
+          'check': check?.value,
+          'visibility': encodeVisibility(visibility),
+        },
+      ),
+    SendPhoneMessage(:final from, :final to, :final text) => (
+      'sendPhoneMessage',
+      {'from': encodeParty(from), 'to': encodeParty(to), 'text': text},
+    ),
+    BroadcastToQualifying(:final text, :final condition) => (
+      'broadcastToQualifying',
+      {'text': text, 'condition': encodeCondition(condition)},
+    ),
+  };
+  return {
+    'v': shapeVersion,
+    'type': body.$1,
+    'actor': encodeActor(command.actor),
+    ...body.$2,
+  };
+}
+
+/// Decodes a command from the JSON [encodeCommand] writes.
+///
+/// Throws [UnknownTypeException] for a `type` this build does not know and
+/// [ProtocolFormatException] for anything malformed. Unknown extra fields are
+/// ignored (additive changes within a major).
+Command decodeCommand(Object? json) {
+  final map = asMap(json, 'command');
+  checkJsonDepth(map);
+  checkShapeVersion(map);
+  // Type first, so a type from a later minor is reported as unknown even when
+  // it also uses an actor or visibility kind this build does not know.
+  final type = map.string('type');
+  if (!_commandTypes.contains(type)) {
+    throw UnknownTypeException(type, 'command');
+  }
+  final actor = decodeActor(map.object('actor'));
+  return guarded('command', () {
+    switch (type) {
+      case 'startOperation':
+        return StartOperation(
+          operationId: map.string('operationId'),
+          settings: decodeSettings(map.object('settings')),
+          actor: actor,
+        );
+      case 'createAgent':
+        final owner = map.optString('ownerAlias');
+        return CreateAgent(
+          name: map.string('name'),
+          attributes: map.intMap('attributes'),
+          skills: map.stringMap('skills'),
+          ownerAlias: owner == null ? null : AliasId(owner),
+          actor: actor,
+        );
+      case 'requestAction':
+        return RequestAction(
+          entity: EntityId(map.string('entity')),
+          description: map.string('description'),
+          suggestedSkill: map.optString('suggestedSkill'),
+          actor: actor,
+        );
+      case 'declineRequest':
+        return DeclineRequest(
+          request: RequestId(map.string('request')),
+          reason: map.optString('reason'),
+          actor: actor,
+        );
+      case 'requireCheck':
+        return RequireCheck(
+          entity: EntityId(map.string('entity')),
+          attribute: map.optString('attribute'),
+          skill: map.optString('skill'),
+          difficulty: decodeDifficulty(map.object('difficulty')),
+          modifiers: decodeModifiers(map, 'modifiers'),
+          request: optRequest(map, 'request'),
+          visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'resolveCheck':
+        return ResolveCheck(check: CheckId(map.string('check')), actor: actor);
+      case 'applyCondition':
+        return ApplyCondition(
+          entity: EntityId(map.string('entity')),
+          condition: map.string('condition'),
+          check: optCheck(map, 'check'),
+          visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'clearCondition':
+        return ClearCondition(
+          entity: EntityId(map.string('entity')),
+          condition: map.string('condition'),
+          visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'applyDamage':
+        return ApplyDamage(
+          entity: EntityId(map.string('entity')),
+          amount: map.integer('amount'),
+          check: optCheck(map, 'check'),
+          visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'applySanityLoss':
+        return ApplySanityLoss(
+          entity: EntityId(map.string('entity')),
+          amount: map.integer('amount'),
+          check: optCheck(map, 'check'),
+          visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'sendPhoneMessage':
+        return SendPhoneMessage(
+          from: decodeParty(map.object('from')),
+          to: decodeParty(map.object('to')),
+          text: decodePhoneText(map),
+          actor: actor,
+        );
+      case 'broadcastToQualifying':
+        return BroadcastToQualifying(
+          text: map.string('text'),
+          condition: decodeConditionField(map, 'condition'),
+          actor: actor,
+        );
+      case final other:
+        throw UnknownTypeException(other, 'command');
+    }
+  });
+}

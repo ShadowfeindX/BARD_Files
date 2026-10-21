@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "type": "broadcastDelivered",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "aliases",
+    "aliases": [
+      "al_quinn",
+      "al_vale"
+    ]
+  },
+  "text": "A low groaning voice."
+}

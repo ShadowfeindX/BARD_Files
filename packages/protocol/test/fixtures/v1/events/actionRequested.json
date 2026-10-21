@@ -1,0 +1,18 @@
+{
+  "v": 1,
+  "type": "actionRequested",
+  "actor": {
+    "kind": "alias",
+    "alias": "al_vale"
+  },
+  "visibility": {
+    "kind": "aliases",
+    "aliases": [
+      "al_vale"
+    ]
+  },
+  "request": "r1",
+  "entity": "e1",
+  "description": "Shoot the lock",
+  "suggestedSkill": "firearms"
+}
