@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "type": "broadcastEvaluated",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "gmOnly"
+  },
+  "text": "A low groaning voice.",
+  "condition": {
+    "type": "compare",
+    "op": "lt",
+    "left": {
+      "type": "attr",
+      "key": "WIL"
+    },
+    "right": {
+      "type": "const",
+      "value": 3
+    }
+  },
+  "candidates": [
+    {
+      "alias": "al_vale",
+      "entity": "e1",
+      "result": {
+        "passed": true,
+        "left": 2,
+        "right": 3
+      }
+    },
+    {
+      "alias": "al_quinn",
+      "entity": "e2",
+      "result": null
+    }
+  ]
+}

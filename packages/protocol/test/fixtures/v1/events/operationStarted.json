@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "type": "operationStarted",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "operationId": "op_01J8Z3",
+  "engineVersion": "1.0.0-dev.1",
+  "packRef": {
+    "id": "example-core",
+    "version": "0.0.1",
+    "contentHash": "sha256:00ff"
+  },
+  "settings": {
+    "autoResolveChecks": false,
+    "autoConfirmConsequences": false,
+    "autoApplyEngineUpdates": true,
+    "autoApplyPackUpdates": false
+  }
+}

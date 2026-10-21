@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "requestDeclined",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "request": "r1",
+  "reason": "Not now"
+}

@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "type": "applyCondition",
+  "actor": {
+    "kind": "gm"
+  },
+  "entity": "e1",
+  "condition": "bleeding",
+  "check": "c1",
+  "visibility": {
+    "kind": "public"
+  }
+}
