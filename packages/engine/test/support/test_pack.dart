@@ -50,12 +50,12 @@ RulesPack testPack() => RulesPack(
     DerivedStat(
       key: 'health',
       name: 'Health',
-      formula: Op(OpKind.mul, const [Attr('END'), Attr('LCK')]),
+      formula: Op(OpKind.mul, [Attr('END'), Attr('LCK')]),
     ),
     DerivedStat(
       key: 'sanity',
       name: 'Sanity',
-      formula: Op(OpKind.mul, const [Attr('WIS'), Attr('LCK')]),
+      formula: Op(OpKind.mul, [Attr('WIS'), Attr('LCK')]),
     ),
   ],
 );

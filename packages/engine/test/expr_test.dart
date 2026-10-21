@@ -5,7 +5,7 @@ void main() {
   group('evaluate', () {
     test('constants, attributes and vars report their values', () {
       final term = evaluate(
-        Sum([const Const(3), const Attr('DEX'), const Var('helperSkillBonus')]),
+        Sum([Const(3), Attr('DEX'), Var('helperSkillBonus')]),
         attributes: {'DEX': 2},
         vars: {'helperSkillBonus': 4},
       );
@@ -79,7 +79,7 @@ void main() {
 
     test('keepHighest can keep several, listed in pool order', () {
       final term = evaluate(
-        KeepHighest([const Const(1), const Const(7), const Const(3)], 2),
+        KeepHighest([Const(1), Const(7), Const(3)], 2),
       ) as KeepHighestTerm;
       expect(term.value, 10);
       expect(term.kept, [1, 2]);
@@ -99,26 +99,38 @@ void main() {
     });
 
     test('whole results are ints on every platform', () {
-      final value = evaluate(Op(OpKind.div, const [Const(10), Const(2)])).value;
+      final value = evaluate(Op(OpKind.div, [Const(10), Const(2)])).value;
       expect(value, isA<int>());
       expect(value.toString(), '5');
       expect(normalizeNumber(2.5), 2.5);
     });
 
+    test('results beyond 2^53 fail instead of differing on the web', () {
+      expect(
+        () => evaluate(Op(OpKind.mul, [Const(maxSafeInteger), Const(2)])),
+        throwsA(isA<EvaluationException>()),
+      );
+      expect(
+        () => evaluate(Sum([Const(maxSafeInteger), Const(1)])),
+        throwsA(isA<EvaluationException>()),
+      );
+      expect(
+        () => evaluate(Attr('STR'), attributes: {'STR': maxSafeInteger + 1}),
+        throwsA(isA<EvaluationException>()),
+      );
+    });
+
     test('division by zero fails', () {
       expect(
-        () => evaluate(Op(OpKind.div, const [Const(1), Const(0)])),
+        () => evaluate(Op(OpKind.div, [Const(1), Const(0)])),
         throwsA(isA<EvaluationException>()),
       );
     });
 
     test('missing values and a missing RNG fail', () {
+      expect(() => evaluate(Attr('STR')), throwsA(isA<EvaluationException>()));
       expect(
-        () => evaluate(const Attr('STR')),
-        throwsA(isA<EvaluationException>()),
-      );
-      expect(
-        () => evaluate(const Var('newScore')),
+        () => evaluate(Var('newScore')),
         throwsA(isA<EvaluationException>()),
       );
       expect(
@@ -134,7 +146,7 @@ void main() {
       );
       expect(
         evaluateFormula(
-          Op(OpKind.mul, const [Attr('END'), Attr('LCK')]),
+          Op(OpKind.mul, [Attr('END'), Attr('LCK')]),
           attributes: {'END': 3, 'LCK': 2},
         ),
         6,
@@ -144,14 +156,14 @@ void main() {
 
   group('approved var placements', () {
     test('attribute purchase XP: 10 × var(newScore)', () {
-      final xp = Op(OpKind.mul, const [Const(10), Var(VarKeys.newScore)]);
+      final xp = Op(OpKind.mul, [Const(10), Var(VarKeys.newScore)]);
       expect(evaluateFormula(xp, vars: {VarKeys.newScore: 4}), 40);
     });
 
     test('assistance bonus: 1d6 + var(helperSkillBonus)', () {
       final bonus = Sum([
         Dice(count: 1, sides: 6),
-        const Var(VarKeys.helperSkillBonus),
+        Var(VarKeys.helperSkillBonus),
       ]);
       final term = evaluate(
         bonus,
@@ -173,36 +185,49 @@ void main() {
       expect(Dice(count: 1, sides: 1).sides, 1);
     });
 
+    test('constants must be finite and web-safe; keys must be non-empty', () {
+      expect(() => Const(double.nan), throwsArgumentError);
+      expect(() => Const(double.infinity), throwsArgumentError);
+      expect(() => Const(maxSafeInteger + 1), throwsArgumentError);
+      expect(Const(maxSafeInteger).value, maxSafeInteger);
+      expect(() => Attr(''), throwsArgumentError);
+    });
+
+    test('only approved var keys exist', () {
+      expect(() => Var('playerLevel'), throwsArgumentError);
+      expect(() => Var(''), throwsArgumentError);
+      for (final key in VarKeys.all) {
+        expect(Var(key).key, key);
+      }
+    });
+
     test('operator arity', () {
-      expect(() => Op(OpKind.sub, const [Const(1)]), throwsArgumentError);
-      expect(
-        () => Op(OpKind.floor, const [Const(1), Const(2)]),
-        throwsArgumentError,
-      );
+      expect(() => Op(OpKind.sub, [Const(1)]), throwsArgumentError);
+      expect(() => Op(OpKind.floor, [Const(1), Const(2)]), throwsArgumentError);
       expect(() => Op(OpKind.add, const []), throwsArgumentError);
     });
 
     test('sum and keepHighest need options', () {
       expect(() => Sum(const []), throwsArgumentError);
-      expect(() => KeepHighest(const [Const(1)], 2), throwsArgumentError);
-      expect(() => KeepHighest(const [Const(1)], 0), throwsArgumentError);
+      expect(() => KeepHighest([Const(1)], 2), throwsArgumentError);
+      expect(() => KeepHighest([Const(1)], 0), throwsArgumentError);
     });
 
     test('trees report dice, vars and attributes they read', () {
       final expr = Sum([
         Dice(count: 1, sides: 6),
-        Op(OpKind.add, const [Attr('DEX'), Var('helperSkillBonus')]),
+        Op(OpKind.add, [Attr('DEX'), Var('helperSkillBonus')]),
       ]);
       expect(expr.rollsDice, isTrue);
       expect(expr.varKeys, {'helperSkillBonus'});
       expect(expr.attributeKeys, {'DEX'});
-      expect(Op(OpKind.add, const [Attr('DEX')]).rollsDice, isFalse);
+      expect(Op(OpKind.add, [Attr('DEX')]).rollsDice, isFalse);
     });
 
     test('value equality', () {
       expect(
-        Sum([Dice(count: 1, sides: 6, explode: true), const Const(2)]),
-        Sum([Dice(count: 1, sides: 6, explode: true), const Const(2)]),
+        Sum([Dice(count: 1, sides: 6, explode: true), Const(2)]),
+        Sum([Dice(count: 1, sides: 6, explode: true), Const(2)]),
       );
       expect(
         Dice(count: 1, sides: 6),

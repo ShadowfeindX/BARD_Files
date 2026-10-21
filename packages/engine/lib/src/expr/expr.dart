@@ -4,10 +4,13 @@
 /// *formula* is an expression with no [Dice] in it, so it evaluates without an
 /// RNG. A *dice expression* may roll.
 ///
-/// Constructors check their own invariants, so an invalid tree cannot exist.
+/// Constructors check their own invariants (finite, web-safe constants,
+/// non-empty keys, only approved `var` keys, dice and operator shapes), so an
+/// invalid tree cannot be built.
 library;
 
 import '../equality.dart';
+import 'vars.dart';
 
 /// One node of an expression tree.
 sealed class Expr {
@@ -26,7 +29,18 @@ sealed class Expr {
 /// A fixed number.
 final class Const extends Expr {
   /// Creates a constant node.
-  const Const(this.value);
+  ///
+  /// Throws an [ArgumentError] unless [value] is finite and no larger in size
+  /// than [maxSafeInteger], so it means the same number on the VM and the web.
+  Const(this.value) {
+    if (!value.isFinite || value.abs() > maxSafeInteger) {
+      throw ArgumentError.value(
+        value,
+        'value',
+        'must be finite and at most $maxSafeInteger in size',
+      );
+    }
+  }
 
   /// The number.
   final num value;
@@ -53,8 +67,11 @@ final class Const extends Expr {
 /// The score of a pack-declared attribute (`STR`, `LCK`, ...) on the entity
 /// being evaluated.
 final class Attr extends Expr {
-  /// Creates an attribute reference.
-  const Attr(this.key);
+  /// Creates an attribute reference. Throws an [ArgumentError] when [key] is
+  /// empty.
+  Attr(this.key) {
+    if (key.isEmpty) throw ArgumentError.value(key, 'key', 'must not be empty');
+  }
 
   /// Pack attribute key.
   final String key;
@@ -84,8 +101,17 @@ final class Attr extends Expr {
 /// Only the keys in `VarKeys` exist, each in one approved placement. Any new
 /// key or placement goes to R first.
 final class Var extends Expr {
-  /// Creates a `var` node.
-  const Var(this.key);
+  /// Creates a `var` node. Throws an [ArgumentError] unless [key] is one of
+  /// `VarKeys.all`.
+  Var(this.key) {
+    if (!VarKeys.all.contains(key)) {
+      throw ArgumentError.value(
+        key,
+        'key',
+        'is not an approved var key (${VarKeys.all.join(', ')})',
+      );
+    }
+  }
 
   /// Name of the engine-supplied value.
   final String key;
@@ -328,3 +354,9 @@ final class Op extends Expr {
   @override
   String toString() => 'Op(${op.name}, $args)';
 }
+
+/// Largest integer a double (and so a web `int`) holds exactly: 2^53 - 1.
+///
+/// Numbers above it differ between the VM (64-bit ints) and the web
+/// (doubles) [V-14], so expressions refuse them.
+const maxSafeInteger = 9007199254740991;

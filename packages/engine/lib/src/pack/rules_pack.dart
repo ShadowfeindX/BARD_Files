@@ -6,6 +6,7 @@
 /// is Provisional, pending D (02 §Pack structure).
 library;
 
+import '../equality.dart';
 import '../expr/expr.dart';
 
 /// Identifies one exact pack: what an operation pins (02 §Operations pin
@@ -51,6 +52,13 @@ final class AttributeDef {
 
   /// Display name.
   final String name;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AttributeDef && other.key == key && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(AttributeDef, key, name);
 }
 
 /// Limits on attribute scores when an agent is created (rulebook §3).
@@ -73,6 +81,17 @@ final class AttributeCreation {
 
   /// Highest score allowed at creation.
   final int maxPerAttribute;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AttributeCreation &&
+      other.points == points &&
+      other.minPerAttribute == minPerAttribute &&
+      other.maxPerAttribute == maxPerAttribute;
+
+  @override
+  int get hashCode =>
+      Object.hash(AttributeCreation, points, minPerAttribute, maxPerAttribute);
 }
 
 /// One proficiency tier (`untrained`, `proficient`, `expert`).
@@ -88,6 +107,16 @@ final class ProficiencyTier {
 
   /// Extra dice the tier adds to a check (G16); `null` = no bonus.
   final Expr? bonus;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProficiencyTier &&
+      other.key == key &&
+      other.name == name &&
+      other.bonus == bonus;
+
+  @override
+  int get hashCode => Object.hash(ProficiencyTier, key, name, bonus);
 }
 
 /// One of the pack's skill categories. Organizational only (F3).
@@ -100,6 +129,13 @@ final class SkillCategory {
 
   /// Display name.
   final String name;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SkillCategory && other.key == key && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(SkillCategory, key, name);
 }
 
 /// One skill: name, description, category and attribute (F3).
@@ -127,6 +163,19 @@ final class SkillDef {
 
   /// [AttributeDef.key], or `null` while the pack's author has not ruled.
   final String? attribute;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SkillDef &&
+      other.id == id &&
+      other.name == name &&
+      other.description == description &&
+      other.category == category &&
+      other.attribute == attribute;
+
+  @override
+  int get hashCode =>
+      Object.hash(SkillDef, id, name, description, category, attribute);
 }
 
 /// A stat the engine computes from attributes, such as Health (rulebook §3).
@@ -146,6 +195,16 @@ final class DerivedStat {
 
   /// Formula over attributes; never rolls dice.
   final Expr formula;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DerivedStat &&
+      other.key == key &&
+      other.name == name &&
+      other.formula == formula;
+
+  @override
+  int get hashCode => Object.hash(DerivedStat, key, name, formula);
 }
 
 /// An immutable, validated rules pack bound to one `Engine`.
@@ -205,6 +264,28 @@ final class RulesPack {
     }
     return null;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is RulesPack &&
+      other.ref == ref &&
+      other.attributeCreation == attributeCreation &&
+      listEquals(other.attributes, attributes) &&
+      listEquals(other.proficiencyTiers, proficiencyTiers) &&
+      listEquals(other.skillCategories, skillCategories) &&
+      listEquals(other.skills, skills) &&
+      listEquals(other.derived, derived);
+
+  @override
+  int get hashCode => Object.hash(
+    ref,
+    attributeCreation,
+    Object.hashAll(attributes),
+    Object.hashAll(proficiencyTiers),
+    Object.hashAll(skillCategories),
+    Object.hashAll(skills),
+    Object.hashAll(derived),
+  );
 
   @override
   String toString() =>

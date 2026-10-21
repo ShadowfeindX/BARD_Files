@@ -62,14 +62,11 @@ num normalizeNumber(num value) {
   if (value is double &&
       value.isFinite &&
       value == value.truncateToDouble() &&
-      value.abs() <= _maxSafeInteger) {
+      value.abs() <= maxSafeInteger) {
     return value.toInt();
   }
   return value;
 }
-
-/// Largest integer a double (and so a web `int`) holds exactly: 2^53 - 1.
-const _maxSafeInteger = 9007199254740991;
 
 final class _Evaluator {
   _Evaluator(this.attributes, this.vars, this.rng);
@@ -83,7 +80,7 @@ final class _Evaluator {
     Attr(:final key) => AttrTerm(key, _lookup(attributes, key, 'attribute')),
     Var(:final key) => VarTerm(key, _lookup(vars, key, 'var')),
     Dice() => _rollDice(expr),
-    Sum(:final terms) => SumTerm(terms.map(eval).toList()),
+    Sum(:final terms) => _sum(terms),
     KeepHighest(:final pool, :final keep) => _keepHighest(pool, keep),
     Op(:final op, :final args) => _applyOp(op, args.map(eval).toList()),
   };
@@ -93,7 +90,7 @@ final class _Evaluator {
     if (value == null) {
       throw EvaluationException('No value supplied for $kind "$key".');
     }
-    return normalizeNumber(value);
+    return _checked(normalizeNumber(value), '$kind "$key"');
   }
 
   DiceTerm _rollDice(Dice dice) {
@@ -114,6 +111,22 @@ final class _Evaluator {
     return DiceTerm(sides: dice.sides, explode: dice.explode, rolls: rolls);
   }
 
+  SumTerm _sum(List<Expr> terms) {
+    final term = SumTerm(terms.map(eval).toList());
+    _checked(term.value, 'sum');
+    return term;
+  }
+
+  /// Returns [value], or throws when it is not finite or not web-safe.
+  num _checked(num value, String what) {
+    if (!value.isFinite || value.abs() > maxSafeInteger) {
+      throw EvaluationException(
+        '$what produced $value, outside the range every platform agrees on.',
+      );
+    }
+    return value;
+  }
+
   KeepHighestTerm _keepHighest(List<Expr> pool, int keep) {
     final options = pool.map(eval).toList();
     // Highest value first; equal values keep pool order, so the earliest
@@ -124,7 +137,9 @@ final class _Evaluator {
         return byValue != 0 ? byValue : a.compareTo(b);
       });
     final kept = order.take(keep).toList()..sort();
-    return KeepHighestTerm(options: options, kept: kept);
+    final term = KeepHighestTerm(options: options, kept: kept);
+    _checked(term.value, 'keepHighest');
+    return term;
   }
 
   OpTerm _applyOp(OpKind op, List<Term> args) {
@@ -138,10 +153,7 @@ final class _Evaluator {
       OpKind.max => values.reduce(math.max),
       OpKind.floor => values[0].floor(),
     };
-    if (!result.isFinite) {
-      throw EvaluationException('${op.name} produced $result.');
-    }
-    return OpTerm(op, args, normalizeNumber(result));
+    return OpTerm(op, args, _checked(normalizeNumber(result), op.name));
   }
 
   num _divide(num a, num b) {

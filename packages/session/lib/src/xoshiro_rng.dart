@@ -79,7 +79,7 @@ final class RngSeed {
 ///
 /// One draw is one 32-bit output of the generator. A die is rolled by
 /// rejection sampling, so every face is equally likely: raw values at or
-/// above the largest multiple of `sides` below 2^32 are thrown away and drawn
+/// above the largest multiple of `sides` that is at most 2^32 are thrown away and drawn
 /// again. Faces are computed with `%` and `<` only, never bit operators, so
 /// the result is the same on the VM and the web [V-14].
 ///

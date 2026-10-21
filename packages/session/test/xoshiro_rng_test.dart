@@ -98,8 +98,15 @@ void main() {
       expect(() => RngSeed.parseHex('0' * 32), throwsArgumentError);
     });
 
-    test('generate uses the given source and never returns all zeros', () {
+    test('generate is deterministic for a given source', () {
       expect(RngSeed.generate(Random(1)), RngSeed.generate(Random(1)));
+    });
+
+    test('generate draws again instead of returning all zeros', () {
+      expect(
+        RngSeed.generate(_ScriptedRandom([0, 0, 0, 0, 7, 0, 0, 0])),
+        RngSeed(7, 0, 0, 0),
+      );
     });
 
     // Random.secure() works in browsers and on the VM, but the Node.js test
@@ -112,4 +119,21 @@ void main() {
       expect(seed.toString(), isNot(contains('9e3779b9')));
     });
   });
+}
+
+/// A [Random] whose `nextInt` returns fixed values in order.
+final class _ScriptedRandom implements Random {
+  _ScriptedRandom(this._values);
+
+  final List<int> _values;
+  int _next = 0;
+
+  @override
+  int nextInt(int max) => _values[_next++];
+
+  @override
+  bool nextBool() => throw UnimplementedError();
+
+  @override
+  double nextDouble() => throw UnimplementedError();
 }

@@ -16,7 +16,9 @@
 /// annotations must be stripped first.
 library;
 
+import 'evaluate.dart' show normalizeNumber;
 import 'expr.dart';
+import 'vars.dart';
 
 /// Decodes an expression from its JSON form.
 ///
@@ -25,19 +27,30 @@ import 'expr.dart';
 /// (see `VarKeys`). [path] names the location in error messages, for example
 /// `derived.json: derived[0].formula`.
 ///
-/// Throws a [FormatException] describing the first problem found.
+/// Throws an [ArgumentError] if [allowedVars] names a key outside
+/// `VarKeys.all`. Throws a [FormatException] describing the first problem found.
 Expr decodeExpr(
   Object? json, {
   Set<String> allowedVars = const {},
   String path = r'$',
-}) => _Decoder(allowedVars).decode(json, path);
+}) {
+  final unknown = allowedVars.difference(VarKeys.all);
+  if (unknown.isNotEmpty) {
+    throw ArgumentError.value(
+      allowedVars,
+      'allowedVars',
+      'contains keys that are not approved: ${unknown.join(', ')}',
+    );
+  }
+  return _Decoder(allowedVars).decode(json, path);
+}
 
 /// Encodes [expr] in the JSON form [decodeExpr] reads.
 ///
 /// A dice node with `explode == null` is written with `"explode": null`, as
 /// the provisional pack does.
 Map<String, Object?> encodeExpr(Expr expr) => switch (expr) {
-  Const(:final value) => {'type': 'const', 'value': value},
+  Const(:final value) => {'type': 'const', 'value': normalizeNumber(value)},
   Attr(:final key) => {'type': 'attr', 'key': key},
   Var(:final key) => {'type': 'var', 'key': key},
   Dice(:final count, :final sides, :final explode) => {
@@ -74,7 +87,10 @@ final class _Decoder {
     final type = json['type'];
     return switch (type) {
       'const' => _const(json, path),
-      'attr' => Attr(_string(json, 'key', path, {'type', 'key'})),
+      'attr' => _wrap(
+        path,
+        () => Attr(_string(json, 'key', path, {'type', 'key'})),
+      ),
       'var' => _var(json, path),
       'dice' => _dice(json, path),
       'sum' => Sum(_list(json, 'terms', path, {'type', 'terms'})),
@@ -90,7 +106,7 @@ final class _Decoder {
     if (value is! num) {
       throw FormatException('$path.value: expected a number.');
     }
-    return Const(value);
+    return _wrap(path, () => Const(normalizeNumber(value)));
   }
 
   Var _var(Map<String, Object?> json, String path) {
@@ -162,7 +178,12 @@ final class _Decoder {
     final value = json[key];
     // A JSON number like 2.0 decodes as a double on the VM and as an int on
     // the web; accept whole doubles so both platforms agree.
-    if (value is num && value == value.truncate()) return value.toInt();
+    if (value is num &&
+        value.isFinite &&
+        value == value.truncate() &&
+        value.abs() <= maxSafeInteger) {
+      return value.toInt();
+    }
     throw FormatException('$path.$key: expected a whole number.');
   }
 

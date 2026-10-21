@@ -12,7 +12,7 @@ void main() {
           '[{"type":"attr","key":"END"},{"type":"attr","key":"LCK"}]}',
         ),
       );
-      expect(expr, Op(OpKind.mul, const [Attr('END'), Attr('LCK')]));
+      expect(expr, Op(OpKind.mul, [Attr('END'), Attr('LCK')]));
     });
 
     test('difficulty.json primary die: exploding d6', () {
@@ -32,7 +32,7 @@ void main() {
       );
       expect(
         expr,
-        Sum([Dice(count: 1, sides: 6), const Var(VarKeys.helperSkillBonus)]),
+        Sum([Dice(count: 1, sides: 6), Var(VarKeys.helperSkillBonus)]),
       );
     });
 
@@ -44,24 +44,18 @@ void main() {
         ),
         allowedVars: {VarKeys.newScore},
       );
-      expect(expr, Op(OpKind.mul, const [Const(10), Var(VarKeys.newScore)]));
+      expect(expr, Op(OpKind.mul, [Const(10), Var(VarKeys.newScore)]));
     });
   });
 
   test('every node type round-trips', () {
     final expr = Op(OpKind.max, [
-      Sum([
-        Dice(count: 2, sides: 4, explode: false),
-        const Var(VarKeys.newScore),
-      ]),
-      KeepHighest([
-        Dice(count: 1, sides: 6, explode: true),
-        const Attr('LCK'),
-      ], 1),
+      Sum([Dice(count: 2, sides: 4, explode: false), Var(VarKeys.newScore)]),
+      KeepHighest([Dice(count: 1, sides: 6, explode: true), Attr('LCK')], 1),
       Op(OpKind.floor, [
-        Op(OpKind.div, const [Const(7), Const(2)]),
+        Op(OpKind.div, [Const(7), Const(2)]),
       ]),
-      Op(OpKind.sub, const [Const(1.5), Const(1)]),
+      Op(OpKind.sub, [Const(1.5), Const(1)]),
     ]);
     final json = jsonDecode(jsonEncode(encodeExpr(expr)));
     expect(decodeExpr(json, allowedVars: {VarKeys.newScore}), expr);
@@ -75,6 +69,19 @@ void main() {
   test('whole doubles are accepted where an int is expected', () {
     final expr = decodeExpr({'type': 'dice', 'count': 1.0, 'sides': 6.0});
     expect(expr, Dice(count: 1, sides: 6));
+  });
+
+  test('whole-number constants decode and encode as ints', () {
+    final expr = decodeExpr({'type': 'const', 'value': 10.0}) as Const;
+    expect(expr.value, isA<int>());
+    expect(jsonEncode(encodeExpr(Const(10.0))), '{"type":"const","value":10}');
+  });
+
+  test('allowedVars may only name approved keys', () {
+    expect(
+      () => decodeExpr({'type': 'const', 'value': 1}, allowedVars: {'x'}),
+      throwsArgumentError,
+    );
   });
 
   group('decodeExpr errors', () {
@@ -138,6 +145,17 @@ void main() {
           {'type': 'const', 'value': 'two'},
         ],
       }, 'f.terms[1].value: expected a number');
+    });
+    test('numbers outside the web-safe range', () {
+      expectError({'type': 'const', 'value': 9007199254740992}, 'f: ');
+      expectError({
+        'type': 'dice',
+        'count': 9007199254740992,
+        'sides': 6,
+      }, 'f.count');
+    });
+    test('empty attribute key', () {
+      expectError({'type': 'attr', 'key': ''}, 'f.key');
     });
     test('bad dice fields', () {
       expectError({'type': 'dice', 'count': 1, 'sides': 2.5}, 'f.sides');

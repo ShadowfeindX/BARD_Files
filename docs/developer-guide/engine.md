@@ -58,21 +58,27 @@ Packs write data-only trees (P4); there is no scripting:
 ```
 
 - `op` is one of `add sub mul div min max floor`. `sub` and `div` take two arguments, `floor` one, the rest one or more.
-- `explode` may be `true`, `false`, `null` or left out. `null` or absent means "not ruled" (G3) and rolls like `false`.
+- `explode` may be `true`, `false`, `null` or left out. `null` or absent means "not ruled" (G3) and rolls like `false`: R's setup decision 1 (2026-10-21) keeps a feature off while its value is pending D, so only the primary d6, marked `true`, explodes.
+- Every number must be finite and at most 2^53 - 1 in size (`maxSafeInteger`), in the pack and in every result, because larger ones differ between the VM and the web. `Attr` keys may not be empty and `Var` keys must be in `VarKeys.all`.
 - `decodeExpr` refuses unknown keys, so authoring annotations must be stripped first. It also refuses any `var` key not passed in `allowedVars`; each approved key (`VarKeys`) belongs to one placement. A new key or placement goes to R first.
-- `evaluate` returns a `Term` tree: the value plus every die face, so the UI shows the breakdown without recomputing. `evaluateFormula` refuses dice. Whole results are always `int`, so encoded numbers are the same on the VM and the web.
+- `evaluate` returns a `Term` tree: the value plus every die face, so the UI shows the breakdown without recomputing. `evaluateFormula` refuses dice. Whole results and constants are always `int`, so encoded numbers are the same on the VM and the web.
 - Nodes roll depth first, left to right; the same tree draws from the RNG in the same order every time.
 
 ## Randomness
 
 - Tests use `ScriptedRng([faces...])`: it fails loudly when the script runs out or a face does not fit the die.
 - Production uses `XoshiroRng` in `packages/session` (`xrandom` 0.7.2 `Xoshiro128pp`, pinned). One draw is one 32-bit output; dice use rejection sampling. Reopening an operation passes the stored draw count, and the generator skips to it.
-- The known-seed vectors in `packages/session/test/xoshiro_rng_test.dart` come from the reference C implementation (kept in the project library, `probes/xoshiro128pp-vectors/`). CI runs them, and the engine tests, on the VM and on Node.js (`dart test -p node`). Locally, `dart test -p chrome` also works.
+- The known-seed vectors in `packages/session/test/xoshiro_rng_test.dart` come from the reference C implementation. The program is kept in the project's shared library folder (`probes/xoshiro128pp-vectors/`), not in this repository, since the stack is Dart only. CI runs the vectors and the engine tests on the VM and on Node.js (`dart test -p node`). Locally, `dart test -p chrome` also passes (as root, Chromium needs a wrapper that adds `--no-sandbox`).
 
 ## Proposed in this code (for R to accept or change)
 
+- The public API shape (01 §Public API surface is Proposed): `Engine`, `Decision` (`Accepted` / `Rejected`), `Rejection` and `RejectionCode`.
 - Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the operation lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly`; an agent's `AgentCreated` is seen by the GM and its owner.
+- `EntityKind` values (from 01's entity list) on `Identity`; display and filtering only.
+- The breakdown types (`Term` and its subclasses) that rolling events will carry.
 - Setting defaults: auto-resolve and auto-confirm off.
-- `KeepHighest` JSON form; `floor` as an `op`.
-- Seeds stay in `session`, not in engine state: state keeps only the draw count, so nothing broadcast can carry the seed.
+- `KeepHighest` and its JSON form; `floor` as an `op`.
+- `engineVersion` `1.0.0-dev.1`: major 1 matches `engineApi` 1, which the provisional pack declares (the scaffold had 0.0.0).
+- Seeds stay in `session`, not in engine state: state keeps only `RngState.drawCount`, so nothing broadcast can carry the seed. No event advances it yet; rolling events (the check system) will.
+- `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
 - Not checked yet because the rule is not ruled: whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.
