@@ -1,0 +1,20 @@
+# One analysis configuration for the whole workspace (CLAUDE.md §8:
+# `flutter analyze` with zero warnings). Members inherit it.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    # Standalone emulator checks with their own pubspec; not a workspace member.
+    - firebase/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # CLAUDE.md §8: `///` on public APIs.
+    - public_member_api_docs
+    - prefer_single_quotes
+    - always_declare_return_types
+    - unawaited_futures

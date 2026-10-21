@@ -1,0 +1,30 @@
+name: companion
+description: "B.A.R.D. Files phone companion app (player first)."
+version: 0.0.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+  flutter: ^3.47.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  session: any
+  protocol: any
+  engine: any
+  backend: any
+  ui_kit: any
+  content_core: any
+  signals_flutter: 7.1.0
+  go_router: 18.1.1
+  app_links: 7.2.2
+
+dev_dependencies:
+  flutter_lints: 6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
