@@ -1,0 +1,6 @@
+name: rtdb_rules_test
+description: RTDB live-play rules checks against the Firebase Local Emulator Suite. SDK only, no packages.
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
