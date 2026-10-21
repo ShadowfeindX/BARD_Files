@@ -4,6 +4,14 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Workspace
+- Pub workspace with package and app stubs named per the spec: `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, `content_core`, `backend`, `ui_kit`, `apps/bard`, `apps/companion`, `apps/functions`, plus `tool/`.
+- Toolchain pinned to Flutter 3.47.7 / Dart 3.13.5; external dependencies pinned exactly (`signals_flutter` 7.1.0, `go_router` 18.1.1, `app_links` 7.2.2, `yaml` 3.1.4, `flutter_lints` 6.0.0, `test` 1.31.1).
+- One root `analysis_options.yaml` (`flutter_lints`, strict inference and casts, public API docs required).
+- `tool/` checks: dependency-rule check (layer table, unlisted pubspecs, transitive graph of `apps/functions`) and exact-pin check, with unit tests; `tool/check_all.sh` and `tool/test_all.sh` run them locally.
+- GitHub Actions CI on Linux (Proposed in 08-testing.md): format, analyze, dependency rules, exact pins, tests.
+- Developer guide: `docs/developer-guide/` with a setup page.
+
 ### Docs
 - Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
 - Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.
