@@ -141,7 +141,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ## Realtime Database model (live play)
 
-**P10c draft (Proposed), with its three open items ruled by R 2026-10-20.** Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed proposal, which R reviews with this spec. The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the three changes applied, the prototype's `phoneDraft` path removed (R 2026-10-21, P23) and the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). The changes are not in the probed file yet, so they are unproven until those tests run. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
+**P10c (Fixed).** The three open items were ruled by R 2026-10-20, and the rest of the draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"). Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed design R approved (review sheet: project library `architecture/rtdb-draft-review.md`, P1-P24). The prototype rules file is in the project library (`probes/rtdb-rules-8-6/database.rules.json`); it becomes the repository's RTDB rules file when `backend` is scaffolded, with the three changes applied, the prototype's `phoneDraft` path removed (R 2026-10-21, P23) and the emulator checks as its test suite (P10b, [08-testing.md](08-testing.md#backend)). The changes are not in the probed file yet, so they are unproven until those tests run. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
 
 ```
 /operations/$op/meta                     gm uid, campaignId, engine version, packRef, status, locked, lastSeq
@@ -164,11 +164,11 @@ Who can do what (shown in the emulator [V-38], except the `meta` and `signaling`
 |---|---|---|---|
 | `meta` | creates it (non-anonymous, naming itself `gm`), edits until locked; `gm` cannot change; never deletes (ruling 1; unproven) | reads | — |
 | `members` | reads all, writes entries until locked | reads own entry only, cannot list | — |
-| `requests` | reads and clears | creates under own uid with `from == auth.uid`; cannot read others | — |
+| `requests` | reads and clears | creates under own uid with `from == auth.uid`; cannot read requests at all, own included | — |
 | `events`, `textlog` | reads every audience; appends, never overwrites or deletes | reads `public` and `alias:<own aliasId>` only | — |
 | `head` | reads and writes until locked | — | — |
 | `phone` | reads every box, delivers into any box | reads and writes own box | — |
-| `signaling` | reads (read scope Proposed, as probed); writes any uid's branch until locked | reads (as probed); writes own uid's branch until locked | — |
+| `signaling` | reads (as probed); writes any uid's branch until locked | reads (as probed); writes own uid's branch until locked | — |
 | `presence/$op` | reads (writes own uid only if also a member) | reads; writes own uid | — |
 | `inbox/$uid` | — | owner reads and deletes | functions write (admin REST) |
 
@@ -201,8 +201,8 @@ Notes on the live tree:
 - **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them. This replaces the earlier Firestore per-audience documents (P12).
 - **Head snapshot (P12).** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-operation interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
 - **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38].
-- **Archiving.** The `archiveOperation` function (below) copies the frozen log to Firestore; the GM client then sets `meta/locked`, which rules check [V-38]. Archived logs are chunked into a Firestore subcollection (FS5). Migrated operations get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)).
-- **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches.
+- **Archiving.** The `archiveOperation` function (below) copies the frozen log to Firestore; the GM client then sets `meta/locked`, which rules check [V-38]. Archived logs are chunked into a Firestore subcollection (FS5). Migrated operations get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). **Open (R):** whether a function deletes the live branches after the archive is written, keeping `meta` as a locked stub (estimate flag 2).
+- **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches. Traffic and cost at an assumed table size are approximated in the project library (`architecture/rtdb-traffic-cost-estimate.md`, P24): about 2,200 writes per 4-hour session (an approximation from an assumed profile, not a measurement), about 0.15 writes per second.
 
 ## Library (Fixed: concern 5, ruled by R 2026-10-20)
 

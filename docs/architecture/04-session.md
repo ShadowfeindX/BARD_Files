@@ -153,7 +153,7 @@ Players can send in-world text messages ("phone") that are forwarded to the GM (
 - The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]` (the GM always sees it). Messages to an NPC go to the GM, who answers **as** that NPC with `SendPhoneMessage(fromNpc, ...)`.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
-- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box only when the "mission" ends are R's rulings (2026-10-21, P17); the mission-to-spec-unit mapping waits on Q24, and the rest of the RTDB draft is Proposed (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
+- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box only when the "mission" ends are R's rulings (2026-10-21, P17); the mission-to-spec-unit mapping waits on Q24, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives
 
