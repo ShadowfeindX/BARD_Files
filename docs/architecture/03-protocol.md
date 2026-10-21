@@ -61,7 +61,7 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 
 | Message | Body |
 |---|---|
-| `hello` | `agentId`, `aliasId?`, `kind?` (`account` default, or `anonymous`), `authProof?`, `lastSeq` (0 if none) |
+| `hello` | `agentId`, `aliasId?`, `kind?` (`full` default, or `anonymous`, as in 06's account model; advisory, the host decides from the verified identity), `authProof?`, `lastSeq` (0 if none) |
 | `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`), `events?` (from the snapshot's `seq + 1`, or the client's `lastSeq + 1` without a snapshot) |
 | `refused` | `reason`, `message?`, and one of `protocolMajor` / `engineMajor` / `requiredEngine` that matches the reason |
 | `request` | `requestId`, `command` |
@@ -74,7 +74,7 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 
 Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and Proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
 
-The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are strict `major.minor.patch` with no leading zeros or suffixes (Proposed).
+The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (Proposed).
 
 ## Ordering and delivery
 

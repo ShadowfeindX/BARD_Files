@@ -34,8 +34,41 @@ void main() {
       expect(v140.toString(), '1.4.0');
     });
 
-    test('rejects anything but major.minor.patch', () {
-      for (final bad in ['1.4', '1.4.0-beta', 'v1.4.0', '', '1.4.x']) {
+    test('pre-releases parse and sort before their release (SemVer)', () {
+      final dev1 = EngineVersion.parse('1.0.0-dev.1');
+      expect(dev1.toString(), '1.0.0-dev.1');
+      expect(dev1.isPreRelease, isTrue);
+      final ordered = [
+        '1.0.0-alpha',
+        '1.0.0-alpha.1',
+        '1.0.0-alpha.beta',
+        '1.0.0-beta',
+        '1.0.0-beta.2',
+        '1.0.0-beta.11',
+        '1.0.0-dev.1',
+        '1.0.0-rc.1',
+        '1.0.0',
+        '1.0.1-dev.1',
+      ].map(EngineVersion.parse).toList();
+      for (var i = 0; i + 1 < ordered.length; i++) {
+        expect(ordered[i] < ordered[i + 1], isTrue, reason: '${ordered[i]}');
+        expect(ordered[i + 1] < ordered[i], isFalse, reason: '${ordered[i]}');
+      }
+      expect(dev1, EngineVersion.parse('1.0.0-dev.1'));
+      expect(dev1 == EngineVersion.parse('1.0.0'), isFalse);
+    });
+
+    test('rejects anything but major.minor.patch[-pre.release]', () {
+      for (final bad in [
+        '1.4',
+        '1.4.0+build',
+        '1.4.0-',
+        '1.4.0-01',
+        '1.4.0-a..b',
+        'v1.4.0',
+        '',
+        '1.4.x',
+      ]) {
         expect(
           () => EngineVersion.parse(bad),
           throwsA(isA<ProtocolFormatException>()),
@@ -232,7 +265,7 @@ void main() {
     test('hello defaults', () {
       final m = roundTrip(const Hello(agentId: 'a')) as Hello;
       expect(m.aliasId, isNull);
-      expect(m.kind, AgentKind.account);
+      expect(m.kind, AgentKind.full);
       expect(m.lastSeq, 0);
     });
 

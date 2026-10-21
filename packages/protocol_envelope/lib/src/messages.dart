@@ -83,11 +83,15 @@ sealed class Message {
 
 /// Whether an agent is a signed-in account or an anonymous guest.
 ///
-/// Proposed: 06 §Anonymous says a guest identity "carries `kind: anonymous`";
-/// the field name and values are not yet specified.
+/// Values follow 06 §Account model (`kind: full | anonymous`).
+///
+/// Advisory only: a client states its own kind, so the host never grants or
+/// refuses anything because of this field. It decides from the verified
+/// identity (the `authProof`, or the auth token's `sign_in_provider` on the
+/// backend), as RTDB rules already do for anonymous members.
 enum AgentKind {
-  /// A signed-in account.
-  account,
+  /// A full (signed-in, non-anonymous) account.
+  full,
 
   /// An anonymous guest (one alias, no hosting).
   anonymous,
@@ -99,14 +103,14 @@ final class Hello extends Message {
   const Hello({
     required this.agentId,
     this.aliasId,
-    this.kind = AgentKind.account,
+    this.kind = AgentKind.full,
     this.authProof,
     this.lastSeq = 0,
   });
 
   /// Decodes a hello body.
   factory Hello.fromBody(JsonMap body) {
-    final kind = optString(body, 'kind') ?? AgentKind.account.name;
+    final kind = optString(body, 'kind') ?? AgentKind.full.name;
     return Hello(
       agentId: reqString(body, 'agentId'),
       aliasId: optString(body, 'aliasId'),
@@ -124,7 +128,8 @@ final class Hello extends Message {
   /// The alias (character) the agent joins as; null for a GM or a spectator.
   final String? aliasId;
 
-  /// Proposed field: account or anonymous guest.
+  /// Proposed field: full account or anonymous guest. Advisory; see
+  /// [AgentKind].
   final AgentKind kind;
 
   /// Auth proof, if any. Opaque here; the session and backend define it.
