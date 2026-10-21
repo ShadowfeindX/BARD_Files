@@ -9,7 +9,8 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Toolchain pinned to Flutter 3.47.7 / Dart 3.13.5; external dependencies pinned exactly (`signals_flutter` 7.1.0, `go_router` 18.1.1, `app_links` 7.2.2, `yaml` 3.1.4, `flutter_lints` 6.0.0, `test` 1.31.1).
 - One root `analysis_options.yaml` (`flutter_lints`, strict inference and casts, public API docs required).
 - `tool/` checks: dependency-rule check (layer table, unlisted pubspecs, transitive graph of `apps/functions`) and exact-pin check, with unit tests; `tool/check_all.sh` and `tool/test_all.sh` run them locally.
-- GitHub Actions CI on Linux (Proposed in 08-testing.md): format, analyze, dependency rules, exact pins, tests.
+- GitHub Actions CI on Linux (Proposed in 08-testing.md, approved as plan decision 5): format, analyze, dependency rules, exact pins, tests.
+- Dependency table in 00-overview.md: `backend` row gains `sembast`/`sembast_web` (plan decision 3) and `firebase_core`; dev tooling (`flutter_lints`, `test`, `flutter_test`) allowed in every package.
 - Developer guide: `docs/developer-guide/` with a setup page.
 
 ### Docs

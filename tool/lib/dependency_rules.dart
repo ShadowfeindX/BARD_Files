@@ -106,7 +106,9 @@ void _checkSection(
   };
   for (final dep in deps) {
     if (dep.kind == DependencyKind.sdk) {
-      final ok = dev || rule.flutterSdk;
+      final ok = dev
+          ? toolingDev.contains(dep.name)
+          : rule.flutterSdk && dep.name == 'flutter';
       if (!ok) {
         problems.add(
           '${member.dir}: $section lists sdk dependency "${dep.name}" but '

@@ -100,6 +100,14 @@ void main() {
       expect(checkExactPins([m]), hasLength(3));
     });
 
+    test('git and path sources fail', () {
+      final m = member(
+        'packages/session',
+        deps: [const Dependency('xrandom', DependencyKind.other)],
+      );
+      expect(checkExactPins([m]), hasLength(1));
+    });
+
     test('SDK dependencies are skipped', () {
       final m = member(
         'apps/bard',

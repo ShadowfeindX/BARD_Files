@@ -97,13 +97,13 @@ R named `engine`, `protocol`, `session` and `migrator`. `content_core`, `backend
 
 ## Dependency rules
 
-Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`. `dev_dependencies` (test-only) follow the same table except for the single exception listed below it, and the analysis and test tooling (`flutter_lints`, `test`, `flutter_test`), which every package may use. The check is `tool/bin/check_dependency_rules.dart` ([developer guide](../developer-guide/setup.md#the-checks)).
+Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`. `dev_dependencies` (test-only) follow the same table except for the single exception listed below it, and the analysis and test tooling (`flutter_lints`, `test`, `flutter_test`), which every package may use. The repository tooling package `tool/` may use `yaml` only. The check is `tool/bin/check_dependency_rules.dart` ([developer guide](../developer-guide/setup.md#the-checks)).
 
 ```
 apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, signals_flutter, go_router, app_links
 ui_kit                    ──► signals_flutter (Flutter widgets and theme only)
 apps/functions            ──► protocol_envelope, firebase_functions, firebase_admin_sdk*   (never protocol, never the engine)
-backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned), flutter_secure_storage, sembast + sembast_web (pinned; the `EventStore`, plan decision 3), FlutterFire (only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client (FS2)
+backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned), flutter_secure_storage, sembast + sembast_web (pinned; the `EventStore`, plan decision 3), FlutterFire (`firebase_core`, plus only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client (FS2)
 session                   ──► protocol, engine, xrandom (pinned; Rng adapter)
 protocol                  ──► protocol_envelope, engine   (codecs for engine commands/events)
 protocol_envelope         ──► (Dart SDK only)
