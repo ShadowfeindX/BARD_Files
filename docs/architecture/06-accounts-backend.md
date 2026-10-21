@@ -211,7 +211,7 @@ Review follow-ups, approved by R the same day ("Yes to all of these.") and shown
 Second round of review follow-ups, approved by R the same day ("Yes let's fix those now") and shown in the emulator [V-53]:
 
 - **`archived` is admin-only:** the rules refuse `meta/status = archived` from any client, the GM included, before or after the lock (also when the whole `meta` is replaced). Only the archive step (admin REST) sets it. After the lock, status cannot change at all.
-- **Phone length unit:** the 2,000 limit is checked with the rules language's `.length`, which counts UTF-16 code units, so an emoji can count as 2 (1,000 emoji are accepted, 1,001 refused). Shown in the emulator; production RTDB is not checked. The rule is unchanged; the limit is a size bound, not a character count.
+- **Phone length unit:** the 2,000 limit is checked with the rules language's `.length`, which counts UTF-16 code units, so an emoji can count as 2 (1,000 emoji are accepted, 1,001 refused). Shown in the emulator and confirmed on a real RTDB [V-55]. The rule is unchanged; the limit is a size bound, not a character count.
 - **Text log `alias:null`:** a non-member cannot read `textlog/alias:null`, mirroring the events check.
 - **Multi-path writes:** the emulator runs PATCH writes that change several paths at once (on the operation node and from the root), and PUT and DELETE of the whole operation node, before and after the lock. Archived-status, `meta` delete and unlock refusals hold, and a write refused before the lock is rolled back as a whole (head and event stay unwritten). A PUT or DELETE of the whole operation node is refused only because that node has no write rule; the body is not evaluated [V-54].
 
