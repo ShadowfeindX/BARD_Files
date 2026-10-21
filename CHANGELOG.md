@@ -29,8 +29,10 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ### Pack loader
 - `loadPack` validates and loads a rules pack from its files: manifest and `engineApi` check, one parser per pack file, unknown keys and unknown files as errors, cross-reference checks, every problem reported at once with file and JSON path.
-- `null` means pending D: a warning, never an error; `RulesPack.pendingPaths` lists every pending place so features that need them stay off. `occult.json` is kept unvalidated (pending D).
-- Deprecation records (`deprecated`, `deprecatedFields`) are validated and reported as warnings; `replacedBy` targets must exist.
+- `null` means pending D: a warning, never an error; `RulesPack.pendingPaths` lists every pending place so features that need them stay off, including dice whose `explode` is not ruled. `occult.json` is kept unvalidated (pending D).
+- Numbers outside the web-safe range (non-finite or above 2^53 - 1) are errors in every pack file.
+- Deprecation records (`deprecated`, `deprecatedFields`) are validated and reported as warnings; `replacedBy` must name an existing entry, or another field of the same entry.
+- An advancement cost's `xp` may be a plain number (Proposed shorthand).
 - Content hash over canonical JSON (`sha256:<hex>`), with SHA-256 written in pure Dart; a manifest's written hash must match.
 - `RulesPack` now carries every provisional pack file: difficulty and check rules, conditions, disorders, sanity events, damage, vehicles, ranges, advancement, threats, items, techniques, NPCs and strings.
 - Command-line validator: `dart run engine:validate_pack <packDir>`.

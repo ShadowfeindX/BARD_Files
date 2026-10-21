@@ -32,7 +32,7 @@ const _minimalPack = {
       {
         'key': 'proficient',
         'name': 'Proficient',
-        'bonus': {'type': 'dice', 'count': 1, 'sides': 4},
+        'bonus': {'type': 'dice', 'count': 1, 'sides': 4, 'explode': false},
       },
     ],
   },
@@ -80,7 +80,7 @@ const _minimalPack = {
         'bonus': {
           'type': 'sum',
           'terms': [
-            {'type': 'dice', 'count': 1, 'sides': 6},
+            {'type': 'dice', 'count': 1, 'sides': 6, 'explode': false},
             {'type': 'var', 'key': 'helperSkillBonus'},
           ],
         },
@@ -290,7 +290,12 @@ void main() {
             {
               'key': 'D',
               'name': 'Cat-D',
-              'dice': {'type': 'dice', 'count': 1, 'sides': 10},
+              'dice': {
+                'type': 'dice',
+                'count': 1,
+                'sides': 10,
+                'explode': false,
+              },
               'min': 2,
             },
           ],
@@ -355,6 +360,17 @@ void main() {
       expect(result.pack!.skill('climb')!.attribute, isNull);
       expect(result.pack!.pendingPaths, {'skills.json: skills[0].attribute'});
       expect(result.warnings.single.pendingD, isTrue);
+    });
+
+    test('dice with no explode ruling are pending D and still load', () {
+      final result = loadEdited(
+        'proficiency.json',
+        (p) => (p['tiers'][1]['bonus'] as Map).remove('explode'),
+      );
+      expect(result.ok, isTrue);
+      expect(result.pack!.pendingPaths, {
+        'proficiency.json: tiers[1].bonus.explode',
+      });
     });
 
     test('a pending slot with a value is an error', () {
@@ -454,6 +470,29 @@ void main() {
       );
     });
 
+    test('a deprecated field may only be replaced by another field', () {
+      final ok = loadEdited(
+        'skills.json',
+        (s) => s['skills'][0]['deprecatedFields'] = {
+          'attribute': record(replacedBy: 'category'),
+        },
+      );
+      expect(ok.ok, isTrue);
+      expect(
+        loadEdited(
+          'skills.json',
+          (s) => s['skills'][0]['deprecatedFields'] = {
+            'attribute': record(replacedBy: 'governs'),
+          },
+        ),
+        hasError(
+          'skills.json',
+          'skills[0].deprecatedFields.attribute.replacedBy',
+          'No other field "governs"',
+        ),
+      );
+    });
+
     test('a record needs since, removeIn and note', () {
       expect(
         loadEdited(
@@ -463,6 +502,38 @@ void main() {
         hasError('skills.json', 'skills[0].deprecated.removeIn', 'Missing'),
       );
     });
+  });
+
+  test('numbers outside the web-safe range are errors anywhere', () {
+    final files = minimalPack()
+      ..['occult.json'] = {'anything': 9007199254740992};
+    expect(
+      load(files),
+      hasError('occult.json', 'anything', 'outside the range'),
+    );
+  });
+
+  test('cross-checks still run when an entry fails to parse', () {
+    final result = loadEdited('skills.json', (s) {
+      s['skills'][0]['deprecated'] = {
+        'since': '1.1.0',
+        'removeIn': 2,
+        'note': 'Gone.',
+        'replacedBy': 'skill:jump',
+      };
+      (s['skills'] as List).add({
+        'id': 'swim',
+        'name': 'Swim',
+        'description': 'Wet.',
+        'category': 'physical',
+        'attribute': 7,
+      });
+    });
+    expect(result, hasError('skills.json', 'skills[1].attribute', ''));
+    expect(
+      result,
+      hasError('skills.json', 'skills[climb].deprecated', 'missing skill'),
+    );
   });
 
   test('every problem is reported, not just the first', () {

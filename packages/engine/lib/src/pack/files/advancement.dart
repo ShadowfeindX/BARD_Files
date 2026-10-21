@@ -70,7 +70,8 @@ List<AdvancementCost> parseAdvancement(ObjectReader r, int? packMajor) {
   return r.objects('costs', (c) {
     final key = c.string('key');
     final name = c.string('name');
-    // A plain number is shorthand for a constant cost.
+    // A plain number is shorthand for a constant cost. Proposed: not in the
+    // spec yet (docs/developer-guide/packs.md, Proposed shorthand).
     final xpRaw = c.has('xp') ? c.raw('xp') : null;
     final xp = xpRaw is num
         ? _constant(c, xpRaw)

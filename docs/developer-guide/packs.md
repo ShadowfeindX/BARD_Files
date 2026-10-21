@@ -26,7 +26,12 @@ Every problem is collected, so the author sees them all in one run.
 `null` means "D has not ruled". It is a warning, never an error, and the pack lists every such place in `RulesPack.pendingPaths`, so a feature that needs one stays off and the UI can label it (setup decision 1). Two kinds:
 
 - A **value** that may be pending: a skill's `attribute` or `category`, damage `dice` and `min`, a vehicle's `drivingModifier` or `hp`, `disorders.json` `rollDie`, an armor's `drModifier`, an NPC's `attributes`.
+- A dice node whose `explode` is `null` or absent (G3), anywhere an expression appears. It rolls like `explode: false` until ruled, and its path ends in `.explode`.
 - A **slot** that may only hold `null` for now, because the engine has no vocabulary for its value yet: for example `checkRules.fumble.basis` (G1), `luckAdvantage.grantedBy` (G2), `assistance.cap` (G4), advancement `effect` and `repeat` (G14). A real value there is an error until the engine supports it.
+
+Two places use `null` as a real value, not the marker: a proficiency tier's `bonus: null` means "no bonus die", and an open-ended sanity-event row (`openEnded: true`) may have `max: null` because it has no top. Neither is listed in `pendingPaths`.
+
+Every number in every file, including `occult.json`, must be finite and at most 2^53 - 1 in size; anything else is an error, because the VM and the web would read it differently and the content hash would differ.
 
 `occult.json` is pending D as a whole (C5/G6, F3): it is kept as raw JSON in `RulesPack.occultPending`, not validated, and not used.
 
@@ -38,7 +43,13 @@ Some provisional files carry explanatory text with no effect on rules (`decided`
 
 ## Deprecation (P11)
 
-Any entry may carry a `deprecated` record (`since`, `removeIn`, `note`, optional `replacedBy`), and any entry a `deprecatedFields` map of field name to record. Each is a warning. `removeIn` must be a later major than the pack's own version; `replacedBy` of the form `kind:id` must name an existing entry (kinds: `attribute`, `skill`, `condition`, `item`, `technique`, `npc`).
+Any entry may carry a `deprecated` record (`since`, `removeIn`, `note`, optional `replacedBy`), and any entry a `deprecatedFields` map of field name to record. A valid record loads with a warning. A malformed one is an error: `removeIn` must be a later major than the pack's own version, an entry's `replacedBy` of the form `kind:id` must name an existing entry (kinds: `attribute`, `skill`, `condition`, `item`, `technique`, `npc`), and a field's `replacedBy` must name another field of the same entry.
+
+Engine-side deprecations of pack keys (a key the engine still reads but plans to drop) will also be warnings. There are none yet, so that path has no code until the first one; `lib/src/deprecation.dart` holds the record type both will share.
+
+## Proposed shorthand
+
+An advancement cost's `xp` may be a plain number instead of an expression; it is read as `{"type": "const", "value": n}`. This shorthand is Proposed (not in the spec) and goes to R with the row 4 PR.
 
 ## Content hash
 

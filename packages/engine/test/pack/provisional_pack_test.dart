@@ -50,6 +50,22 @@ void main() {
       'threats.json: perClassNumbersForAttackAndDefense',
       'vehicles.json: performance[7].drivingModifier',
       'vehicles.json: durability[7].hp',
+      // Dice whose explode flag is not ruled (G3).
+      'proficiency.json: tiers[1].bonus.explode',
+      'proficiency.json: tiers[2].bonus.explode',
+      'difficulty.json: checkRules.assistance.bonus.terms[0].explode',
+      'damage.json: categories[0].dice.explode',
+      'damage.json: categories[1].dice.explode',
+      'damage.json: categories[2].dice.explode',
+      'damage.json: categories[3].dice.explode',
+      'damage.json: categories[4].dice.explode',
+      'damage.json: categories[5].dice.explode',
+      'damage.json: categories[6].dice.explode',
+      'advancement.json: costs[0].grants.explode',
+      'advancement.json: costs[1].grants.explode',
+      'threats.json: supernatural[0].damage.dice.explode',
+      'threats.json: supernatural[1].damage.dice.explode',
+      'threats.json: supernatural[2].damage.dice.explode',
     });
     expect(
       result.warnings.where((w) => w.pendingD).length,

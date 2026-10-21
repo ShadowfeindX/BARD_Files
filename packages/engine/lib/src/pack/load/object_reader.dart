@@ -163,11 +163,31 @@ final class ObjectReader {
         error(key, 'A formula may not roll dice.');
         return null;
       }
+      _reportUnruledExplode(value, at(key));
       return expr;
     } on FormatException catch (e) {
       // decodeExpr already puts the full path in its message.
       log.error(file, '', e.message);
       return null;
+    }
+  }
+
+  /// Reports every dice node in [json] whose `explode` is `null` or absent as
+  /// pending D (gap G3). Such dice roll like `explode: false` until ruled.
+  ///
+  /// Walks the raw JSON rather than the decoded tree so each warning carries
+  /// the node's exact path. Only called after [json] decoded cleanly.
+  void _reportUnruledExplode(Object? json, String nodePath) {
+    if (json is! Map<String, Object?>) return;
+    if (json['type'] == 'dice' && isPendingMarker(json['explode'])) {
+      log.pendingD(file, '$nodePath.explode');
+    }
+    for (final listKey in const ['terms', 'pool', 'args']) {
+      final list = json[listKey];
+      if (list is! List<Object?>) continue;
+      for (var i = 0; i < list.length; i++) {
+        _reportUnruledExplode(list[i], '$nodePath.$listKey[$i]');
+      }
     }
   }
 
@@ -291,8 +311,8 @@ final class ObjectReader {
   }
 
   /// The entry's optional `deprecatedFields` map, field name to record. Each
-  /// named field must be a field the parser accepts on this entry (call this
-  /// last, after every other getter).
+  /// named field, and each `replacedBy`, must be a field the parser accepts on
+  /// this entry (call this last, after every other getter).
   Map<String, Deprecation> deprecatedFields(int? packMajor) {
     if (!has('deprecatedFields')) return const {};
     final value = _take('deprecatedFields');
@@ -318,6 +338,18 @@ final class ObjectReader {
       final reader = ObjectReader._(log, file, fieldPath, record);
       final parsed = reader._readDeprecation(packMajor);
       reader.finish();
+      final replacedBy = parsed?.replacedBy;
+      if (replacedBy != null &&
+          (!_known.contains(replacedBy) ||
+              replacedBy.startsWith('deprecated') ||
+              replacedBy == field)) {
+        log.error(
+          file,
+          '$fieldPath.replacedBy',
+          'No other field "$replacedBy" on this entry to replace it.',
+        );
+        continue;
+      }
       if (parsed != null) {
         result[field] = parsed;
         log.warning(file, fieldPath, _describe(parsed));

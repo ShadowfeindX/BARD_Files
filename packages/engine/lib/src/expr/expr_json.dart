@@ -93,7 +93,7 @@ final class _Decoder {
       ),
       'var' => _var(json, path),
       'dice' => _dice(json, path),
-      'sum' => Sum(_list(json, 'terms', path, {'type', 'terms'})),
+      'sum' => _sum(json, path),
       'keepHighest' => _keepHighest(json, path),
       'op' => _op(json, path),
       _ => throw FormatException('$path: unknown expression type "$type".'),
@@ -134,6 +134,11 @@ final class _Decoder {
         explode: explode as bool?,
       ),
     );
+  }
+
+  Sum _sum(Map<String, Object?> json, String path) {
+    final terms = _list(json, 'terms', path, {'type', 'terms'});
+    return _wrap(path, () => Sum(terms));
   }
 
   KeepHighest _keepHighest(Map<String, Object?> json, String path) {

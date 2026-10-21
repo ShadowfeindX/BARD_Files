@@ -110,7 +110,9 @@ PackLoadResult loadPack(Map<String, String> files) {
       continue;
     }
     try {
-      decoded[path] = jsonDecode(text);
+      final json = jsonDecode(text);
+      _checkNumbers(log, path, json, '');
+      decoded[path] = json;
     } on FormatException catch (e) {
       log.error(path, '', 'Not valid JSON: ${e.message}');
     }
@@ -127,7 +129,10 @@ PackLoadResult loadPack(Map<String, String> files) {
 
   final parts = _Parts(log, decoded, major);
   final pack = parts.build(manifest);
-  if (log.hasErrors || pack == null) return PackLoadResult(null, log.issues);
+  if (pack == null) return PackLoadResult(null, log.issues);
+  // Cross-checks run even after parse errors, so the author sees every
+  // problem in one pass. An entry that failed to parse is missing from the
+  // pack, so references to it are reported too.
   _CrossCheck(log, pack).run();
   if (log.hasErrors) return PackLoadResult(null, log.issues);
   return PackLoadResult(pack, log.issues);
@@ -291,6 +296,33 @@ final class _Parts {
 
 /// Cross-file and cross-entry checks on a parsed pack (02 §Loading and
 /// validation, step 4).
+/// Logs an error for every number in [json] that is not finite or is larger
+/// in size than [maxSafeInteger].
+///
+/// Such a number means something different on the VM and the web [V-14], so
+/// the content hash and every value read from it would differ between
+/// clients. The check covers the whole file, including parts nothing reads
+/// yet (such as `occult.json`).
+void _checkNumbers(IssueLog log, String file, Object? json, String path) {
+  switch (json) {
+    case num() when !json.isFinite || json.abs() > maxSafeInteger:
+      log.error(
+        file,
+        path,
+        'The number $json is outside the range every platform agrees on '
+        '(at most $maxSafeInteger in size).',
+      );
+    case Map<String, Object?>():
+      for (final MapEntry(:key, :value) in json.entries) {
+        _checkNumbers(log, file, value, path.isEmpty ? key : '$path.$key');
+      }
+    case List<Object?>():
+      for (var i = 0; i < json.length; i++) {
+        _checkNumbers(log, file, json[i], '$path[$i]');
+      }
+  }
+}
+
 final class _CrossCheck {
   _CrossCheck(this.log, this.pack);
 
