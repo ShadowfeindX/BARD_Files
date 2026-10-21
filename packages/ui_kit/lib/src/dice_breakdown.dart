@@ -133,14 +133,13 @@ class DiceBreakdownView extends StatelessWidget {
             for (final mod in data.modifiers)
               _ValueRow(label: mod.label, value: _signed(mod.value)),
             const Divider(),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text('Total ${data.total}', style: text.titleLarge),
-                if (dcText != null) ...[
-                  const SizedBox(width: 12),
-                  Text('vs $dcText', style: text.bodyLarge),
-                ],
-                const Spacer(),
+                if (dcText != null) Text('vs $dcText', style: text.bodyLarge),
                 Chip(
                   label: Text(
                     outcomeLabel(data.outcome),
