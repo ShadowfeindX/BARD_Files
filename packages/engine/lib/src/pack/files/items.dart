@@ -101,7 +101,6 @@ ItemTemplate? parseItem(ObjectReader r, int? packMajor) {
       ? r.intOrPending('drModifier')
       : null;
   r.pendingSlot('rangeBands'); // G10
-  r.pendingSlot('drModifierPlaceholder'); // G8 marker wrapper
   final deprecated = r.deprecation(packMajor);
   final fields = r.deprecatedFields(packMajor);
   if (id == null || name == null || kind == null || description == null) {

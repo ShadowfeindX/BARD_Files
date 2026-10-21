@@ -5,11 +5,11 @@ A pack is a folder of JSON files plus `manifest.json` (02 §Pack structure). The
 ## Check a pack from the command line
 
 ```bash
-dart run tool/bin/strip_annotations.dart packages/content_core/assets/example-core build/example-core
-cd packages/engine && dart run engine:validate_pack ../../build/example-core
+bash tool/build_pack.sh    # strips annotations into packages/content_core/assets/generated/example-core/
+cd packages/engine && dart run engine:validate_pack ../content_core/assets/generated/example-core
 ```
 
-Strip first: authoring annotations (`note`, `source`, `gap`, ...) are unknown keys to the loader, and unknown keys are errors. The validator prints every error and warning with its file and JSON path, then a summary and, when the pack loads, its content hash. Exit code 1 means errors. The validator itself is Proposed (02).
+Validate the generated pack, not the source: authoring annotations (`note`, `source`, `gap`, `_`-prefixed keys, ...) are unknown keys to the loader, and unknown keys are errors. The validator prints every error and warning with its file and JSON path, then a summary and, when the pack loads, its content hash. Exit code 1 means errors. The validator itself is Proposed (02).
 
 ## What the loader does
 
@@ -35,11 +35,11 @@ Every number in every file, including `occult.json`, must be finite and at most 
 
 `occult.json` is pending D as a whole (C5/G6, F3): it is kept as raw JSON in `RulesPack.occultPending`, not validated, and not used.
 
-Which JSON value counts as the marker is decided in one function, `isPendingMarker` in `lib/src/pack/load/pending.dart`. Today it is `null`. The annotation stripper currently writes `{}` for the provisional pack's marker objects; the recommendation to make it write `null` (and to treat `_`-prefixed keys as annotations) is awaiting R's ruling. Until then the stripped provisional pack reports those places as errors. The engine's own test strips the pack the recommended way (`test/support/provisional_pack.dart`).
+Which JSON value counts as the marker is decided in one function, `isPendingMarker` in `lib/src/pack/load/pending.dart`: `null`. R ruled (2026-10-21) that the annotation stripper turns marker objects into `null` and treats `_`-prefixed keys as annotations, so the generated pack carries `null` at every pending place. The engine's tests load that generated pack (`test/support/provisional_pack.dart`), so they need `bash tool/build_pack.sh` first; `tool/check_all.sh` and CI do this.
 
 ## Text fields of the provisional shape
 
-Some provisional files carry explanatory text with no effect on rules (`decided`, `attributeSource`, `notShownHere`, `storedModifiersAllowed`, `appliesTo`). The parsers accept these as text and ignore them, and the item, skill and NPC `*Placeholder` wrapper keys as pending slots. All of these are listed in the parsers (`prose(...)` and `pendingSlot(...)` calls), so they go away with one edit each when D's pack shape replaces the provisional one.
+Some provisional files carry explanatory text with no effect on rules (`decided`, `attributeSource`, `notShownHere`, `storedModifiersAllowed`, `appliesTo`). The parsers accept these as text and ignore them. They are listed in the parsers (`prose(...)` calls), so they go away with one edit each when D's pack shape replaces the provisional one. The old `*Placeholder` wrapper keys are now `_`-prefixed annotations (R, 2026-10-21) and are stripped before the loader sees the pack.
 
 ## Deprecation (P11)
 

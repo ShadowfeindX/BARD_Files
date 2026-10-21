@@ -35,7 +35,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - An advancement cost's `xp` may be a plain number (Proposed shorthand).
 - Content hash over canonical JSON (`sha256:<hex>`), with SHA-256 written in pure Dart; a manifest's written hash must match.
 - `RulesPack` now carries every provisional pack file: difficulty and check rules, conditions, disorders, sanity events, damage, vehicles, ranges, advancement, threats, items, techniques, NPCs and strings.
-- Command-line validator: `dart run engine:validate_pack <packDir>`.
+- Command-line validator: `dart run engine:validate_pack <packDir>`, run on the generated pack (`tool/build_pack.sh`); the provisional pack loads with no errors. The engine tests load the generated pack too, so the old `*Placeholder` slots are gone from the parsers.
 - Developer guide page `docs/developer-guide/packs.md`.
 
 ### Session

@@ -132,8 +132,6 @@ SkillsFile parseSkills(ObjectReader r, int? packMajor) {
     final category = s.stringOrPending('category');
     final attribute = s.stringOrPending('attribute');
     // Provisional-pack marker wrappers beside the field they explain (G15).
-    s.pendingSlot('categoryPlaceholder');
-    s.pendingSlot('attributePlaceholder');
     final deprecated = s.deprecation(packMajor);
     final fields = s.deprecatedFields(packMajor);
     if (id == null || name == null || description == null) return null;

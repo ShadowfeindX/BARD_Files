@@ -88,7 +88,6 @@ NpcTemplate? parseNpc(ObjectReader r, int? packMajor) {
           }
           return ImmutableMap.of(scores);
         });
-  r.pendingSlot('attributesPlaceholder'); // G11 marker wrapper
   final deprecated = r.deprecation(packMajor);
   final fields = r.deprecatedFields(packMajor);
   if (id == null ||
