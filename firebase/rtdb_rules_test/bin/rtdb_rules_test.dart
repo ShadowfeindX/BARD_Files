@@ -216,12 +216,30 @@ Future<void> main() async {
     (c, t) => c == 200 && jsonDecode(t) == 1,
   );
   await expectCode(
+    'multi-path PATCH: status archived with an allowed event is refused',
+    call(
+      'PATCH',
+      '/operations/$op',
+      gm,
+      body: {
+        'meta/status': 'archived',
+        'events/public/e90': {'seq': 90, 'body': 'x'},
+      },
+    ),
+    401,
+  );
+  await expectBody(
+    'multi-path PATCH: refused write left the event unwritten (atomic)',
+    call('GET', o('events/public/e90'), gm),
+    (c, t) => c == 200 && jsonDecode(t) == null,
+  );
+  await expectCode(
     'root PATCH: status archived across paths is refused',
     call('PATCH', '/', gm, body: {'operations/$op/meta/status': 'archived'}),
     401,
   );
   await expectCode(
-    'multi-path PATCH: gm cannot delete meta',
+    'PATCH: gm cannot delete meta',
     call('PATCH', '/operations/$op', gm, body: {'meta': null}),
     401,
   );
@@ -244,7 +262,7 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'root PUT of the operation node is refused (no write rule there)',
+    'root PUT of the operation node is refused (no write rule on the node; body not evaluated)',
     call(
       'PUT',
       '/operations/$op',
@@ -985,7 +1003,7 @@ Future<void> main() async {
     401,
   );
   await expectBody(
-    'locked: refused PATCH wrote no event (atomic)',
+    'locked: refused PATCH wrote no event',
     call('GET', o('events/public/e8'), gm),
     (c, t) => c == 200 && jsonDecode(t) == null,
   );
