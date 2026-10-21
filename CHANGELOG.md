@@ -31,6 +31,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
 - Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
 
+### UI
+- `packages/ui_kit` foundation: plain placeholder theme (`BardTheme`, light and dark; the dossier look waits for D), `DiceBreakdownView` with plain display data (exploded dice, modifiers, total vs DC, outcome; all numbers engine-supplied), `PerspectivePanel` scaffold bound to a `signals_flutter` list signal, widget tests, and developer notes in `docs/ui-kit.md`.
+
 ### Docs
 - Architecture specification under `docs/architecture/`: overview and package map, engine (ECS + event sourcing), rules packs, protocol, session actors, migrator, accounts and backend, apps, testing, open decisions for R, and a verification register.
 - Architecture spec: compatibility decoding within an engine major (additive-only) with a proposed deprecation mechanism; web build recorded as a lightweight client.
