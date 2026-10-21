@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:engine/engine.dart';
 import 'package:protocol/protocol.dart';
-import 'package:protocol_envelope/protocol_envelope.dart';
+// Prefixed: once `protocol` re-exports the envelope (later rows), an
+// unprefixed import would be flagged as unnecessary.
+import 'package:protocol_envelope/protocol_envelope.dart' as envelope;
 import 'package:test/test.dart';
 
 import 'support/samples.dart';
@@ -224,17 +226,20 @@ void main() {
 
     test('a newer shape version is refused', () {
       final json = sample()..['v'] = shapeVersion + 1;
-      expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));
+      expect(
+        () => decodeEvent(json),
+        throwsA(isA<envelope.ProtocolFormatException>()),
+      );
     });
 
     test('a missing or zero shape version is refused', () {
       expect(
         () => decodeEvent(sample()..remove('v')),
-        throwsA(isA<ProtocolFormatException>()),
+        throwsA(isA<envelope.ProtocolFormatException>()),
       );
       expect(
         () => decodeEvent(sample()..['v'] = 0),
-        throwsA(isA<ProtocolFormatException>()),
+        throwsA(isA<envelope.ProtocolFormatException>()),
       );
     });
 
@@ -266,7 +271,7 @@ void main() {
       expect(
         () => decodeEvent(json),
         throwsA(
-          isA<ProtocolFormatException>().having(
+          isA<envelope.ProtocolFormatException>().having(
             (e) => e.message,
             'message',
             contains('amount'),
@@ -280,12 +285,15 @@ void main() {
           onTheWire(encodeEvent(sampleEvents['checkResolved']!))!
               as Map<String, Object?>;
       json['draws'] = {'start': 5, 'end': 2};
-      expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));
+      expect(
+        () => decodeEvent(json),
+        throwsA(isA<envelope.ProtocolFormatException>()),
+      );
       final aliases = sample()
         ..['visibility'] = {'kind': 'aliases', 'aliases': <String>[]};
       expect(
         () => decodeEvent(aliases),
-        throwsA(isA<ProtocolFormatException>()),
+        throwsA(isA<envelope.ProtocolFormatException>()),
       );
     });
 
@@ -294,7 +302,10 @@ void main() {
           onTheWire(encodeEvent(sampleEvents['broadcastDelivered']!))!
               as Map<String, Object?>;
       json['visibility'] = {'kind': 'public'};
-      expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));
+      expect(
+        () => decodeEvent(json),
+        throwsA(isA<envelope.ProtocolFormatException>()),
+      );
     });
 
     Object? nested(int depth) {
@@ -316,7 +327,7 @@ void main() {
         (json['breakdown']! as Map)['primary'] = nested(depth);
         expect(
           () => decodeEvent(json),
-          throwsA(isA<ProtocolFormatException>()),
+          throwsA(isA<envelope.ProtocolFormatException>()),
           reason: 'depth $depth',
         );
       }
@@ -326,7 +337,7 @@ void main() {
       command['condition'] = nested(20000);
       expect(
         () => decodeCommand(command),
-        throwsA(isA<ProtocolFormatException>()),
+        throwsA(isA<envelope.ProtocolFormatException>()),
       );
     });
 
@@ -390,7 +401,7 @@ void main() {
       for (final term in bad) {
         expect(
           () => decodeEvent(withPrimary(term)),
-          throwsA(isA<ProtocolFormatException>()),
+          throwsA(isA<envelope.ProtocolFormatException>()),
           reason: '$term',
         );
       }
@@ -401,15 +412,21 @@ void main() {
           onTheWire(encodeEvent(sampleEvents['broadcastEvaluated']!))!
               as Map<String, Object?>;
       json['visibility'] = {'kind': 'public'};
-      expect(() => decodeEvent(json), throwsA(isA<ProtocolFormatException>()));
+      expect(
+        () => decodeEvent(json),
+        throwsA(isA<envelope.ProtocolFormatException>()),
+      );
     });
 
     test('non-object input is a format error, not a crash', () {
       for (final bad in <Object?>[null, 3, 'x', <Object?>[]]) {
-        expect(() => decodeEvent(bad), throwsA(isA<ProtocolFormatException>()));
+        expect(
+          () => decodeEvent(bad),
+          throwsA(isA<envelope.ProtocolFormatException>()),
+        );
         expect(
           () => decodeCommand(bad),
-          throwsA(isA<ProtocolFormatException>()),
+          throwsA(isA<envelope.ProtocolFormatException>()),
         );
       }
     });
@@ -426,20 +443,20 @@ void main() {
       };
       expect(
         () => decodeCommand(json),
-        throwsA(isA<ProtocolFormatException>()),
+        throwsA(isA<envelope.ProtocolFormatException>()),
       );
     });
   });
 
   group('inside an envelope', () {
     test('a command travels in a request body and an event in events', () {
-      const codec = JsonEnvelopeCodec();
+      const codec = envelope.JsonEnvelopeCodec();
       final command = encodeCommand(sampleCommands['applyDamage']!);
-      final request = Request(requestId: 'rq1', command: command);
+      final request = envelope.Request(requestId: 'rq1', command: command);
       final frame = codec.encode(
-        Envelope.of(
+        envelope.Envelope.of(
           request,
-          engineVersion: const EngineVersion(1, 0, 0),
+          engineVersion: const envelope.EngineVersion(1, 0, 0),
           operationId: 'op_1',
           from: 'al_vale',
         ),
