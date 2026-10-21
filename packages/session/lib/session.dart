@@ -1,4 +1,6 @@
 /// Pure-Dart actors, operation loop, transport and store interfaces, Rng adapter.
 ///
-/// Stub created by the workspace scaffold; the owning workstream fills it in.
+/// See `docs/architecture/04-session.md`.
 library;
+
+export 'src/xoshiro_rng.dart';
