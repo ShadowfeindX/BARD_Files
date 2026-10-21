@@ -17,6 +17,7 @@ const _eventTypes = {
   'sanityLost',
   'broadcastEvaluated',
   'broadcastDelivered',
+  'phoneMessageSent',
 };
 
 /// Encodes an engine [Event] as JSON for an `events` message or a log line.
@@ -174,6 +175,10 @@ JsonMap encodeEvent(Event event) {
         ],
       },
     ),
+    PhoneMessageSent(:final from, :final to, :final text) => (
+      'phoneMessageSent',
+      {'from': encodeParty(from), 'to': encodeParty(to), 'text': text},
+    ),
     BroadcastDelivered(:final text) => ('broadcastDelivered', {'text': text}),
   };
   return {
@@ -325,6 +330,16 @@ Event decodeEvent(Object? json) {
               ),
           ],
           actor: actor,
+        );
+      case 'phoneMessageSent':
+        final from = decodeParty(map.object('from'));
+        final to = decodeParty(map.object('to'));
+        return PhoneMessageSent(
+          from: from,
+          to: to,
+          text: decodePhoneText(map),
+          actor: actor,
+          visibility: decodePhoneVisibility(visibilityJson, from, to),
         );
       case 'broadcastDelivered':
         return BroadcastDelivered(

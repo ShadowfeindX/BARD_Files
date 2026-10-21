@@ -22,9 +22,9 @@ final event = decodeEvent(encodeEvent(event));
 
 ## Types
 
-Commands: `startOperation`, `createAgent`, `requestAction`, `declineRequest`, `requireCheck`, `resolveCheck`, `applyCondition`, `clearCondition`, `applyDamage`, `applySanityLoss`, `broadcastToQualifying`.
+Commands: `startOperation`, `createAgent`, `requestAction`, `declineRequest`, `requireCheck`, `resolveCheck`, `applyCondition`, `clearCondition`, `applyDamage`, `applySanityLoss`, `sendPhoneMessage`, `broadcastToQualifying`.
 
-Events: `operationStarted`, `agentCreated`, `actionRequested`, `requestDeclined`, `checkRequired`, `checkResolved`, `conditionApplied`, `conditionCleared`, `damageApplied`, `sanityLost`, `broadcastEvaluated`, `broadcastDelivered`.
+Events: `operationStarted`, `agentCreated`, `actionRequested`, `requestDeclined`, `checkRequired`, `checkResolved`, `conditionApplied`, `conditionCleared`, `damageApplied`, `sanityLost`, `phoneMessageSent`, `broadcastEvaluated`, `broadcastDelivered`.
 
 Adding an engine command or event is a compile error here (the encoders switch exhaustively): add the encoder case, the decoder case, a sample in `test/support/samples.dart` and a fixture.
 

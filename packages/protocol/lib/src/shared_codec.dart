@@ -74,6 +74,56 @@ Actor decodeActor(JsonMap json) => switch (json.string('kind')) {
   final other => throw ProtocolFormatException('unknown actor kind "$other"'),
 };
 
+/// Encodes the phone party as JSON.
+JsonMap encodeParty(PhoneParty party) => switch (party) {
+  PhoneGm() => {'kind': 'gm'},
+  PhoneAlias(:final alias) => {'kind': 'alias', 'alias': alias.value},
+  PhoneNpc(:final entity) => {'kind': 'npc', 'entity': entity.value},
+};
+
+/// Decodes the phone party from JSON; throws [ProtocolFormatException] when malformed.
+PhoneParty decodeParty(JsonMap json) => switch (json.string('kind')) {
+  'gm' => const PhoneGm(),
+  'alias' => PhoneAlias(AliasId(json.string('alias'))),
+  'npc' => PhoneNpc(EntityId(json.string('entity'))),
+  final other => throw ProtocolFormatException(
+    'unknown phone party kind "$other"',
+  ),
+};
+
+/// Reads phone message text; throws [ProtocolFormatException] when it is empty
+/// or longer than [maxPhoneTextUnits].
+String decodePhoneText(JsonMap json) {
+  final text = json.string('text');
+  if (text.isEmpty || text.length > maxPhoneTextUnits) {
+    throw const ProtocolFormatException(
+      'phone text must be 1 to $maxPhoneTextUnits UTF-16 units',
+    );
+  }
+  return text;
+}
+
+/// Decodes a phone message's visibility and checks it is exactly the alias
+/// parties of [from] and [to], the rule the engine applies when it decides.
+AliasesOnly decodePhoneVisibility(
+  JsonMap json,
+  PhoneParty from,
+  PhoneParty to,
+) {
+  final visibility = decodeAliasesOnly(json);
+  final expected = {
+    for (final party in [from, to])
+      if (party is PhoneAlias) party.alias,
+  };
+  if (visibility.aliases.length != expected.length ||
+      !visibility.aliases.containsAll(expected)) {
+    throw const ProtocolFormatException(
+      'phone message visibility must be the aliases of its parties',
+    );
+  }
+  return visibility;
+}
+
 /// Encodes the visibility as JSON.
 JsonMap encodeVisibility(Visibility visibility) => switch (visibility) {
   Public() => {'kind': 'public'},

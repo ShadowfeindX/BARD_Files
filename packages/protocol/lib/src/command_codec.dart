@@ -16,6 +16,7 @@ const _commandTypes = {
   'applyDamage',
   'applySanityLoss',
   'broadcastToQualifying',
+  'sendPhoneMessage',
 };
 
 /// Encodes an engine [Command] as JSON for the `request` message body.
@@ -131,6 +132,10 @@ JsonMap encodeCommand(Command command) {
           'visibility': encodeVisibility(visibility),
         },
       ),
+    SendPhoneMessage(:final from, :final to, :final text) => (
+      'sendPhoneMessage',
+      {'from': encodeParty(from), 'to': encodeParty(to), 'text': text},
+    ),
     BroadcastToQualifying(:final text, :final condition) => (
       'broadcastToQualifying',
       {'text': text, 'condition': encodeCondition(condition)},
@@ -232,6 +237,13 @@ Command decodeCommand(Object? json) {
           amount: map.integer('amount'),
           check: optCheck(map, 'check'),
           visibility: decodeVisibility(map.object('visibility')),
+          actor: actor,
+        );
+      case 'sendPhoneMessage':
+        return SendPhoneMessage(
+          from: decodeParty(map.object('from')),
+          to: decodeParty(map.object('to')),
+          text: decodePhoneText(map),
           actor: actor,
         );
       case 'broadcastToQualifying':

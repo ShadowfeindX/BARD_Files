@@ -16,6 +16,7 @@ import '../expr/evaluate.dart';
 import '../expr/expr.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
+import '../phone.dart';
 import '../state/operation_state.dart';
 import '../visibility.dart';
 
@@ -110,6 +111,9 @@ final class Narrator {
         '${_name(state, event.entity)} is now ${_condition(event.condition)}'
             '${was(event.overriddenFrom == null ? null : _condition(event.overriddenFrom!))}.',
       BroadcastEvaluated() => _evaluated(state, event),
+      PhoneMessageSent() =>
+        '${_party(state, event.from)} texts '
+            '${_party(state, event.to)}: "${event.text}"',
       BroadcastDelivered() =>
         forGm
             ? 'Message to ${_aliases(state, event.visibility.aliases)}: '
@@ -120,6 +124,13 @@ final class Narrator {
             '${_condition(event.condition)}.',
     };
   }
+
+  /// A party's name; the Handler is "the Handler" to everyone.
+  String _party(OperationState state, PhoneParty party) => switch (party) {
+    PhoneGm() => 'the Handler',
+    PhoneAlias(:final alias) => _aliases(state, {alias}),
+    PhoneNpc(:final entity) => _name(state, entity),
+  };
 
   String _evaluated(OperationState state, BroadcastEvaluated event) {
     final recipients = event.recipients;

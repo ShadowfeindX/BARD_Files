@@ -308,6 +308,50 @@ void main() {
       );
     });
 
+    group('phone messages', () {
+      Map<String, Object?> sent() =>
+          onTheWire(encodeEvent(sampleEvents['phoneMessageSent']!))!
+              as Map<String, Object?>;
+
+      test('visibility must be the aliases of the parties', () {
+        final json = sent();
+        json['visibility'] = {'kind': 'public'};
+        expect(
+          () => decodeEvent(json),
+          throwsA(isA<envelope.ProtocolFormatException>()),
+        );
+        final other = sent();
+        other['visibility'] = {
+          'kind': 'aliases',
+          'aliases': ['al_other'],
+        };
+        expect(
+          () => decodeEvent(other),
+          throwsA(isA<envelope.ProtocolFormatException>()),
+        );
+      });
+
+      test('text must be 1 to 2000 UTF-16 units in event and command', () {
+        for (final bad in ['', 'x' * 2001]) {
+          final event = sent()..['text'] = bad;
+          expect(
+            () => decodeEvent(event),
+            throwsA(isA<envelope.ProtocolFormatException>()),
+          );
+          final command =
+              onTheWire(encodeCommand(sampleCommands['sendPhoneMessage']!))!
+                  as Map<String, Object?>;
+          command['text'] = bad;
+          expect(
+            () => decodeCommand(command),
+            throwsA(isA<envelope.ProtocolFormatException>()),
+          );
+        }
+        final ok = sent()..['text'] = 'x' * 2000;
+        expect(decodeEvent(ok), isA<PhoneMessageSent>());
+      });
+    });
+
     Object? nested(int depth) {
       Object? inner = {'type': 'const', 'value': 1};
       for (var i = 0; i < depth; i++) {

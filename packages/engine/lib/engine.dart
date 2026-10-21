@@ -43,6 +43,8 @@ export 'src/ids.dart';
 export 'src/immutable_map.dart';
 export 'src/pack/rules_pack.dart';
 export 'src/narrator/narrator.dart';
+export 'src/phone.dart';
+export 'src/read_models/phone_threads.dart';
 export 'src/read_models/derived_stats.dart';
 export 'src/rng.dart';
 export 'src/state/component_stores.dart';
