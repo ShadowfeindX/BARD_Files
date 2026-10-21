@@ -27,7 +27,7 @@ The rest of this spec still uses "campaign" for the long-running game and "opera
 - **Private agent.** The agent's information is redacted on the public profile, and the alias list is partly hidden.
 - **Private alias.** The alias is left out of the alias list on the agent's public profile.
 - **Public profile.** The agent's public profile shows the agent, the public aliases, the operations they took part in and the missions they completed. The public badge links to it. Where the mission history comes from waits on X0.
-- **Document split.** Firestore rules act on whole documents, so hidden fields belong in a separate document [V-48]. Public profile data, owner-only data and private alias data are therefore separate documents. This shapes the Firestore collection draft (P10c).
+- **Document split.** Firestore rules act on whole documents, so hidden fields belong in a separate document [V-48]. Public profile data, owner-only data and private alias data are therefore separate documents. This shapes the Firestore collection draft (P10c, [12](12-firestore-collections.md)).
 
 ## Real personal data
 
