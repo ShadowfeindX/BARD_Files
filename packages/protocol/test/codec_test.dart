@@ -318,7 +318,7 @@ void main() {
         json['visibility'] = {'kind': 'public'};
         expect(
           () => decodeEvent(json),
-          throwsA(isA<ProtocolFormatException>()),
+          throwsA(isA<envelope.ProtocolFormatException>()),
         );
         final other = sent();
         other['visibility'] = {
@@ -327,7 +327,7 @@ void main() {
         };
         expect(
           () => decodeEvent(other),
-          throwsA(isA<ProtocolFormatException>()),
+          throwsA(isA<envelope.ProtocolFormatException>()),
         );
       });
 
@@ -336,7 +336,7 @@ void main() {
           final event = sent()..['text'] = bad;
           expect(
             () => decodeEvent(event),
-            throwsA(isA<ProtocolFormatException>()),
+            throwsA(isA<envelope.ProtocolFormatException>()),
           );
           final command =
               onTheWire(encodeCommand(sampleCommands['sendPhoneMessage']!))!
@@ -344,7 +344,7 @@ void main() {
           command['text'] = bad;
           expect(
             () => decodeCommand(command),
-            throwsA(isA<ProtocolFormatException>()),
+            throwsA(isA<envelope.ProtocolFormatException>()),
           );
         }
         final ok = sent()..['text'] = 'x' * 2000;
