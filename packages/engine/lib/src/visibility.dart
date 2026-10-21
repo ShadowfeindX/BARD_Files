@@ -7,7 +7,10 @@ import 'actor.dart';
 sealed class Visibility {
   const Visibility();
 
-  /// Whether a player acting as [alias] may see the event.
+  /// Whether a player acting as [alias] may see the event in full.
+  ///
+  /// For [Redacted] this is `false` for everyone: players receive only the
+  /// redacted form.
   bool visibleTo(AliasId alias);
 }
 
@@ -45,6 +48,28 @@ final class GmOnly extends Visibility {
 
   @override
   String toString() => 'GmOnly()';
+}
+
+/// Everyone learns that the event happened, but only the GM sees its body
+/// (03 §Visibility and perspectives: "the GM rolled something").
+///
+/// The session sends players a redacted form and the narrator writes the
+/// redacted text variant (01 §Responsibilities).
+final class Redacted extends Visibility {
+  /// The redacted visibility.
+  const Redacted();
+
+  @override
+  bool visibleTo(AliasId alias) => false;
+
+  @override
+  bool operator ==(Object other) => other is Redacted;
+
+  @override
+  int get hashCode => (Redacted).hashCode;
+
+  @override
+  String toString() => 'Redacted()';
 }
 
 /// The GM and the listed aliases see the event.

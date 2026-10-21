@@ -51,6 +51,9 @@ enum RejectionCode {
   /// The operation has already started.
   alreadyStarted,
 
+  /// The engine is bound to a different pack than the operation pinned.
+  packMismatch,
+
   /// A key does not exist in the pack (attribute, skill, tier, ...).
   unknownPackKey,
 

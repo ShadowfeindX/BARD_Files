@@ -92,6 +92,8 @@ void main() {
     const b = AliasId('b');
     expect(const Public().visibleTo(a), isTrue);
     expect(const GmOnly().visibleTo(a), isFalse);
+    expect(const Redacted().visibleTo(a), isFalse);
+    expect(const Redacted(), isNot(const GmOnly()));
     expect(AliasesOnly({a}).visibleTo(a), isTrue);
     expect(AliasesOnly({a}).visibleTo(b), isFalse);
     expect(AliasesOnly({a, b}), AliasesOnly({b, a}));

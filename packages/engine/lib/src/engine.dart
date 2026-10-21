@@ -44,6 +44,17 @@ final class Engine {
         ),
       );
     }
+    // The pinned pack decides every outcome (02 §Operations pin packs), so an
+    // engine bound to any other pack must not decide for this operation.
+    final pinned = state.meta?.packRef;
+    if (pinned != null && pinned != pack.ref) {
+      return Rejected(
+        Rejection(
+          RejectionCode.packMismatch,
+          'The operation pins $pinned but this engine runs ${pack.ref}.',
+        ),
+      );
+    }
     try {
       return switch (command) {
         OperationCommand() => _operation.decide(state, command),

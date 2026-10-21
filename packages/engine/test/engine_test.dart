@@ -89,6 +89,25 @@ void main() {
     );
   });
 
+  test('an engine bound to another pack refuses to decide', () {
+    final other = Engine(
+      testPack(
+        ref: const PackRef(id: 'test-core', version: '0.0.2', contentHash: 'x'),
+      ),
+    );
+    expect(
+      rejection(
+        other.decide(
+          started,
+          CreateAgent(name: 'Hall', attributes: validScores()),
+          ScriptedRng([]),
+          SequentialIdSource(),
+        ),
+      ),
+      RejectionCode.packMismatch,
+    );
+  });
+
   group('CreateAgent', () {
     test('produces AgentCreated with a new id, visible to its owner', () {
       const owner = AliasId('alias-1');

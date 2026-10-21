@@ -3,8 +3,14 @@ import 'package:engine/engine.dart';
 /// A small pack with values copied from the provisional example pack
 /// (library `packs/example-core/`): its nine attributes, creation limits,
 /// proficiency tiers, a few skills and the Health and Sanity formulas.
-RulesPack testPack() => RulesPack(
-  ref: const PackRef(id: 'test-core', version: '0.0.1', contentHash: 'test'),
+RulesPack testPack({
+  PackRef ref = const PackRef(
+    id: 'test-core',
+    version: '0.0.1',
+    contentHash: 'test',
+  ),
+}) => RulesPack(
+  ref: ref,
   attributes: [
     for (final key in attributeKeys) AttributeDef(key: key, name: key),
   ],

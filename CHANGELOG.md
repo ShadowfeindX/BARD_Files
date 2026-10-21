@@ -14,7 +14,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Developer guide: `docs/developer-guide/` with a setup page.
 
 ### Engine
-- Engine core in `packages/engine`: sealed `Command` and `Event` families grouped per system; `OperationState` with immutable ECS stores (`Identity`, `Attributes`, `Skills`); `Engine` with `decide`, `evolve` and `replay`; `Decision` (`Accepted` / `Rejected` with a `Rejection` code and message).
+- Engine core in `packages/engine`: sealed `Command` and `Event` families grouped per system; `OperationState` with immutable ECS stores (`Identity`, `Attributes`, `Skills`); `Engine` with `decide`, `evolve` and `replay`; `Decision` (`Accepted` / `Rejected` with a `Rejection` code and message); an engine refuses to decide for an operation that pinned a different pack; `Visibility` with `Public`, `GmOnly`, `AliasesOnly` and `Redacted`.
 - First commands: `StartOperation` (genesis `OperationStarted` pins engine version, pack and settings) and `CreateAgent` (`AgentCreated`; attribute and skill keys and per-attribute creation limits checked against the pack).
 - `Rng` and `IdSource` interfaces, `ScriptedRng` for tests, `SequentialIdSource`.
 - Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, numbers bounded to the range the VM and the web agree on, and only the two approved `var` keys.

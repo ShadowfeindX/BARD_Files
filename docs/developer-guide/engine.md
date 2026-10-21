@@ -16,6 +16,7 @@ switch (decision) {
 - `decide` is the only function that draws from the `Rng` or the `IdSource`. A rejection produces no events and draws nothing.
 - `evolve` (and `replay`, a fold of it) never fails and never rolls. Every client runs it.
 - Commands before `StartOperation` are rejected with `RejectionCode.notStarted`.
+- An engine bound to a different pack than the operation pinned refuses every command (`RejectionCode.packMismatch`).
 
 ## Where things live
 
@@ -70,10 +71,17 @@ Packs write data-only trees (P4); there is no scripting:
 - Production uses `XoshiroRng` in `packages/session` (`xrandom` 0.7.2 `Xoshiro128pp`, pinned). One draw is one 32-bit output; dice use rejection sampling. Reopening an operation passes the stored draw count, and the generator skips to it.
 - The known-seed vectors in `packages/session/test/xoshiro_rng_test.dart` come from the reference C implementation. The program is kept in the project's shared library folder (`probes/xoshiro128pp-vectors/`), not in this repository, since the stack is Dart only. CI runs the vectors and the engine tests on the VM and on Node.js (`dart test -p node`). Locally, `dart test -p chrome` also passes (as root, Chromium needs a wrapper that adds `--no-sandbox`).
 
+## Invariants later work must keep
+
+From the gate review of the engine core (2026-10-21):
+
+- **RNG draw count.** Each rolling event records the range of draws it used, and `evolve` sets `RngState.drawCount` to the end of that range. It never adds to it. A rejected command must leave the count where it was: either `decide` validates everything before its first draw, or the host stores the RNG's real count and reopens at the higher of the two. The check system adds a test for this.
+- **Entity ids.** `SequentialIdSource` restarts at `start`. The production `IdSource` in the session must never hand out an id already in the log after a crash and reopen. It derives the next id from state, or stores its counter with the commit marker.
+
 ## Proposed in this code (for R to accept or change)
 
 - The public API shape (01 §Public API surface is Proposed): `Engine`, `Decision` (`Accepted` / `Rejected`), `Rejection` and `RejectionCode`.
-- Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the operation lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly`; an agent's `AgentCreated` is seen by the GM and its owner.
+- Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the operation lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly` / `Redacted` (03 lists the four; the class names are Proposed); an agent's `AgentCreated` is seen by the GM and its owner.
 - `EntityKind` values (from 01's entity list) on `Identity`; display and filtering only.
 - The breakdown types (`Term` and its subclasses) that rolling events will carry.
 - Setting defaults: auto-resolve and auto-confirm off.
