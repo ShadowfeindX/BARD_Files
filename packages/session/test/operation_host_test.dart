@@ -244,13 +244,16 @@ void main() {
         final ann = await rig.join('ann', 'hall');
         // Every frame to the host arrives twice (at-least-once delivery).
         // An alias plays one agent, so a second delivery that was decided
-        // again would be rejected rather than stored: the seq proves
-        // nothing there, so count the events instead.
+        // again would be rejected (`aliasTaken`) rather than stored: the seq
+        // alone proves nothing, so the absence of a rejection does.
+        final rejections = <RequestRejected>[];
+        ann.rejections.listen(rejections.add);
         rig.network.filter = (toHost, frame) =>
             toHost ? [frame, frame] : [frame];
         final id = await ann.request(rig.agent('Hall', owner: 'hall'));
         await pumpEventQueue();
-        expect(rig.host.lastSeq, 2, reason: 'duplicated frame decided once');
+        expect(rig.host.lastSeq, 2);
+        expect(rejections, isEmpty, reason: 'duplicated frame decided once');
         expect(
           ann.pendingRequests,
           isEmpty,
@@ -264,6 +267,10 @@ void main() {
       rig = await Rig.create();
       await rig.start();
       final ann = await rig.join('ann', 'hall');
+      // A second decision would be rejected (`aliasTaken`), not stored, so
+      // the absence of a rejection is what proves the dedupe.
+      final rejections = <RequestRejected>[];
+      ann.rejections.listen(rejections.add);
       // Drop everything from the host so the request is never acknowledged.
       rig.network.filter = (toHost, frame) => toHost ? [frame] : [];
       await ann.request(rig.agent('Hall', owner: 'hall'));
@@ -276,6 +283,7 @@ void main() {
       await pumpEventQueue();
       expect(rig.host.lastSeq, 2, reason: 'the resent request was a duplicate');
       expect(ann.lastSeq, 2, reason: 'catch-up on hello delivered the event');
+      expect(rejections, isEmpty, reason: 'the resent request was a duplicate');
     });
 
     test(
@@ -667,6 +675,9 @@ void main() {
         rig = await Rig.create();
         await rig.start();
         final ann = await rig.join('ann', 'hall');
+        // A second decision would be rejected (`aliasTaken`), not stored.
+        final rejections = <RequestRejected>[];
+        ann.rejections.listen(rejections.add);
         // The host's answer never reaches the player, so the request stays pending.
         rig.network.filter = (toHost, frame) => toHost ? [frame] : [];
         await ann.request(rig.agent('Hall', owner: 'hall'));
@@ -681,6 +692,7 @@ void main() {
         expect(rig.host.lastSeq, 2, reason: 'recognised from the stored log');
         expect(ann.lastSeq, 2);
         expect(ann.pendingRequests, isEmpty);
+        expect(rejections, isEmpty, reason: 'recognised from the stored log');
       },
     );
 
