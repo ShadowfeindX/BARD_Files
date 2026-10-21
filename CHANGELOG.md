@@ -30,7 +30,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Session
 - `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
 - Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
-### Features
+### Protocol envelope
 - `protocol_envelope` package (SDK only): envelope, eleven message types, refusal reasons, `hello` version negotiation (SemVer pre-releases accepted), and a JSON codec behind an `EnvelopeCodec` interface, with round-trip, malformed-input, negotiation and fixture tests.
 
 ### Docs
