@@ -33,8 +33,27 @@ class _BardAppState extends State<BardApp> {
 
   /// One active host at a time: the old one is closed, a fresh empty
   /// operation replaces it, and the router restarts at `/`.
+  final GlobalKey<ScaffoldMessengerState> _messenger =
+      GlobalKey<ScaffoldMessengerState>();
+  bool _opening = false;
+
   Future<void> _startNewOperation() async {
-    final next = await Composition.inProcess(rootBundle, seedDemoAgents: false);
+    if (_opening) return;
+    _opening = true;
+    final Composition next;
+    try {
+      next = await Composition.inProcess(rootBundle, seedDemoAgents: false);
+    } catch (e) {
+      // Keep the current operation running and say why nothing changed.
+      _opening = false;
+      if (mounted) {
+        _messenger.currentState?.showSnackBar(
+          SnackBar(content: Text('Could not start a new operation: $e')),
+        );
+      }
+      return;
+    }
+    _opening = false;
     final old = _composition;
     setState(() {
       _composition = next;
@@ -46,6 +65,7 @@ class _BardAppState extends State<BardApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      scaffoldMessengerKey: _messenger,
       title: 'B.A.R.D. Files',
       theme: BardTheme.light(),
       darkTheme: BardTheme.dark(),

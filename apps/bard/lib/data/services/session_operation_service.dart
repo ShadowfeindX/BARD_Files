@@ -51,7 +51,12 @@ class SessionOperationService implements OperationService {
       verifier: _NoLinksVerifier(),
     );
     final service = SessionOperationService._(host, store, pack);
-    await service._seed(seedDemoAgents: seedDemoAgents);
+    try {
+      await service._seed(seedDemoAgents: seedDemoAgents);
+    } catch (_) {
+      await host.close();
+      rethrow;
+    }
     host.states.listen((_) => unawaited(service._serial(service._refresh)));
     host.pendingChanges.listen(
       (_) => unawaited(service._serial(service._refresh)),
@@ -80,7 +85,12 @@ class SessionOperationService implements OperationService {
   static const _demoAliases = {'vale': 'Agent Vale', 'quill': 'Agent Quill'};
 
   Future<void> _seed({required bool seedDemoAgents}) async {
-    await _host.submit(const StartOperation(operationId: _operationId));
+    final started = await _host.submit(
+      const StartOperation(operationId: _operationId),
+    );
+    if (started is Refusal) {
+      throw StateError('Could not start the operation: ${started.message}');
+    }
     if (!seedDemoAgents) {
       await _refresh();
       return;
