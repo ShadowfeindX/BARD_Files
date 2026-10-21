@@ -4,7 +4,7 @@
   "description": "[D to write]",
   "threatClass": "human:E",
   "attributes": null,
-  "attributesPlaceholder": {
+  "_attributesPlaceholder": {
     "placeholder": true,
     "gap": "G11",
     "note": "An NPC needs attribute numbers or an Evasion/attack value to act. The book gives class totals only."

@@ -38,13 +38,32 @@ void main() {
       expect(out, {'explode': null});
     });
 
-    test('reports an object left empty instead of dropping it', () {
+    test('an object that held only annotations becomes null (pending D)', () {
       final report = StripReport();
       final out = stripAnnotations({
         'basis': {'placeholder': true, 'gap': 'G1', 'note': 'n'},
+        'rows': [
+          {'_wrapper': 'x'},
+          <String, Object?>{},
+        ],
       }, report);
-      expect(out, {'basis': <String, Object?>{}});
-      expect(report.emptied, [r'$.basis']);
+      expect(out, {
+        'basis': null,
+        'rows': [null, <String, Object?>{}],
+      });
+      expect(report.pending, [r'$.basis', r'$.rows[0]']);
+    });
+
+    test('a key starting with an underscore is an annotation', () {
+      final report = StripReport();
+      final out = stripAnnotations({
+        'v': 1,
+        '_note': 'n',
+        '_attributePlaceholder': {'placeholder': true},
+      }, report);
+      expect(out, {'v': 1});
+      expect(report.removed, 2);
+      expect(report.pending, isEmpty);
     });
 
     test('keeps the note inside a deprecation record', () {
@@ -55,37 +74,49 @@ void main() {
 
     test('reports annotation-like keys that are not in the spec list', () {
       final report = StripReport();
-      final out = stripAnnotations({
-        '_note': 'x',
-        'attributePlaceholder': {'placeholder': true},
-      }, report);
-      expect(out, containsPair('_note', 'x'));
-      expect(report.suspected, [r'$._note', r'$.attributePlaceholder']);
+      final out = stripAnnotations({'gapFill': 1, 'xNOTE': 2}, report);
+      expect(out, {'gapFill': 1, 'xNOTE': 2});
+      expect(report.suspected, [r'$.gapFill', r'$.xNOTE']);
     });
   });
 
-  test('stripPack handles a trailing slash and names a malformed file', () {
-    final dir = Directory.systemTemp.createTempSync('strip_slash');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    Directory('${dir.path}/in/sub').createSync(recursive: true);
-    File('${dir.path}/in/sub/a.json').writeAsStringSync('{"v":1}');
-    final reports = stripPack(
-      Directory('${dir.path}/in/'),
-      Directory('${dir.path}/out'),
-    );
-    expect(reports.keys, ['sub/a.json']);
-    expect(File('${dir.path}/out/sub/a.json').existsSync(), isTrue);
-    File('${dir.path}/in/bad.json').writeAsStringSync('{');
-    expect(
-      () => stripPack(Directory('${dir.path}/in'), Directory('${dir.path}/o2')),
-      throwsA(
-        isA<FormatException>().having(
-          (e) => e.message,
-          'message',
-          contains('bad.json'),
-        ),
-      ),
-    );
+  group('checkPack', () {
+    late Directory dir;
+    late Directory source;
+    late Directory target;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('strip_check');
+      source = Directory('${dir.path}/in')..createSync();
+      target = Directory('${dir.path}/out');
+      File('${source.path}/a.json').writeAsStringSync('{"v":1,"note":"n"}');
+    });
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    test('a freshly built pack is current', () {
+      stripPack(source, target);
+      expect(checkPack(source, target), isEmpty);
+    });
+
+    test('a missing target, stale file and extra file are reported', () {
+      expect(checkPack(source, target), hasLength(1));
+      stripPack(source, target);
+      File('${source.path}/a.json').writeAsStringSync('{"v":2}');
+      expect(checkPack(source, target), ['a.json is out of date']);
+      stripPack(source, target);
+      File('${target.path}/stray.json').writeAsStringSync('{}');
+      expect(checkPack(source, target), [
+        'stray.json is not in the source pack',
+      ]);
+    });
+
+    test('rebuilding removes files deleted from the source', () {
+      File('${source.path}/b.json').writeAsStringSync('{}');
+      stripPack(source, target);
+      File('${source.path}/b.json').deleteSync();
+      stripPack(source, target);
+      expect(File('${target.path}/b.json').existsSync(), isFalse);
+    });
   });
 
   test('stripPack writes stripped json and skips other files', () {

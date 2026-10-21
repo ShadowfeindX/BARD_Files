@@ -93,7 +93,7 @@
       "description": "[D to write: the canonical book has no skill descriptions]",
       "category": "social",
       "attribute": null,
-      "attributePlaceholder": {
+      "_attributePlaceholder": {
         "placeholder": true,
         "gap": "G15",
         "note": "No attribute on the dossier. The older 2.1 draft suggests WIS. D decides."
@@ -119,7 +119,7 @@
       "description": "[D to write: the canonical book has no skill descriptions]",
       "category": null,
       "attribute": "WIL",
-      "categoryPlaceholder": {
+      "_categoryPlaceholder": {
         "placeholder": true,
         "gap": "G15",
         "note": "Named as a prerequisite on p29 but missing from the p19 skill list. D picks the category."

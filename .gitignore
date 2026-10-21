@@ -17,3 +17,6 @@ build/
 firebase-debug.log
 ui-debug.log
 database-debug.log
+
+# Generated rules-pack assets (built by tool/build_pack.sh)
+packages/content_core/assets/generated/

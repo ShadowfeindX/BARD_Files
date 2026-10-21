@@ -4,7 +4,7 @@
   "kind": "armor",
   "description": "[D to write]",
   "drModifier": null,
-  "drModifierPlaceholder": {
+  "_drModifierPlaceholder": {
     "placeholder": true,
     "gap": "G8",
     "note": "Armor has no values in the book. D chooses categories and numbers."
