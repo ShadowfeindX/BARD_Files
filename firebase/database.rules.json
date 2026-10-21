@@ -12,7 +12,7 @@
           },
           ".validate": "newData.hasChildren(['gm', 'status']) && (!data.hasChild('locked') || newData.hasChild('locked'))",
           "status": {
-            ".validate": "newData.isString()"
+            ".validate": "newData.isString() && newData.val() !== 'archived'"
           },
           "locked": {
             ".validate": "newData.isBoolean()"

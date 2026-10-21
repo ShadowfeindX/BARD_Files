@@ -171,6 +171,16 @@ Future<void> main() async {
     200,
   );
   await expectCode(
+    'gm cannot set status archived before lock (admin path only)',
+    call('PUT', o('meta/status'), gm, body: 'archived'),
+    401,
+  );
+  await expectCode(
+    'gm cannot replace meta with status archived before lock',
+    call('PUT', o('meta'), gm, body: {'gm': 'gm1', 'status': 'archived'}),
+    401,
+  );
+  await expectCode(
     'gm cannot remove status (validate)',
     call('DELETE', o('meta/status'), gm),
     401,
@@ -604,6 +614,27 @@ Future<void> main() async {
     ),
     401,
   );
+  // `.length` counts UTF-16 code units, so an emoji counts as 2.
+  await expectCode(
+    'phone/<uid>: 1,000 emoji (2,000 UTF-16 units) accepted',
+    call(
+      'PUT',
+      o('phone/p2/v7'),
+      p2,
+      body: {'from': 'p2', 'text': '\u{1F600}' * 1000},
+    ),
+    200,
+  );
+  await expectCode(
+    'phone/<uid>: 1,001 emoji (2,002 UTF-16 units) rejected',
+    call(
+      'PUT',
+      o('phone/p2/v8'),
+      p2,
+      body: {'from': 'p2', 'text': '\u{1F600}' * 1001},
+    ),
+    401,
+  );
   await expectCode(
     'phone/<uid>: member cannot delete own message (create-only)',
     call('DELETE', o('phone/p2/m1'), p2),
@@ -795,6 +826,16 @@ Future<void> main() async {
     401,
   );
   await expectCode(
+    'locked: gm cannot change status',
+    call('PUT', o('meta/status'), gm, body: 'paused'),
+    401,
+  );
+  await expectCode(
+    'locked: gm cannot set status archived',
+    call('PUT', o('meta/status'), gm, body: 'archived'),
+    401,
+  );
+  await expectCode(
     'locked: gm cannot delete meta (ruling 1)',
     call('DELETE', o('meta'), gm),
     401,
@@ -859,6 +900,11 @@ Future<void> main() async {
   await expectCode(
     'non-member cannot read alias:null branch (null aliasId must not match)',
     call('GET', o('events/alias:null'), out),
+    401,
+  );
+  await expectCode(
+    'non-member cannot read textlog alias:null branch',
+    call('GET', o('textlog/alias:null'), out),
     401,
   );
   await expectCode(
@@ -938,6 +984,14 @@ Future<void> main() async {
     401,
   );
 
+  // ---- archive step: the function marks the operation archived. Only
+  // admin REST can set this value; the rules refuse it from any client ----
+  await expectCode(
+    'archive: function marks the operation archived (admin)',
+    call('PUT', o('meta/status'), admin, body: 'archived'),
+    200,
+  );
+
   // ---- post-archive clean-up (R 2026-10-21): admin REST deletes live
   // branches, meta and members stay as the locked stub ----
   for (final branch in [
@@ -996,11 +1050,6 @@ Future<void> main() async {
     'clean-up: member cannot write signaling again',
     call('PUT', o('signaling/p2/offer'), p2, body: 'x'),
     401,
-  );
-  await expectCode(
-    'clean-up: function marks the operation archived',
-    call('PUT', o('meta/status'), admin, body: 'archived'),
-    200,
   );
   await expectCode(
     'archived: member cannot write own presence again',

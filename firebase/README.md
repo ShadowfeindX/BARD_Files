@@ -23,4 +23,6 @@ The project id `demo-bard` is a `demo-` project: the emulator runs fully offline
 
 Every rule change comes with checks for it in `rtdb_rules_test/bin/rtdb_rules_test.dart`, in the same PR. Checks build unsigned ID tokens (the emulator accepts them) and set `firebase.sign_in_provider` per user, so anonymous and full accounts can be told apart. Admin requests (`Bearer owner`) stand in for functions using admin REST, which bypass rules.
 
-Not covered here: rules deployed to a real project with signed tokens, custom claims, payload size limits and load.
+Not covered here: rules deployed to a real project with signed tokens, custom claims, payload size limits (beyond the phone text cap) and load. The phone text cap (2,000) uses `.length`, which counts UTF-16 code units in the emulator, so an emoji counts as 2; the checks pin that.
+
+Only admin REST may set `meta/status` to `archived`; the rules refuse it from every client.
