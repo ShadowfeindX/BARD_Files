@@ -55,6 +55,27 @@ There is no message by which a client sends an *event*. Only the GM produces eve
 
 A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is not built. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
 
+### Message bodies (Proposed)
+
+The table above names what each message carries; `packages/protocol_envelope` fixes the field names below. They are **Proposed** until R approves, and are the only wire details the spec had left open. Engine commands, events and state inside them are opaque JSON owned by `protocol`.
+
+| Message | Body |
+|---|---|
+| `hello` | `agentId`, `aliasId?`, `kind?` (`full` default, or `anonymous`, as in 06's account model; advisory, the host decides from the verified identity), `authProof?`, `lastSeq` (0 if none) |
+| `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`), `events?` (from the snapshot's `seq + 1`, or the client's `lastSeq + 1` without a snapshot) |
+| `refused` | `reason`, `message?`, and one of `protocolMajor` / `engineMajor` / `requiredEngine` that matches the reason |
+| `request` | `requestId`, `command` |
+| `rejected` | `requestId`, `code`, `message?` |
+| `events` | `events` (non-empty). The envelope `seq` is the first event's `seq`; the rest are consecutive |
+| `resync` | `lastSeq` |
+| `textlog` | `archive` (archived operation id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
+| `presence` | `status`: `online`, `away` or `typing` |
+| `ping` / `pong` | `nonce?` |
+
+Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and Proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
+
+The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (Proposed).
+
 ## Ordering and delivery
 
 - The GM's session assigns `seq` strictly increasing per operation, starting at 1. It is the order of truth.
