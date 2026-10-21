@@ -10,7 +10,7 @@
           "gm": {
             ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val())"
           },
-          ".validate": "newData.hasChildren(['gm', 'status'])",
+          ".validate": "newData.hasChildren(['gm', 'status']) && (!data.hasChild('locked') || newData.hasChild('locked'))",
           "status": {
             ".validate": "newData.isString()"
           },
@@ -75,14 +75,15 @@
           "$uid": {
             ".read": "auth != null && auth.uid === $uid",
             "$push": {
-              ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists() && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists() && newData.child('from').val() === auth.uid))"
+              ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && !data.exists() && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists() && newData.child('from').val() === auth.uid))",
+              ".validate": "newData.hasChildren(['from', 'text']) && newData.child('from').isString() && newData.child('text').isString() && newData.child('text').val().length <= 2000"
             }
           },
           ".read": "auth != null && root.child('operations/' + $op + '/meta/gm').val() === auth.uid"
         },
         "signaling": {
           "$uid": {
-            ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || root.child('operations/' + $op + '/members/' + auth.uid).exists())",
+            ".read": "auth != null && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists()))",
             ".write": "auth != null && root.child('operations/' + $op + '/meta/locked').val() !== true && (root.child('operations/' + $op + '/meta/gm').val() === auth.uid || (auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('operations/' + $op + '/members/' + auth.uid).exists()))"
           }
         }

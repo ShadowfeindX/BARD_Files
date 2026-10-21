@@ -194,6 +194,21 @@ Future<void> main() async {
     200,
   );
   await expectCode(
+    'gm cannot remove locked once set, even before the lock (validate)',
+    call('DELETE', o('meta/locked'), gm),
+    401,
+  );
+  await expectCode(
+    'gm cannot replace meta dropping locked once set (validate)',
+    call('PUT', o('meta'), gm, body: {'gm': 'gm1', 'status': 'paused'}),
+    401,
+  );
+  await expectBody(
+    'locked is still false after the removal attempts',
+    call('GET', o('meta/locked'), admin),
+    (c, t) => c == 200 && jsonDecode(t) == false,
+  );
+  await expectCode(
     'full account cannot create an operation without status (validate)',
     call('PUT', '/operations/op3/meta', p2, body: {'gm': 'p2'}),
     401,
@@ -553,6 +568,41 @@ Future<void> main() async {
     401,
   );
   await expectCode(
+    'phone/<uid>: message without text rejected (validate)',
+    call('PUT', o('phone/p2/v1'), p2, body: {'from': 'p2'}),
+    401,
+  );
+  await expectCode(
+    'phone/<uid>: gm message without from rejected (validate)',
+    call('PUT', o('phone/p2/v2'), gm, body: {'text': 'hi'}),
+    401,
+  );
+  await expectCode(
+    'phone/<uid>: non-string text rejected (validate)',
+    call('PUT', o('phone/p2/v3'), p2, body: {'from': 'p2', 'text': 42}),
+    401,
+  );
+  await expectCode(
+    'phone/<uid>: text of exactly 2,000 characters accepted',
+    call('PUT', o('phone/p2/v4'), p2, body: {'from': 'p2', 'text': 'a' * 2000}),
+    200,
+  );
+  await expectCode(
+    'phone/<uid>: text over 2,000 characters rejected (validate)',
+    call('PUT', o('phone/p2/v5'), p2, body: {'from': 'p2', 'text': 'a' * 2001}),
+    401,
+  );
+  await expectCode(
+    'phone/<uid>: gm text over 2,000 characters rejected (validate)',
+    call(
+      'PUT',
+      o('phone/p2/v6'),
+      gm,
+      body: {'from': 'npc7', 'text': 'a' * 2001},
+    ),
+    401,
+  );
+  await expectCode(
     'phone/<uid>: member cannot delete own message (create-only)',
     call('DELETE', o('phone/p2/m1'), p2),
     401,
@@ -647,8 +697,23 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'member reads another uid\'s signaling (read scope as probed)',
+    'full-account member reads another uid\'s signaling (read scope as probed)',
+    call('GET', o('signaling/p2'), p4),
+    200,
+  );
+  await expectCode(
+    'anonymous member cannot read any signaling (no voice or video for tier 0)',
     call('GET', o('signaling/p2'), p1),
+    401,
+  );
+  await expectCode(
+    'anonymous member cannot read own-uid signaling either',
+    call('GET', o('signaling/p1'), p1),
+    401,
+  );
+  await expectCode(
+    'gm reads a uid\'s signaling',
+    call('GET', o('signaling/p2'), gm),
     200,
   );
   await expectCode(
@@ -812,6 +877,21 @@ Future<void> main() async {
   await expectCode(
     'non-member cannot read textlog public',
     call('GET', o('textlog/public'), out),
+    401,
+  );
+  await expectCode(
+    'non-member cannot read textlog root',
+    call('GET', o('textlog'), out),
+    401,
+  );
+  await expectCode(
+    'non-member cannot read textlog gm branch',
+    call('GET', o('textlog/gm'), out),
+    401,
+  );
+  await expectCode(
+    'unauthenticated cannot read textlog public',
+    call('GET', o('textlog/public'), none),
     401,
   );
   await expectCode('gm reads textlog root', call('GET', o('textlog'), gm), 200);
