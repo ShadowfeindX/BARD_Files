@@ -92,6 +92,22 @@ void main() {
       ),
     );
     run(
+      const SendPhoneMessage(
+        from: PhoneAlias(valeAlias),
+        to: PhoneGm(),
+        text: 'Need backup',
+        actor: AliasActor(valeAlias),
+      ),
+    );
+    run(
+      const SendPhoneMessage(
+        from: PhoneGm(),
+        to: PhoneAlias(valeAlias),
+        text: 'Hold on',
+        actor: GmActor(),
+      ),
+    );
+    run(
       RequireCheck(
         entity: vale,
         attribute: 'WIL',
@@ -118,6 +134,7 @@ void main() {
       'sanityLost',
       'broadcastEvaluated',
       'broadcastDelivered',
+      'phoneMessageSent',
     });
     expect(
       log.whereType<CheckResolved>().single.breakdown.primary,

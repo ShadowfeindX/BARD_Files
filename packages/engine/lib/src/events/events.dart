@@ -12,6 +12,7 @@ import '../equality.dart';
 import '../expr/condition.dart';
 import '../ids.dart';
 import '../immutable_map.dart';
+import '../phone.dart';
 import '../pack/rules_pack.dart';
 import '../state/operation_state.dart';
 import '../visibility.dart';

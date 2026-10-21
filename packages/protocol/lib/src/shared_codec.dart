@@ -74,6 +74,23 @@ Actor decodeActor(JsonMap json) => switch (json.string('kind')) {
   final other => throw ProtocolFormatException('unknown actor kind "$other"'),
 };
 
+/// Encodes the phone party as JSON.
+JsonMap encodeParty(PhoneParty party) => switch (party) {
+  PhoneGm() => {'kind': 'gm'},
+  PhoneAlias(:final alias) => {'kind': 'alias', 'alias': alias.value},
+  PhoneNpc(:final entity) => {'kind': 'npc', 'entity': entity.value},
+};
+
+/// Decodes the phone party from JSON; throws [ProtocolFormatException] when malformed.
+PhoneParty decodeParty(JsonMap json) => switch (json.string('kind')) {
+  'gm' => const PhoneGm(),
+  'alias' => PhoneAlias(AliasId(json.string('alias'))),
+  'npc' => PhoneNpc(EntityId(json.string('entity'))),
+  final other => throw ProtocolFormatException(
+    'unknown phone party kind "$other"',
+  ),
+};
+
 /// Encodes the visibility as JSON.
 JsonMap encodeVisibility(Visibility visibility) => switch (visibility) {
   Public() => {'kind': 'public'},

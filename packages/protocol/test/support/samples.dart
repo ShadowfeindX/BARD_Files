@@ -51,6 +51,12 @@ final Map<String, Command> sampleCommands = {
     check: CheckId('c1'),
   ),
   'applySanityLoss': const ApplySanityLoss(entity: vale, amount: 3),
+  'sendPhoneMessage': const SendPhoneMessage(
+    from: PhoneAlias(valeAlias),
+    to: PhoneNpc(EntityId('e3')),
+    text: 'Who goes there?',
+    actor: AliasActor(valeAlias),
+  ),
   'broadcastToQualifying': BroadcastToQualifying(
     text: 'A low groaning voice.',
     condition: Compare(CompareOp.lt, Attr('WIL'), Const(3)),
@@ -186,6 +192,13 @@ final Map<String, Event> sampleEvents = {
       ),
     ],
     actor: const GmActor(),
+  ),
+  'phoneMessageSent': PhoneMessageSent(
+    from: const PhoneNpc(EntityId('e3')),
+    to: const PhoneAlias(valeAlias),
+    text: 'Go away.',
+    actor: const GmActor(),
+    visibility: AliasesOnly({valeAlias}),
   ),
   'broadcastDelivered': BroadcastDelivered(
     text: 'A low groaning voice.',
