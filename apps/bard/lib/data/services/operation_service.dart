@@ -8,6 +8,9 @@ import '../models.dart';
 /// view models only see this interface (07 §Layering).
 /// Perspective signals hold already-filtered lines for one viewer.
 abstract interface class OperationService {
+  /// Releases the host. The service is unusable afterwards.
+  Future<void> dispose();
+
   /// All agents with current vitals.
   ReadonlySignal<List<AgentSheet>> get agents;
 

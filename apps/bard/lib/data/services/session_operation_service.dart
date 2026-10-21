@@ -26,11 +26,13 @@ class SessionOperationService implements OperationService {
   /// Fixed demo seed so a run is reproducible; the rolls are still logged.
   static final RngSeed demoSeed = RngSeed(1, 2, 3, 4);
 
-  /// Opens an operation from [packFiles], starts it, and adds two demo
-  /// agents. Throws [StateError] listing the pack problems if it fails.
+  /// Opens an operation from [packFiles] and starts it. With
+  /// [seedDemoAgents] it also adds two demo agents; a new operation passes
+  /// false and the GM adds agents. Throws [StateError] listing the pack problems if it fails.
   static Future<SessionOperationService> open(
-    Map<String, String> packFiles,
-  ) async {
+    Map<String, String> packFiles, {
+    bool seedDemoAgents = true,
+  }) async {
     final loaded = loadPack(packFiles);
     final pack = loaded.pack;
     if (pack == null) {
@@ -49,7 +51,7 @@ class SessionOperationService implements OperationService {
       verifier: _NoLinksVerifier(),
     );
     final service = SessionOperationService._(host, store, pack);
-    await service._seed();
+    await service._seed(seedDemoAgents: seedDemoAgents);
     host.states.listen((_) => unawaited(service._serial(service._refresh)));
     host.pendingChanges.listen(
       (_) => unawaited(service._serial(service._refresh)),
@@ -77,8 +79,12 @@ class SessionOperationService implements OperationService {
   /// scores spread the pack's creation points; they are demo data, not rules.
   static const _demoAliases = {'vale': 'Agent Vale', 'quill': 'Agent Quill'};
 
-  Future<void> _seed() async {
+  Future<void> _seed({required bool seedDemoAgents}) async {
     await _host.submit(const StartOperation(operationId: _operationId));
+    if (!seedDemoAgents) {
+      await _refresh();
+      return;
+    }
     final points = _pack.attributeCreation.points;
     final keys = [for (final a in _pack.attributes) a.key];
     for (final entry in _demoAliases.entries) {
@@ -110,6 +116,9 @@ class SessionOperationService implements OperationService {
   }
 
   // --- reads -------------------------------------------------------------
+
+  @override
+  Future<void> dispose() => _serial(_host.close);
 
   @override
   ReadonlySignal<List<AgentSheet>> get agents => _agents;

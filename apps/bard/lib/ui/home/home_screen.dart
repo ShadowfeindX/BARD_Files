@@ -12,7 +12,12 @@ import '../table/table_panel.dart';
 /// panel side by side (04 §Play modes).
 class HomeScreen extends StatefulWidget {
   /// Creates the screen.
-  const HomeScreen({super.key, required this.service, required this.console});
+  const HomeScreen({
+    super.key,
+    required this.service,
+    required this.console,
+    required this.onNewOperation,
+  });
 
   /// The running operation.
   final OperationService service;
@@ -20,49 +25,93 @@ class HomeScreen extends StatefulWidget {
   /// GM console state.
   final ConsoleViewModel console;
 
+  /// Replaces the operation with a fresh, empty one.
+  final VoidCallback onNewOperation;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late String _agentId = widget.service.agents.value.first.id;
+  String? _agentId;
+
+  Future<void> _confirmNew() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New operation'),
+        content: const Text(
+          'This closes the current operation and starts an empty one.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('new-operation-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Start new'),
+          ),
+        ],
+      ),
+    );
+    if (ok ?? false) widget.onNewOperation();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('B.A.R.D. Files'),
-        actions: [
-          SignalBuilder(
-            builder: (context) => DropdownButton<String>(
-              key: const ValueKey('player-picker'),
-              value: _agentId,
-              items: [
-                for (final a in widget.service.agents.value)
-                  DropdownMenuItem(value: a.id, child: Text(a.name)),
+    return SignalBuilder(
+      builder: (context) {
+        final agents = widget.service.agents.value;
+        final selected = agents.any((a) => a.id == _agentId)
+            ? _agentId
+            : agents.firstOrNull?.id;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('B.A.R.D. Files'),
+            actions: [
+              TextButton.icon(
+                key: const ValueKey('new-operation'),
+                onPressed: _confirmNew,
+                icon: const Icon(Icons.add),
+                label: const Text('New operation'),
+              ),
+              if (selected != null)
+                DropdownButton<String>(
+                  key: const ValueKey('player-picker'),
+                  value: selected,
+                  items: [
+                    for (final a in agents)
+                      DropdownMenuItem(value: a.id, child: Text(a.name)),
+                  ],
+                  onChanged: (v) => setState(() => _agentId = v),
+                ),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(flex: 3, child: ConsoleView(model: widget.console)),
+                Expanded(
+                  flex: 3,
+                  child: selected == null
+                      ? const Center(
+                          child: Text('Add an agent to start playing.'),
+                        )
+                      : DossierView(
+                          key: ValueKey('dossier-$selected'),
+                          model: DossierViewModel(widget.service, selected),
+                        ),
+                ),
+                Expanded(flex: 2, child: TablePanel(service: widget.service)),
               ],
-              onChanged: (v) => setState(() => _agentId = v ?? _agentId),
             ),
           ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Expanded(flex: 3, child: ConsoleView(model: widget.console)),
-            Expanded(
-              flex: 3,
-              child: DossierView(
-                key: ValueKey('dossier-$_agentId'),
-                model: DossierViewModel(widget.service, _agentId),
-              ),
-            ),
-            Expanded(flex: 2, child: TablePanel(service: widget.service)),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

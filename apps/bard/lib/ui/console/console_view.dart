@@ -249,7 +249,10 @@ class _SanityControlState extends State<_SanityControl> {
     return SignalBuilder(
       builder: (context) {
         final agents = model.agents.value;
-        final agent = _agent ?? agents.first.id;
+        if (agents.isEmpty) return const SizedBox.shrink();
+        final agent = agents.any((a) => a.id == _agent)
+            ? _agent!
+            : agents.first.id;
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(12),

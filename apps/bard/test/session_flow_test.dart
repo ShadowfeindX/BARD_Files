@@ -110,4 +110,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Agent Rook'), findsWidgets);
   });
+
+  testWidgets('new operation replaces the host with an empty one', (
+    tester,
+  ) async {
+    await _pump(tester);
+    expect(find.byKey(const ValueKey('player-picker')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('new-operation')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('new-operation-confirm')));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Add an agent to start playing.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('player-picker')), findsNothing);
+  });
 }

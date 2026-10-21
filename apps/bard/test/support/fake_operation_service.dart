@@ -45,6 +45,9 @@ class FakeOperationService implements OperationService {
   final Signal<String?> _error = signal(null);
 
   @override
+  Future<void> dispose() async {}
+
+  @override
   ReadonlySignal<List<AgentSheet>> get agents => _agents;
 
   @override

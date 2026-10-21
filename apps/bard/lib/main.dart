@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import 'app/composition.dart';
@@ -24,7 +25,23 @@ class BardApp extends StatefulWidget {
 }
 
 class _BardAppState extends State<BardApp> {
-  late final _router = buildRouter(widget.composition);
+  late Composition _composition = widget.composition;
+  late GoRouter _router = _build();
+
+  GoRouter _build() =>
+      buildRouter(_composition, onNewOperation: _startNewOperation);
+
+  /// One active host at a time: the old one is closed, a fresh empty
+  /// operation replaces it, and the router restarts at `/`.
+  Future<void> _startNewOperation() async {
+    final next = await Composition.inProcess(rootBundle, seedDemoAgents: false);
+    final old = _composition;
+    setState(() {
+      _composition = next;
+      _router = _build();
+    });
+    await old.operation.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

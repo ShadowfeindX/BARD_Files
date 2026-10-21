@@ -72,7 +72,9 @@ class _AddAgentDialogState extends State<AddAgentDialog> {
           children: [
             Text(
               '${limits.points} points; each attribute '
-              '${limits.min} to ${limits.max}.',
+              '${limits.min} to ${limits.max}. The engine refuses scores '
+              'outside that range; the points total is not checked yet '
+              '(rule pending D).',
             ),
             TextField(
               key: const ValueKey('agent-name'),

@@ -11,8 +11,16 @@ class Composition {
 
   /// Composition backed by a real host over the shipped pack, in "in person,
   /// one device" mode.
-  static Future<Composition> inProcess(AssetBundle bundle) async => Composition(
-    operation: await SessionOperationService.open(await loadPackFiles(bundle)),
+  ///
+  /// [seedDemoAgents] adds two demo agents; a new operation leaves it false.
+  static Future<Composition> inProcess(
+    AssetBundle bundle, {
+    bool seedDemoAgents = true,
+  }) async => Composition(
+    operation: await SessionOperationService.open(
+      await loadPackFiles(bundle),
+      seedDemoAgents: seedDemoAgents,
+    ),
   );
 
   /// The running operation.

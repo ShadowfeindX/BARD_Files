@@ -10,8 +10,9 @@ import '../ui/table/table_panel.dart';
 import 'composition.dart';
 
 /// Builds the router. `/` shows all panels on one device; the other routes
-/// open a single panel, for a second window or display.
-GoRouter buildRouter(Composition c) {
+/// open a single panel, for a second window or display. [onNewOperation]
+/// replaces the operation; the caller then builds a fresh router.
+GoRouter buildRouter(Composition c, {required VoidCallback onNewOperation}) {
   final console = ConsoleViewModel(c.operation);
   Widget single(String title, Widget body) => Scaffold(
     appBar: AppBar(title: Text(title)),
@@ -21,8 +22,11 @@ GoRouter buildRouter(Composition c) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) =>
-            HomeScreen(service: c.operation, console: console),
+        builder: (context, state) => HomeScreen(
+          service: c.operation,
+          console: console,
+          onNewOperation: onNewOperation,
+        ),
       ),
       GoRoute(
         path: '/gm',

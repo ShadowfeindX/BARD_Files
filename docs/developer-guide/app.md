@@ -30,6 +30,10 @@ cd apps/bard && flutter run -d linux   # or -d windows
 cd apps/bard && flutter test           # includes the flow tests on a real host
 ```
 
+## New operation
+
+`New operation` (app bar) closes the active host, opens an empty one from the shipped pack, rebuilds the router so it restarts at `/`, and leaves the GM to add agents. One host is active at a time. The first launch still seeds two demo agents.
+
 ## Adding agents
 
 `Add agent` in the console opens a dialog with the pack's creation limits (`OperationService.creationLimits`). The UI sends the scores through `CreateAgent` and shows the engine's refusal text; it checks only that each score is a whole number and leaves every rule to the engine. Note the engine currently checks only the per-attribute range, not the total points.
