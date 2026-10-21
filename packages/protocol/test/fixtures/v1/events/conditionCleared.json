@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "conditionCleared",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "entity": "e1",
+  "condition": "bleeding"
+}

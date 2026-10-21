@@ -109,7 +109,8 @@ The invite link is `bard://join/<op>?invite=<token>`. A Firestore invite documen
   - The GM's engine evaluates the condition against each alias's state; the UI never does.
   - The engine records one event with visibility `aliases[...]` naming the qualifying aliases, so the existing filtering delivers it ([03](03-protocol.md#visibility-and-perspectives)).
   - The condition needs new comparison nodes in the data-only expression trees (P4). It stays GM-only.
-  - Open: whether recipients can see who else received it.
+  - Ruled by R (2026-10-21): two events instead of one. `BroadcastEvaluated` is GM-only and holds the condition and every alias's result; `BroadcastDelivered` carries only the text with visibility `aliases[...]` of the qualifying aliases, and is skipped when nobody qualifies. One event visible to the recipients would show them the condition. Condition form: [01-engine.md](01-engine.md#dice-and-checks-vocabulary).
+  - Ruled by R (2026-10-21): recipients never see who else received it; the session strips the recipient list from a player's copy.
 - **Phone.** Handler → alias, alias → NPC and alias → alias messaging use the in-game phone ([04](04-session.md#in-game-phone)). The UI tells players that the handler can read alias → alias messages.
 - **Report.** Messaging has a report option. It is the only content with one.
 - **Contact book.** The handler releases NPC contact details to chosen aliases (D's list). Proposed: an event `ContactRevealed` visible to those aliases. How it persists between missions is part of X0.

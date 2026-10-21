@@ -157,6 +157,19 @@ void main() {
     test('empty attribute key', () {
       expectError({'type': 'attr', 'key': ''}, 'f.key');
     });
+    test('empty sum becomes a format error with the path', () {
+      expect(
+        () => decodeExpr({'type': 'sum', 'terms': <Object?>[]}),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            startsWith(r'$:'),
+          ),
+        ),
+      );
+    });
+
     test('bad dice fields', () {
       expectError({'type': 'dice', 'count': 1, 'sides': 2.5}, 'f.sides');
       expectError({

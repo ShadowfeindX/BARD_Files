@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "type": "agentCreated",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "public"
+  },
+  "entity": "e1",
+  "name": "Agent Vale",
+  "attributes": {
+    "END": 2,
+    "LCK": 3,
+    "STR": 1,
+    "WIL": 2
+  },
+  "skills": {
+    "firearms": "proficient"
+  },
+  "ownerAlias": "al_vale"
+}

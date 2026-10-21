@@ -63,8 +63,25 @@ enum RejectionCode {
   /// The command names an entity that does not exist.
   unknownEntity,
 
+  /// The alias already plays an agent in this operation.
+  aliasTaken,
+
   /// A pack expression could not be evaluated.
   evaluationFailed,
+
+  /// The command names an action request that is not open.
+  unknownRequest,
+
+  /// The command names a check that is not pending.
+  unknownCheck,
+
+  /// The pack does not supply what the command needs (for example no check
+  /// rules).
+  unavailable,
+
+  /// The RNG handed to `decide` is behind the draw count the state records,
+  /// so a roll would reuse dice already recorded. Nothing was drawn.
+  rngOutOfSync,
 }
 
 /// Why a command was refused: a [code] for programs and a [message] for

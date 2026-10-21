@@ -1,0 +1,18 @@
+{
+  "v": 1,
+  "type": "createAgent",
+  "actor": {
+    "kind": "gm"
+  },
+  "name": "Agent Vale",
+  "attributes": {
+    "END": 2,
+    "LCK": 3,
+    "STR": 1,
+    "WIL": 2
+  },
+  "skills": {
+    "firearms": "proficient"
+  },
+  "ownerAlias": "al_vale"
+}

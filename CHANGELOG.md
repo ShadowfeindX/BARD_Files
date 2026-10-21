@@ -4,6 +4,11 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Phone messaging
+- Engine: `SendPhoneMessage(from, to, text)` and `PhoneMessageSent` for the in-game phone, in `MessagingSystem`. Parties are the Handler, an alias or a GM-run entity; senders must match the actor; text is 1 to 2,000 UTF-16 units; visibility is the sending and receiving aliases (the session's projection gives the Handler every event). Narrator lines, and a `phoneConversations(log, viewer)` read model for the Handler's and a player's threads.
+- Codecs: `sendPhoneMessage` and `phoneMessageSent` with v1 fixtures; the engine round-trip test now includes a phone exchange.
+- `ui_kit`: `PhonePanel` (threads, compose box with the 2,000-unit counter, `sendDisabledReason`), plain-data and signal driven, with widget tests. Not wired into a console yet (row 8).
+
 ### Content
 - `content_core` carries the `example-core` sample pack from the project library as the provisional pack (`assets/example-core/`, the authoring source). `null` values stay `null` (pending D); D's pack replaces it. The only edit is renaming the four `*Placeholder` annotation keys to start with `_`.
 - Annotation stripper `tool/bin/strip_annotations.dart` (`note`, `source`, `openItems`, `placeholder`, `gap`, any key ending in `Note`, any key starting with `_`), with tests. An object that held only annotations becomes `null`, the single pending-D signal. Keeps the `note` inside deprecation records and reports annotation-like keys outside the rules instead of removing them.
@@ -25,11 +30,52 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - First commands: `StartOperation` (genesis `OperationStarted` pins engine version, pack and settings) and `CreateAgent` (`AgentCreated`; attribute and skill keys and per-attribute creation limits checked against the pack).
 - `Rng` and `IdSource` interfaces, `ScriptedRng` for tests, `SequentialIdSource`.
 - Data-only dice expressions and formulas (`const`, `attr`, `var`, `dice`, `sum`, `keepHighest`, `op`) with JSON decode/encode, a full breakdown on evaluation, exploding dice, numbers bounded to the range the VM and the web agree on, and only the two approved `var` keys.
+- `CreateAgent` refuses a second agent for an alias that already plays one (`aliasTaken`). Proposed: reads 11 §Terminology as one alias plays one agent.
 - `RulesPack` in-memory pack type (attributes, creation limits, proficiency tiers, skills, derived formulas).
+
+### Checks
+- `CheckSystem`: action requests (`RequestAction`, `DeclineRequest`), required checks (`RequireCheck` by pack category or fixed DC, with modifiers, visibility and an optional auto-resolve) and `ResolveCheck`. A check totals primary die + attribute + proficiency dice + modifiers; outcomes are success, partial success and failure. Fumbles and Luck advantage stay off (pending D).
+- `CheckResolved` carries the full breakdown, the draw range it used and a reserved `source` and `enteredBy`. Folding a rolling event sets the RNG draw count to the range end; rejections never consume draws.
+- GM-entered consequences: `ApplyDamage`, `ApplySanityLoss`, `ApplyCondition` and `ClearCondition`, with `Vitals` and `Conditions` components. Damage, sanity loss and applied conditions are marked as consequences for the GM review gate; an edited amount or condition keeps the original in `overriddenFrom`.
+- Derived-stat read model (`DerivedStats`) with current Health and Sanity.
+- Event narrator: a plain-text line per event, with GM, player and redacted lines by visibility.
+- The rulebook's three worked examples (page 10) run as tests, with test-only skills where the book's skill is unlisted or occult.
+
+### Messaging
+- Stat-gated broadcast: `BroadcastToQualifying(text, condition)` delivers the text only to aliases whose agent meets the condition (`BroadcastDelivered`, alias-only). A GM-only `BroadcastEvaluated` keeps the condition and each alias's result. The GM can preview recipients without sending.
+- Comparison conditions (`compare` with `lt le eq ne ge gt` over two formulas), with JSON decode and encode.
+
+### Pack loader
+- `loadPack` validates and loads a rules pack from its files: manifest and `engineApi` check, one parser per pack file, unknown keys and unknown files as errors, cross-reference checks, every problem reported at once with file and JSON path.
+- `null` means pending D: a warning, never an error; `RulesPack.pendingPaths` lists every pending place so features that need them stay off, including dice whose `explode` is not ruled. `occult.json` is kept unvalidated (pending D).
+- Numbers outside the web-safe range (non-finite or above 2^53 - 1) are errors in every pack file.
+- Deprecation records (`deprecated`, `deprecatedFields`) are validated and reported as warnings; `replacedBy` must name an existing entry, or another field of the same entry.
+- An advancement cost's `xp` may be a plain number (Proposed shorthand).
+- Content hash over canonical JSON (`sha256:<hex>`), with SHA-256 written in pure Dart; a manifest's written hash must match.
+- `RulesPack` now carries every provisional pack file: difficulty and check rules, conditions, disorders, sanity events, damage, vehicles, ranges, advancement, threats, items, techniques, NPCs and strings.
+- Command-line validator: `dart run engine:validate_pack <packDir>`, run on the generated pack (`tool/build_pack.sh`); the provisional pack loads with no errors. The engine tests load the generated pack too, so the old `*Placeholder` slots are gone from the parsers.
+- Developer guide page `docs/developer-guide/packs.md`.
+
+### Protocol envelope
+- `protocol_envelope` package (SDK only): envelope, eleven message types, refusal reasons, `hello` version negotiation (SemVer pre-releases accepted), and a JSON codec behind an `EnvelopeCodec` interface, with round-trip, malformed-input, negotiation and fixture tests.
 
 ### Session
 - `XoshiroRng`: the production `Rng` over `xrandom` 0.7.2 `Xoshiro128pp` (pinned), unbiased dice by rejection sampling, resumable from a draw count; `RngSeed` with hex form.
 - Known-seed vectors from the reference C implementation, run on the VM and on Node.js; CI runs the engine and session tests on Node.js as well as the VM.
+- `OperationHost`: the GM's canonical loop (authorize, dedupe by request id, decide, hold consequences for review, stamp `seq`, store, filter per perspective, broadcast), with the F2 review gate (`confirmPending` with edit, or auto-confirm), perspective views (GM, player, table), and reopening from the store.
+- `OperationParticipant`: non-canonical engine fed by filtered entries, request retry after reconnect, `resync` on a gap, redacted and hidden entries recorded without evolving.
+- Authorization on the identity verified at `hello` (never the envelope `from`); admission refusals (not invited, banned, alias locked, anonymous second alias); anonymous accounts cannot host.
+- Entity ids never repeat after a reopen; RNG draws made by rejected or held commands are persisted so a reopen cannot reuse them; a retried request is recognised across a reopen (stored events record their origin); participant request ids are unique per session.
+- Known gaps are listed in `docs/developer-guide/session.md` (admission not persisted until the store lands, sequential broadcast inside the commit).
+- The host holds exactly the engine's `Consequence` events for review and constrains review edits to the same consequence and entity; players receive a projection of each event (no `overriddenFrom`, multi-alias events narrowed to the viewer); text-log lines come from the engine `Narrator` per audience; redacted and hidden entries acknowledge the sender's request.
+- Interfaces with in-memory implementations: `Transport`/`Link` (with a frame filter for tests), `EventStore`, `Clock`; `Mailbox`; `ConnectionActor`.
+- `EngineCodec` interface in `protocol`, which also re-exports `protocol_envelope`; `PackRef` in the envelope renamed `PackPin` to avoid clashing with the engine's.
+
+### Protocol codecs
+- `protocol` package: hand-written JSON codecs (`encodeCommand`/`decodeCommand`, `encodeEvent`/`decodeEvent`) for every engine command and event, including the stat-gated broadcast; versioned shapes (`v`), stable `type` names, 1:1 with the full event (per-perspective stripping stays in the session).
+- Decoding ignores unknown extra fields, defaults later-added optional fields, refuses newer shape versions, and reports unknown types with `UnknownTypeException`; engine-refused values surface as `ProtocolFormatException`.
+- v1 fixture files per command and event, round-trip and golden tests, malformed-input tests; `packages/protocol/README.md`.
+
 ### Protocol envelope
 - `protocol_envelope` package (SDK only): envelope, eleven message types, refusal reasons, `hello` version negotiation (SemVer pre-releases accepted), and a JSON codec behind an `EnvelopeCodec` interface, with round-trip, malformed-input, negotiation and fixture tests.
 
