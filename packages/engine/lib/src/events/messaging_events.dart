@@ -97,9 +97,9 @@ final class BroadcastEvaluated extends MessagingEvent {
 
 /// The broadcast text, delivered to the qualifying aliases only.
 ///
-/// Not emitted when nobody qualifies. Recipients can tell from an
-/// `AliasesOnly` list who else received it unless the session hides
-/// co-recipients; that is open (11 §Messaging).
+/// Not emitted when nobody qualifies. Players never see who else received
+/// it (R, 2026-10-21): [visibility] lists every recipient for the host's
+/// filter, and the session strips that list from each player's copy.
 final class BroadcastDelivered extends MessagingEvent {
   /// Creates the event.
   const BroadcastDelivered({
