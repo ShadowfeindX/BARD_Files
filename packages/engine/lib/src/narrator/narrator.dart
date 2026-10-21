@@ -64,8 +64,25 @@ final class Narrator {
 
   /// Narrates [event]. [state] is the state the event applies to (before or
   /// after it; only names are read from it).
+  ///
+  /// A GM edit made in review (`overriddenFrom`) is in the GM's line only;
+  /// players read the final value (Proposed: F2 does not say players see
+  /// edits).
   Narration narrate(OperationState state, Event event) {
-    final text = switch (event) {
+    final gm = _text(state, event, forGm: true);
+    final player = _text(state, event, forGm: false);
+    return switch (event.visibility) {
+      Public() || AliasesOnly() => Narration(gm: gm, player: player),
+      GmOnly() => Narration(gm: gm),
+      Redacted() => Narration(gm: gm, redacted: _redacted(event)),
+    };
+  }
+
+  String _text(OperationState state, Event event, {required bool forGm}) {
+    String was(Object? original) => forGm && original != null
+        ? ' (changed by the Handler from $original)'
+        : '';
+    return switch (event) {
       OperationStarted() =>
         'The operation began (pack ${event.packRef.id} '
             '${event.packRef.version}).',
@@ -82,20 +99,16 @@ final class Narrator {
       CheckResolved() => _resolved(state, event),
       DamageApplied() =>
         '${_name(state, event.entity)} takes ${event.amount} damage'
-            '${_was(event.overriddenFrom)}.',
+            '${was(event.overriddenFrom)}.',
       SanityLost() =>
         '${_name(state, event.entity)} loses ${event.amount} Sanity'
-            '${_was(event.overriddenFrom)}.',
+            '${was(event.overriddenFrom)}.',
       ConditionApplied() =>
-        '${_name(state, event.entity)} is now ${_condition(event.condition)}.',
+        '${_name(state, event.entity)} is now ${_condition(event.condition)}'
+            '${was(event.overriddenFrom == null ? null : _condition(event.overriddenFrom!))}.',
       ConditionCleared() =>
         '${_name(state, event.entity)} is no longer '
             '${_condition(event.condition)}.',
-    };
-    return switch (event.visibility) {
-      Public() || AliasesOnly() => Narration(gm: text, player: text),
-      GmOnly() => Narration(gm: text),
-      Redacted() => Narration(gm: text, redacted: _redacted(event)),
     };
   }
 
@@ -141,9 +154,6 @@ final class Narrator {
       key == null ? 'bonus' : pack.proficiencyTier(key)?.name ?? key;
 
   String _condition(String id) => pack.condition(id)?.name ?? id;
-
-  String _was(int? original) =>
-      original == null ? '' : ' (changed by the Handler from $original)';
 
   /// Every face of a term's dice, explosions joined with `+`, for example
   /// `6+2` for an exploding die. Terms without dice show their value.

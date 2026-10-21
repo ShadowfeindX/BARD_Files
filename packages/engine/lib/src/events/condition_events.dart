@@ -7,13 +7,15 @@ sealed class ConditionEvent extends Event {
 
 /// An entity gained a condition.
 ///
-/// A consequence (F2), so the GM reviews it before anyone sees it; the GM's
-/// edit here is to drop it from the batch or replace the condition.
+/// A consequence (F2), so the GM reviews it before anyone sees it. The GM may
+/// drop it from the batch or replace the condition; a replacement keeps the
+/// original in [overriddenFrom].
 final class ConditionApplied extends ConditionEvent implements Consequence {
   /// Creates the event.
   const ConditionApplied({
     required this.entity,
     required this.condition,
+    this.overriddenFrom,
     this.check,
     required this.actor,
     required this.visibility,
@@ -25,6 +27,10 @@ final class ConditionApplied extends ConditionEvent implements Consequence {
   /// Pack condition id.
   final String condition;
 
+  /// The condition before the GM replaced it in review, or `null` when not
+  /// edited.
+  final String? overriddenFrom;
+
   /// The resolved check this follows from, if any.
   final CheckId? check;
 
@@ -34,11 +40,29 @@ final class ConditionApplied extends ConditionEvent implements Consequence {
   @override
   final Visibility visibility;
 
+  /// Returns the event as the GM edited it in review: [newCondition], with
+  /// the original kept in [overriddenFrom]. Throws an [ArgumentError] when
+  /// [newCondition] is empty; the session checks it against the pack.
+  ConditionApplied withCondition(String newCondition) {
+    if (newCondition.isEmpty) {
+      throw ArgumentError.value(newCondition, 'newCondition', 'is empty');
+    }
+    return ConditionApplied(
+      entity: entity,
+      condition: newCondition,
+      overriddenFrom: overriddenFrom ?? condition,
+      check: check,
+      actor: actor,
+      visibility: visibility,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is ConditionApplied &&
       other.entity == entity &&
       other.condition == condition &&
+      other.overriddenFrom == overriddenFrom &&
       other.check == check &&
       other.actor == actor &&
       other.visibility == visibility;

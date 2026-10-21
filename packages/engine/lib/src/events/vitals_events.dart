@@ -37,15 +37,21 @@ final class DamageApplied extends VitalsEvent implements Consequence {
   final Visibility visibility;
 
   /// Returns the event as the GM edited it in review: [newAmount], with the
-  /// original amount kept in [overriddenFrom].
-  DamageApplied withAmount(int newAmount) => DamageApplied(
-    entity: entity,
-    amount: newAmount,
-    overriddenFrom: overriddenFrom ?? amount,
-    check: check,
-    actor: actor,
-    visibility: visibility,
-  );
+  /// original amount kept in [overriddenFrom]. Throws an [ArgumentError]
+  /// when [newAmount] is negative, as the command would reject it.
+  DamageApplied withAmount(int newAmount) {
+    if (newAmount < 0) {
+      throw ArgumentError.value(newAmount, 'newAmount', 'must be 0 or more');
+    }
+    return DamageApplied(
+      entity: entity,
+      amount: newAmount,
+      overriddenFrom: overriddenFrom ?? amount,
+      check: check,
+      actor: actor,
+      visibility: visibility,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -105,15 +111,21 @@ final class SanityLost extends VitalsEvent implements Consequence {
   final Visibility visibility;
 
   /// Returns the event as the GM edited it in review: [newAmount], with the
-  /// original amount kept in [overriddenFrom].
-  SanityLost withAmount(int newAmount) => SanityLost(
-    entity: entity,
-    amount: newAmount,
-    overriddenFrom: overriddenFrom ?? amount,
-    check: check,
-    actor: actor,
-    visibility: visibility,
-  );
+  /// original amount kept in [overriddenFrom]. Throws an [ArgumentError]
+  /// when [newAmount] is negative, as the command would reject it.
+  SanityLost withAmount(int newAmount) {
+    if (newAmount < 0) {
+      throw ArgumentError.value(newAmount, 'newAmount', 'must be 0 or more');
+    }
+    return SanityLost(
+      entity: entity,
+      amount: newAmount,
+      overriddenFrom: overriddenFrom ?? amount,
+      check: check,
+      actor: actor,
+      visibility: visibility,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

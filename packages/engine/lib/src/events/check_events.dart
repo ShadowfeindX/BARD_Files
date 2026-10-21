@@ -150,6 +150,7 @@ final class CheckResolved extends CheckEvent implements RollingEvent {
     required this.outcome,
     required this.draws,
     this.source = RollSourceKind.rng,
+    this.enteredBy,
     required this.actor,
     required this.visibility,
   });
@@ -172,6 +173,10 @@ final class CheckResolved extends CheckEvent implements RollingEvent {
   /// Where the faces came from. Only `rng` is produced (concern 7).
   final RollSourceKind source;
 
+  /// Who entered the faces when [source] is `entered` (the GM or an alias).
+  /// Reserved with [source]; always `null` until the feature is built.
+  final Actor? enteredBy;
+
   @override
   final Actor actor;
 
@@ -190,6 +195,7 @@ final class CheckResolved extends CheckEvent implements RollingEvent {
       other.outcome == outcome &&
       other.draws == draws &&
       other.source == source &&
+      other.enteredBy == enteredBy &&
       other.actor == actor &&
       other.visibility == visibility;
 
@@ -202,6 +208,7 @@ final class CheckResolved extends CheckEvent implements RollingEvent {
     outcome,
     draws,
     source,
+    enteredBy,
     actor,
     visibility,
   );

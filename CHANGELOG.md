@@ -29,8 +29,8 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ### Checks
 - `CheckSystem`: action requests (`RequestAction`, `DeclineRequest`), required checks (`RequireCheck` by pack category or fixed DC, with modifiers, visibility and an optional auto-resolve) and `ResolveCheck`. A check totals primary die + attribute + proficiency dice + modifiers; outcomes are success, partial success and failure. Fumbles and Luck advantage stay off (pending D).
-- `CheckResolved` carries the full breakdown, the draw range it used and a reserved `source`. Folding a rolling event sets the RNG draw count to the range end; rejections never consume draws.
-- GM-entered consequences: `ApplyDamage`, `ApplySanityLoss`, `ApplyCondition` and `ClearCondition`, with `Vitals` and `Conditions` components. Damage, sanity loss and applied conditions are marked as consequences for the GM review gate; edited amounts keep the original in `overriddenFrom`.
+- `CheckResolved` carries the full breakdown, the draw range it used and a reserved `source` and `enteredBy`. Folding a rolling event sets the RNG draw count to the range end; rejections never consume draws.
+- GM-entered consequences: `ApplyDamage`, `ApplySanityLoss`, `ApplyCondition` and `ClearCondition`, with `Vitals` and `Conditions` components. Damage, sanity loss and applied conditions are marked as consequences for the GM review gate; an edited amount or condition keeps the original in `overriddenFrom`.
 - Derived-stat read model (`DerivedStats`) with current Health and Sanity.
 - Event narrator: a plain-text line per event, with GM, player and redacted lines by visibility.
 

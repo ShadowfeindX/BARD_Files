@@ -44,23 +44,19 @@ final class VitalsSystem {
 
   /// Applies a [VitalsEvent].
   OperationState evolve(OperationState state, VitalsEvent event) {
-    final (entity, vitals) = switch (event) {
+    final (entity, update) = switch (event) {
       DamageApplied(:final entity, :final amount) => (
         entity,
-        _vitals(
-          state,
-          entity,
-        ).copyWith(damageTaken: _vitals(state, entity).damageTaken + amount),
+        (Vitals v) => v.copyWith(damageTaken: v.damageTaken + amount),
       ),
       SanityLost(:final entity, :final amount) => (
         entity,
-        _vitals(
-          state,
-          entity,
-        ).copyWith(sanityLost: _vitals(state, entity).sanityLost + amount),
+        (Vitals v) => v.copyWith(sanityLost: v.sanityLost + amount),
       ),
     };
-    return state.copyWith(stores: state.stores.put(entity, vitals));
+    return state.copyWith(
+      stores: state.stores.put(entity, update(_vitals(state, entity))),
+    );
   }
 
   Vitals _vitals(OperationState state, EntityId entity) =>

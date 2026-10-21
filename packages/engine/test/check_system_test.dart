@@ -275,6 +275,7 @@ void main() {
       expect(event.total, 10);
       expect(event.outcome, CheckOutcome.success);
       expect(event.source, RollSourceKind.rng);
+      expect(event.enteredBy, isNull);
       expect(event.visibility, const Public());
       expect(table.state.pending.checks.isEmpty, isTrue);
     });
@@ -404,6 +405,58 @@ void main() {
       );
       expect(table.rng.drawCount, 0);
       expect(table.state.rng.drawCount, 0);
+    });
+
+    RulesPack packWithPrimary(Expr primary) {
+      final base = testPack();
+      final rules = base.checkRules!;
+      return RulesPack(
+        ref: base.ref,
+        attributes: base.attributes,
+        attributeCreation: base.attributeCreation,
+        proficiencyTiers: base.proficiencyTiers,
+        skillCategories: base.skillCategories,
+        skills: base.skills,
+        derived: base.derived,
+        difficultyCategories: base.difficultyCategories,
+        checkRules: CheckRules(
+          primaryDie: primary,
+          partialSuccessWithin: rules.partialSuccessWithin,
+          fumbleFractionOfDc: rules.fumbleFractionOfDc,
+          luckAdvantageAttribute: rules.luckAdvantageAttribute,
+          luckAdvantageKeep: rules.luckAdvantageKeep,
+          assistanceGateCategory: rules.assistanceGateCategory,
+          assistanceBonus: rules.assistanceBonus,
+        ),
+      );
+    }
+
+    test('check dice that divide are refused before drawing', () {
+      final table = Table(
+        faces: [1],
+        pack: packWithPrimary(
+          Op(OpKind.div, [Const(6), Dice(count: 1, sides: 6)]),
+        ),
+      );
+      final check = requireOnly(table, firearms());
+      expect(
+        rejection(table.decide(ResolveCheck(check: check))),
+        RejectionCode.evaluationFailed,
+      );
+      expect(table.rng.drawCount, 0);
+    });
+
+    test('a rejection that drew anyway is a loud error, not a silent '
+        'rejection', () {
+      // A total past the web-safe range fails only after the die is rolled.
+      final table = Table(
+        faces: [1],
+        pack: packWithPrimary(
+          Sum([Dice(count: 1, sides: 6), Const(maxSafeInteger)]),
+        ),
+      );
+      final check = requireOnly(table, firearms());
+      expect(() => table.decide(ResolveCheck(check: check)), throwsStateError);
     });
 
     test('an RNG out of step with the state is refused before drawing', () {

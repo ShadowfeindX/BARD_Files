@@ -83,10 +83,12 @@ void main() {
       actor: GmActor(),
       visibility: Public(),
     ).withAmount(1);
+    final narration = narrator.narrate(table.state, edited);
     expect(
-      narrator.narrate(table.state, edited).gm,
+      narration.gm,
       'Vale takes 1 damage (changed by the Handler from 4).',
     );
+    expect(narration.player, 'Vale takes 1 damage.');
   });
 
   group('perspectives follow visibility', () {

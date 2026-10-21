@@ -15,6 +15,10 @@ import '../visibility.dart';
 
 /// Action requests and skill checks (rulebook §2, §5).
 ///
+/// The engine records who acts but does not check that an alias owns the
+/// entity it acts for: authorization is the session's job (04 §The
+/// operation loop).
+///
 /// A check totals `primary die + attribute + proficiency dice + modifiers`
 /// and compares it with the DC: at or above is a success, short by no more
 /// than the pack's margin is a partial success, otherwise a failure. Fumbles
@@ -131,13 +135,24 @@ final class CheckSystem {
     Rng rng,
     IdSource ids,
   ) {
-    final built = _spec(state, command);
-    if (built is Rejection) return Rejected(built);
-    final spec = built as CheckSpec;
+    final CheckSpec spec;
+    switch (_spec(state, command)) {
+      case _Invalid(:final rejection):
+        return Rejected(rejection);
+      case _Valid(:final value):
+        spec = value;
+    }
     final autoResolve = state.meta?.settings.autoResolveChecks ?? false;
     // Validate the roll before taking an id, so a rejection takes nothing.
-    final roll = autoResolve ? _prepareRoll(state, spec, rng) : null;
-    if (roll is Rejection) return Rejected(roll);
+    _Roll? roll;
+    if (autoResolve) {
+      switch (_prepareRoll(state, spec, rng)) {
+        case _Invalid(:final rejection):
+          return Rejected(rejection);
+        case _Valid(:final value):
+          roll = value;
+      }
+    }
     final check = CheckId(ids.next().value);
     final required = CheckRequired(
       check: check,
@@ -145,7 +160,7 @@ final class CheckSystem {
       actor: command.actor,
       visibility: command.visibility,
     );
-    if (roll is! _Roll) return Accepted([required]);
+    if (roll == null) return Accepted([required]);
     return Accepted([
       required,
       _roll(check, spec, roll, rng, command.actor, command.visibility),
@@ -166,13 +181,18 @@ final class CheckSystem {
         ),
       );
     }
-    final roll = _prepareRoll(state, pending.spec, rng);
-    if (roll is Rejection) return Rejected(roll);
+    final _Roll roll;
+    switch (_prepareRoll(state, pending.spec, rng)) {
+      case _Invalid(:final rejection):
+        return Rejected(rejection);
+      case _Valid(:final value):
+        roll = value;
+    }
     return Accepted([
       _roll(
         command.check,
         pending.spec,
-        roll as _Roll,
+        roll,
         rng,
         command.actor,
         pending.visibility,
@@ -181,32 +201,37 @@ final class CheckSystem {
   }
 
   /// Builds the check's spec, or returns why it cannot be built.
-  Object _spec(OperationState state, RequireCheck command) {
+  _Checked<CheckSpec> _spec(OperationState state, RequireCheck command) {
     if (pack.checkRules == null) {
-      return const Rejection(
-        RejectionCode.unavailable,
-        'The pack has no check rules.',
+      return const _Invalid(
+        Rejection(RejectionCode.unavailable, 'The pack has no check rules.'),
       );
     }
     final scores = state.stores.get(Attributes.componentType, command.entity);
-    if (scores == null) return _unknownEntity(command.entity).reason;
+    if (scores == null) return _Invalid(_unknownEntity(command.entity).reason);
     final skillId = command.skill;
     final skill = skillId == null ? null : pack.skill(skillId);
-    if (skillId != null && skill == null) return _unknownSkill(skillId).reason;
+    if (skillId != null && skill == null) {
+      return _Invalid(_unknownSkill(skillId).reason);
+    }
     final attribute = command.attribute ?? skill?.attribute;
     if (attribute == null) {
-      return Rejection(
-        RejectionCode.invalidValue,
-        skill == null
-            ? 'Name an attribute or a skill.'
-            : '${skill.name} has no attribute set yet (pending D); '
-                  'name the attribute.',
+      return _Invalid(
+        Rejection(
+          RejectionCode.invalidValue,
+          skill == null
+              ? 'Name an attribute or a skill.'
+              : '${skill.name} has no attribute set yet (pending D); '
+                    'name the attribute.',
+        ),
       );
     }
     if (pack.attribute(attribute) == null) {
-      return Rejection(
-        RejectionCode.unknownPackKey,
-        'Unknown attribute "$attribute".',
+      return _Invalid(
+        Rejection(
+          RejectionCode.unknownPackKey,
+          'Unknown attribute "$attribute".',
+        ),
       );
     }
     final dc = switch (command.difficulty) {
@@ -216,54 +241,63 @@ final class CheckSystem {
     };
     if (dc == null) {
       final category = (command.difficulty as CategoryDifficulty).category;
-      return Rejection(
-        RejectionCode.unknownPackKey,
-        'Unknown difficulty category "$category".',
+      return _Invalid(
+        Rejection(
+          RejectionCode.unknownPackKey,
+          'Unknown difficulty category "$category".',
+        ),
       );
     }
     for (final modifier in command.modifiers) {
       if (modifier.label.trim().isEmpty) {
-        return const Rejection(
-          RejectionCode.invalidValue,
-          'Every modifier needs a label.',
+        return const _Invalid(
+          Rejection(
+            RejectionCode.invalidValue,
+            'Every modifier needs a label.',
+          ),
         );
       }
     }
     final request = command.request;
     if (request != null && state.pending.requests[request] == null) {
-      return _unknownRequest(request).reason;
+      return _Invalid(_unknownRequest(request).reason);
     }
-    return CheckSpec(
-      entity: command.entity,
-      attribute: attribute,
-      skill: skillId,
-      category: switch (command.difficulty) {
-        CategoryDifficulty(:final category) => category,
-        FixedDifficulty() => null,
-      },
-      dc: dc,
-      modifiers: command.modifiers,
-      request: request,
+    return _Valid(
+      CheckSpec(
+        entity: command.entity,
+        attribute: attribute,
+        skill: skillId,
+        category: switch (command.difficulty) {
+          CategoryDifficulty(:final category) => category,
+          FixedDifficulty() => null,
+        },
+        dc: dc,
+        modifiers: command.modifiers,
+        request: request,
+      ),
     );
   }
 
-  /// Checks everything a roll needs, without drawing. Returns a [_Roll] or
-  /// the [Rejection].
-  Object _prepareRoll(OperationState state, CheckSpec spec, Rng rng) {
+  /// Checks everything a roll needs, without drawing.
+  _Checked<_Roll> _prepareRoll(OperationState state, CheckSpec spec, Rng rng) {
     final expected = state.rng.drawCount;
     if (rng.drawCount != expected) {
-      return Rejection(
-        RejectionCode.rngOutOfSync,
-        'The RNG is at draw ${rng.drawCount} but the operation is at '
-        'draw $expected.',
+      return _Invalid(
+        Rejection(
+          RejectionCode.rngOutOfSync,
+          'The RNG is at draw ${rng.drawCount} but the operation is at '
+          'draw $expected.',
+        ),
       );
     }
     final scores = state.stores.get(Attributes.componentType, spec.entity);
     final score = scores?[spec.attribute];
     if (scores == null || score == null) {
-      return Rejection(
-        RejectionCode.invalidValue,
-        '${spec.entity.value} has no ${spec.attribute} score.',
+      return _Invalid(
+        Rejection(
+          RejectionCode.invalidValue,
+          '${spec.entity.value} has no ${spec.attribute} score.',
+        ),
       );
     }
     final skill = spec.skill;
@@ -272,9 +306,11 @@ final class CheckSystem {
         : state.stores.get(Skills.componentType, spec.entity)?[skill];
     final tierDef = tier == null ? null : pack.proficiencyTier(tier);
     if (tier != null && tierDef == null) {
-      return Rejection(
-        RejectionCode.unknownPackKey,
-        'Unknown proficiency tier "$tier".',
+      return _Invalid(
+        Rejection(
+          RejectionCode.unknownPackKey,
+          'Unknown proficiency tier "$tier".',
+        ),
       );
     }
     final primary = pack.checkRules!.primaryDie;
@@ -283,26 +319,44 @@ final class CheckSystem {
     // draw, or a failed evaluation would consume draws (draw-count
     // invariant).
     for (final expr in [primary, ?bonus]) {
+      // A division by zero depends on the faces, so it could only show up
+      // after drawing. Check dice may not divide. (A result too large for
+      // every platform is the one failure left after the first draw; with
+      // real dice it cannot happen, and `Engine.decide` guards it.)
+      if (_divides(expr)) {
+        return const _Invalid(
+          Rejection(
+            RejectionCode.evaluationFailed,
+            'Check dice may not divide.',
+          ),
+        );
+      }
       if (expr.varKeys.isNotEmpty) {
-        return const Rejection(
-          RejectionCode.evaluationFailed,
-          'Check dice may not read var values.',
+        return const _Invalid(
+          Rejection(
+            RejectionCode.evaluationFailed,
+            'Check dice may not read var values.',
+          ),
         );
       }
       final missing = expr.attributeKeys.difference(scores.scores.keys.toSet());
       if (missing.isNotEmpty) {
-        return Rejection(
-          RejectionCode.evaluationFailed,
-          '${spec.entity.value} has no score for ${missing.join(', ')}.',
+        return _Invalid(
+          Rejection(
+            RejectionCode.evaluationFailed,
+            '${spec.entity.value} has no score for ${missing.join(', ')}.',
+          ),
         );
       }
     }
-    return _Roll(
-      scores: scores.scores.asMap(),
-      score: score,
-      tier: tier,
-      primary: primary,
-      bonus: bonus,
+    return _Valid(
+      _Roll(
+        scores: scores.scores.asMap(),
+        score: score,
+        tier: tier,
+        primary: primary,
+        bonus: bonus,
+      ),
     );
   }
 
@@ -380,3 +434,29 @@ final class _Roll {
   final Expr primary;
   final Expr? bonus;
 }
+
+/// A validation result: the value, or why there is none.
+sealed class _Checked<T> {
+  const _Checked();
+}
+
+final class _Valid<T> extends _Checked<T> {
+  const _Valid(this.value);
+
+  final T value;
+}
+
+final class _Invalid<T> extends _Checked<T> {
+  const _Invalid(this.rejection);
+
+  final Rejection rejection;
+}
+
+/// Whether [expr] divides anywhere.
+bool _divides(Expr expr) => switch (expr) {
+  Op(op: OpKind.div) => true,
+  Op(:final args) => args.any(_divides),
+  Sum(:final terms) => terms.any(_divides),
+  KeepHighest(:final pool) => pool.any(_divides),
+  Const() || Attr() || Var() || Dice() => false,
+};

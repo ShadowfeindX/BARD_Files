@@ -47,6 +47,16 @@ void main() {
       expect((sanity.amount, sanity.overriddenFrom), (5, 3));
     });
 
+    test('a review edit may not make an amount negative', () {
+      const event = SanityLost(
+        entity: vale,
+        amount: 3,
+        actor: GmActor(),
+        visibility: Public(),
+      );
+      expect(() => event.withAmount(-1), throwsArgumentError);
+    });
+
     test('rejections', () {
       final table = Table();
       expect(
@@ -103,6 +113,18 @@ void main() {
         RejectionCode.unknownEntity,
       );
     });
+  });
+
+  test('a review edit to a condition keeps the original beside it', () {
+    const event = ConditionApplied(
+      entity: vale,
+      condition: 'bleeding',
+      actor: GmActor(),
+      visibility: Public(),
+    );
+    final edited = event.withCondition('stunned').withCondition('bleeding');
+    expect((edited.condition, edited.overriddenFrom), ('bleeding', 'bleeding'));
+    expect(() => event.withCondition(''), throwsArgumentError);
   });
 
   group('derived stats', () {
