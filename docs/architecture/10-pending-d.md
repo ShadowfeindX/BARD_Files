@@ -14,13 +14,17 @@ Conventions:
 - Spec chapters are cited as `01 §Heading` (this folder). Code paths are relative to the repository root; `engine/` is `packages/engine/lib/src/`. Line numbers are on `main` at the time of writing and drift; the symbol name is the stable reference.
 - "Row N" is a workstream in the project library's `architecture/implementation-plan.md`. "Row N follow-up" means a new branch on top of what row N merged. "New row" means work the plan does not have yet.
 - **Pack** means the provisional pack `packages/content_core/assets/example-core/` (the authoring source; `tool/build_pack.sh` regenerates the shipped copy). The library copy `packs/example-core/` gets the same edit until D's pack replaces both.
+- "Pending" in the pack: the authoring source marks an open value with a placeholder object (`placeholder`, `gap`, `note`); the annotation stripper turns it into `null` in the generated pack, which the loader lists in `RulesPack.pendingPaths`. "Replace the placeholder" below means: write the value in the source, then rebuild.
+- An **Assumption** with "(no source; coordinator default)" has no recommendation in the library; the others cite theirs.
 - Rulebook pages are PDF pages of `BARD Core Rulebook.pdf`; "1.3.1" is the older reference book. Plain-language versions of the D questions are in the meeting packet (project library `meeting/`).
+
+D's answers can be collected on the fill-in sheet [10-pending-d-responses.md](10-pending-d-responses.md): every block carries the card's id, so each answer maps onto one card below.
 
 ## How to apply a ruling
 
 1. Write the ruling into the **Ruled** column of the [index](#index) (date and R's or D's words), and add a row to the [09 decisions record](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20).
 2. Do the edits listed under the chosen option, on a branch named for the work (`feature/`, `bugfix/` or `docs/`), with the developer guide and `CHANGELOG.md` in the same PR (CLAUDE.md §10).
-3. For a pack value: replace the `null` (and remove its annotation) in the pack, run `bash tool/build_pack.sh`, and check that the path left `RulesPack.pendingPaths` (`engine/pack/rules_pack.dart`). If the ruling adds a field, the parser in `engine/pack/files/` and the pack loader tests change with it.
+3. For a pack value: replace the placeholder object in the pack source, run `bash tool/build_pack.sh`, and check that the path left `RulesPack.pendingPaths` (`engine/pack/rules_pack.dart`). If the ruling adds a field, the parser in `engine/pack/files/` and the pack loader tests change with it.
 4. Delete the card from this chapter, or shorten it to "Ruled, see 09". Remove the gap from the library's `rulebook/rulebook-gaps.md` and from the pack's `openItems`.
 5. If D picks something no option here covers, the card is re-planned before any code, and the plan goes to R.
 
@@ -88,7 +92,7 @@ The book gives three answers:
 | C. WIS or INT | as B | as B with WIS, INT | `chosenAttribute: ["WIS", "INT"]` |
 | **D. The named skill's attribute** | as A, plus "falls back to the skill's attribute" | no new code: `CheckSystem._spec` already uses the skill's attribute; the cast roll falls back to A when no skill is named | `chosenAttribute: "skill"` with `fallback: "WIL"`; set the occult skills' `attribute` in `skills.json` from the dossier grouping |
 
-**Assumption:** A with D: WIL by default, or the attribute of the skill the player names (coverage report decision 2). The pack field name `chosenAttribute` is Proposed.
+**Assumption:** A with D: WIL by default, or the attribute of the skill the player names (coverage report decision 2). The value replaces the existing `castMagic.chosenAttribute` placeholder; the value shapes above (list, `"skill"`, `fallback`) are Proposed.
 
 ### M2. Cast magic and the occult system (F3 part 1)
 
@@ -105,14 +109,14 @@ The book gives three answers:
 
 ### M3. Casting details (G6)
 
-**Decides:** D. **Source:** `rulebook-gaps.md` G6; 10 §2 open details (previous version of this chapter); coverage report decision 15. Only needed if M2 is A or B.
+**Decides:** D. **Source:** `rulebook-gaps.md` G6; coverage report decision 15; the `occult.json` `sanityCheckOptions` placeholder. Only needed if M2 is A or B.
 
 | Detail | Options | Changes | Assumption |
 |---|---|---|---|
 | Sanity check timing | (a) every cast (p30 step 5); (b) only on success (1.3.1) | `occult.json` `sanityCheckOn: "everyCast" \| "success"`; the cast's follow-up suggestion in the new occult code | (a) |
 | Group casting cost | (a) each caster pays half, rounded up (1.3.1); (b) caster pays all; (c) each pays full | `occult.json` `groupCost`; suggestion per participant in the review tray (row 8 follow-up) | (a) |
 | Focus item category | (a) the spell's category; (b) the item's | `occult.json` `focusItem.categoryFrom: "spell" \| "item"` | (a) |
-| Arcane proficiency prerequisite | (a) warning the GM can override; (b) hard refusal | (a) a warning on the pending check; (b) a `RejectionCode` in `engine/engine.dart` and its codec | (a) |
+| Arcane proficiency prerequisite | (a) warning the GM can override; (b) hard refusal | (a) a warning on the pending check; (b) a `RejectionCode` in `engine/decision.dart` and its codec | (a) |
 
 The coverage report's reading of the book, not rulings.
 
@@ -134,18 +138,18 @@ The coverage report's reading of the book, not rulings.
 
 The `difficulty.json` `checkRules` block sits there as a proposal (`_shapeNote`); D and R may move it. The library provenance field must not reuse the stripped `source` key.
 
-**Assumption:** A, with D's renames applied as B.
+**Assumption:** A, with D's renames applied as B (no source; coordinator default: the library only asks D to review the example).
 
 ### P2. Skill list (G15)
 
 **Decides:** D. **Source:** `rulebook-gaps.md` G15.
-**Today:** `skills.json` has Mind Shielding (`mind_shielding`) and `attribute: null` for the skills without one; a check on such a skill is refused until the GM names an attribute (`CheckSystem._spec`, "pending D").
+**Today:** `skills.json` already has Mind Shielding (`mind_shielding`, WIL, from the dossier) and Insight with a placeholder attribute; Eldritch Lore and Vehicle Modification are not in the file. A check on a skill with no attribute is refused until the GM names one (`CheckSystem._spec`, "pending D").
 
 | Option | Changes | |
 |---|---|---|
-| **Add Mind Shielding; Eldritch Lore INT, Vehicle Modification INT, Insight WIS (2.1); keep paired skills separate** | `skills.json` attributes; remove the G15 `openItems` entry; no code | **Assumption** |
+| **Keep Mind Shielding (WIL); add Eldritch Lore (INT) and Vehicle Modification (INT); Insight WIS (2.1); keep paired skills separate** | `skills.json`: two new skills, Insight's attribute; remove the G15 `openItems` entry; no code | **Assumption** (`rulebook-gaps.md` G15) |
 | Other attributes | same file | |
-| Drop Mind Shielding | `skills.json`; M1 option D loses one WIL skill | |
+| Drop Mind Shielding | remove it from `skills.json`; M1 option D loses one WIL skill | |
 | Merge Alchemy / Advanced Alchemy or Explosive Disposal / Explosives | `skills.json`; deprecation records if the pack has shipped (02 §Deprecation in packs) | |
 
 ---
@@ -155,14 +159,14 @@ The `difficulty.json` `checkRules` block sits there as a proposal (`_shapeNote`)
 ### W1. Web hosting
 
 **Decides:** D. **Source:** 09 W1; 07 §Web build role.
-**Today:** the web build is player-only. Hosting modes come from a per-platform capability set (`canHost`, `canEditPacks`), so a change is configuration.
+**Today:** the web build is player-only. 07 §Web build role specifies hosting modes read from a per-platform capability set (for example `canHost`, `canEditPacks`), so a change is configuration; the capability set is not built yet (no code on `main`).
 
 | Option | Spec | Code |
 |---|---|---|
-| **A. Stay player-only** | 09 W1 row: "confirmed with D" | none |
-| B. Web GM limited to RTDB relay and P2P (no LAN) | 07 §Web build role; 04 §Play modes (web host row); 09 W1, concern 2; P12 web-host autosave (no sembast file: RTDB head only) | capability set in `apps/bard` (row 8 follow-up); `sembast_web` host store (row 12 follow-up); relay (row 15) |
+| **A. Stay player-only** | 09 W1 row: drop "for now" and "Revisit with D" | none |
+| B. Web GM limited to RTDB relay and P2P (no LAN) | 07 §Web build role; 04 §Play modes (web host row); 09 W1, concern 2; P12 web-host autosave (no sembast file: RTDB head only) | build the capability set in `apps/bard` (row 8 follow-up); `sembast_web` host store (row 12 follow-up); relay (row 15) |
 
-**Assumption:** A (R's reason: a web GM loses control over engine version, pack choice and modifying their own games). B only if D needs it for onboarding.
+**Assumption:** A, R's current ruling (R's reason: a web GM loses control over engine version, pack choice and modifying their own games). B only if D needs it for onboarding.
 
 ### C7. Physical dice (concern 7)
 
@@ -176,7 +180,7 @@ The `difficulty.json` `checkRules` block sits there as a proposal (`_shapeNote`)
 
 The design as R specified it: a per-operation GM setting, off by default and agreed with the players; entered faces are recorded with `source: entered` and who entered them. Proposed, not ruled: entered faces, like app rolls, are never re-rolled or altered (F2).
 
-**Assumption:** A, scheduled after the demo slice.
+**Assumption:** A (no source; coordinator default: R specified the design and the field is reserved). Not in the demo slice (implementation plan).
 
 ---
 
@@ -186,23 +190,27 @@ Values D has not given. The engine can represent each variant; agents never choo
 
 ### G1. Fumble
 
-**Today:** `CheckRules.fumbleFractionOfDc` is loaded (0.25, `engine/pack/files/difficulty.dart`); `fumble.basis` is `null`; `CheckOutcome` has no fumble and fumbles are off (`CheckSystem` doc comment).
+**Today:** `CheckRules.fumbleFractionOfDc` is loaded (0.25, `engine/pack/files/difficulty.dart`); `fumble.basis` is a placeholder; `CheckOutcome` has no fumble and fumbles are off (`CheckSystem` doc comment).
 
 | Option | Spec | Code | Pack |
 |---|---|---|---|
-| **A. Total, rounded down** | 01 §Dice and checks: fumble rule | Row 5 follow-up: `CheckOutcome.fumble` (`engine/checks/check_types.dart`); `CheckSystem._outcome` tests `total <= floor(fraction × dc)` before partial success; codec value and fixture (`protocol/lib/src/event_codec.dart`); narrator line (`engine/narrator/narrator.dart`); `ui_kit` dice breakdown label; parser reads `basis` and `rounding` | `difficulty.json` `checkRules.fumble.basis: "total"`, `rounding: "down"` |
+| **A. Total, rounded down** | 01 §Dice and checks (vocabulary): fumble rule | Row 5 follow-up: `CheckOutcome.fumble` (`engine/checks/check_types.dart`); `CheckSystem._outcome` tests `total <= floor(fraction × dc)` before partial success; codec value and fixture (`protocol/lib/src/event_codec.dart`); narrator line (`engine/narrator/narrator.dart`); `ui_kit` dice breakdown label; parser reads `basis` and `rounding` | `difficulty.json` `checkRules.fumble.basis: "total"`, `rounding: "down"` |
 | B. Primary die alone | same | same, comparing the primary die's first face | `basis: "primaryDie"` |
 
 "Immediate complications" on a sanity fumble is G5.
 
+**Assumption:** A (`rulebook-gaps.md` G1, possible answer).
+
 ### G2. Advantage and disadvantage
 
-**Today:** `luckAdvantage` is loaded (`extraPrimaryDiceFrom: LCK`, `keep: bestTotal`); `grantedBy` is `null`; not built.
+**Today:** `luckAdvantage` is loaded (`extraPrimaryDiceFrom: LCK`, `keep: bestTotal`); `grantedBy` is a placeholder; not built.
 
 | Option | Spec | Code | Pack |
 |---|---|---|---|
-| **A. GM grants it per check; disadvantage = roll the same extra dice and keep the worst** | 01 §Dice and checks | Row 5 follow-up: `RequireCheck` gains `advantage: none \| advantage \| disadvantage`; roll draws extra primary dice and keeps best or worst total; breakdown shows every set; codec + fixture; GM control (row 8 follow-up) | `difficulty.json` `luckAdvantage.grantedBy: "gm"`, `disadvantageKeep: "worstTotal"` |
+| **A. GM grants it per check; disadvantage = roll the same extra dice and keep the worst** | 01 §Dice and checks (vocabulary) | Row 5 follow-up: `RequireCheck` gains `advantage: none \| advantage \| disadvantage`; roll draws extra primary dice and keeps best or worst total; breakdown shows every set; codec + fixture; GM control (row 8 follow-up) | `difficulty.json` `luckAdvantage.grantedBy: "gm"`, `disadvantageKeep: "worstTotal"` |
 | B. D lists triggers | 01 as A, plus a trigger list | as A, plus GM prompts per trigger | `grantedBy` as a list (field shape to plan) |
+
+**Assumption:** A (`rulebook-gaps.md` G2, possible answer).
 
 ### G3. Which dice explode
 
@@ -214,21 +222,23 @@ Values D has not given. The engine can represent each variant; agents never choo
 | B. Every die (p11 first sentence) | all `explode: true` | none |
 | C. Primary die only (p11 second sentence) | all others `false` | none |
 
+**Assumption:** A (`rulebook-gaps.md` G3, possible answer).
+
 ### G4 and G18. Assistance
 
-**Today:** `assistance` is loaded (gate Cat-D, bonus `1d6 + var(helperSkillBonus)`), `cap` is `null`; assistance is not built. `helperSkillBonus` has no defined value since proficiency became dice (G16).
+**Today:** `assistance` is loaded (gate Cat-D, bonus `1d6 + var(helperSkillBonus)`), `cap` is a placeholder; assistance is not built. `helperSkillBonus` has no defined value since proficiency became dice (G16).
 
 | Part | Options | Spec | Code | Pack |
 |---|---|---|---|---|
-| Helper bonus (G18) | **(a) helper rolls their own proficiency die: 1d6 + 1d4 Proficient, 1d6 + 1d6 Expert, 1d6 untrained**; (b) a flat number D gives | 01 §Dice and checks; 02 §Named variables (the `var` placement changes) | New: assistance in `CheckSystem` (row 5 follow-up): helper's gate check, then the bonus; for (a) the `helperSkillBonus` var is replaced by the helper's tier expression, so `engine/expr/vars.dart` drops it (deprecation per 01 §Deprecation if any pack shipped it) | (a) `difficulty.json` `assistance.bonus` becomes `1d6` + `{"type":"helperProficiency"}` (new node, Proposed) or the loader adds the tier die; (b) keep the `var` |
-| Cap (G4) | **(a) 3 helpers on ordinary checks**; (b) no cap; (c) another number | 01 §Dice and checks | refusal code `tooManyHelpers` (Proposed) | `assistance.cap: 3` or `null` replaced by `"none"` |
+| Helper bonus (G18) | **(a) helper rolls their own proficiency die: 1d6 + 1d4 Proficient, 1d6 + 1d6 Expert, 1d6 untrained**; (b) a flat number D gives | 01 §Dice and checks (vocabulary); 02 §Named variables (the `var` placement changes) | New: assistance in `CheckSystem` (row 5 follow-up): helper's gate check, then the bonus; for (a) the `helperSkillBonus` var is replaced by the helper's tier expression, so `engine/expr/vars.dart` drops it (deprecation per 01 §Deprecation if any pack shipped it) | (a) `difficulty.json` `assistance.bonus` becomes `1d6` + `{"type":"helperProficiency"}` (new node, Proposed) or the loader adds the tier die; (b) keep the `var` |
+| Cap (G4) | **(a) 3 helpers on ordinary checks**; (b) no cap; (c) another number | 01 §Dice and checks (vocabulary) | refusal code `tooManyHelpers` (Proposed) | `assistance.cap: 3`, or `"none"` for no cap |
 | Ritual helpers (p29) | keep as written (DC 10, +1 each) | M2 | M2 option B or C | `occult.json` |
 
 **Assumption:** (a) and (a). Assistance stays off until both are ruled.
 
 ### G5. Sanity loss
 
-**Today:** GM enters every sanity amount; `VitalsSystem` holds it for review (F2). `sanity_events.json` has ranges with `null` placeholders; `disorders.json` `rollDie` is `null`.
+**Today:** the GM enters every sanity amount through `VitalsSystem`, and the session holds it for review (F2, `session/lib/src/operation_host.dart`). `sanity_events.json` has ranges with placeholders; `disorders.json` `rollDie` is `null` (a pending value in the source too).
 
 | Part | Assumption | Other options | Code | Pack |
 |---|---|---|---|---|
@@ -249,14 +259,18 @@ Values D has not given. The engine can represent each variant; agents never choo
 | B. D writes a new rule | same | per D | per D |
 | C. Handler decides, no rule | 01 note | GM sets a condition by hand (exists today) | none |
 
+**Assumption:** A (`rulebook-gaps.md` G7, possible answer).
+
 ### G8. Armor and damage reduction
 
-**Today:** `derived.json` DR block and `items/armor_vest.json` `drModifier` are `null`.
+**Today:** `derived.json` `damageReduction` is `attr(END)` with an `armorModifierAdded` placeholder (G8); `items/armor_vest.json` `drModifier` is `null`.
 
 | Option | Pack | Code |
 |---|---|---|
-| **A. Flat DR (END + modifier); armor categories light 1-2, medium 3-4, heavy 5+** | `derived.json` DR formula; `items/*.json` `drModifier` | `VitalsSystem` follow-up: damage minus DR suggested in the review tray |
+| **A. Flat DR (END + modifier); armor categories light 1-2, medium 3-4, heavy 5+** | `derived.json` `damageReduction` adds the armor modifier (replaces `armorModifierAdded`); `items/*.json` `drModifier` | `VitalsSystem` follow-up: damage minus DR suggested in the review tray |
 | B. Rolled DR (1d6 + END + armor, older books) | `derived.json` formula with dice | same, rolled at damage time (consumes draws) |
+
+**Assumption:** A (`rulebook-gaps.md` G8, possible answer).
 
 ### G9. Weapon MIN and melee Strength
 
@@ -267,6 +281,8 @@ Values D has not given. The engine can represent each variant; agents never choo
 | **A. MIN = lowest damage a hit does; STR does not add** | `damage.json` `min` values, `meleeAddsStr: false` | damage suggestion floors at `min` |
 | B. STR adds to melee | `meleeAddsStr: true` | damage formula adds `attr(STR)` |
 
+**Assumption:** A (`rulebook-gaps.md` G9, possible answer).
+
 ### G10. Action economy, Aim, Dodge
 
 **Today:** no `CombatSystem` (01 lists it); `ranges.json` and `items/pistol_cat_d.json` mark G10.
@@ -275,6 +291,8 @@ Values D has not given. The engine can represent each variant; agents never choo
 |---|---|---|---|
 | **A. One Major + one Minor per turn; Aim is a Minor action for +1; Dodge against any attack, Parry only melee** | 01 §Systems `CombatSystem` | New row (combat): turn and action tracking; Aim as a labelled modifier | new `combat.json` (`actionsPerTurn`, `aim`), or a `ranges.json` block; field names Proposed |
 | B. D's numbers | same | same | same |
+
+**Assumption:** A (`rulebook-gaps.md` G10, possible answer).
 
 ### G11. Enemy numbers
 
@@ -285,19 +303,29 @@ Values D has not given. The engine can represent each variant; agents never choo
 | **A. Add defense and attack bonus per class, from the class's listed skill bonus** | `threats.json` `defense`, `attack` per class; NPC template attributes | parser `engine/pack/files/threats.dart`; NPC spawn uses them |
 | B. D supplies numbers | same | same |
 
+**Assumption:** A (`rulebook-gaps.md` G11, possible answer).
+
 ### G13. Old difficulty names
+
+**Today:** the old names appear only as annotations (`vehicles.json`, `difficulty.json` `openItems`, G13); nothing in code uses them.
 
 | Option | Pack | Code |
 |---|---|---|
 | **A. Drop "Tough DC 9", "Moderate", "Advanced", "Extreme 21"; restate each use as a category (crash test, Withdraw as Cat-D or Cat-C; passenger penalties as modifiers)** | `vehicles.json` uses; `difficulty.json` `openItems` | none (data) |
 | B. Keep a legacy name table | `difficulty.json` alias table | loader resolves aliases |
 
+**Assumption:** A (`rulebook-gaps.md` G13, possible answer).
+
 ### G14. Advancement purchases
+
+**Today:** `advancement.json` marks the single-use rows and Artifact Clearance with G14 placeholders; advancement purchases are not built.
 
 | Option | Pack | Code |
 |---|---|---|
 | **A. "Single use" = once per character; Artifact Clearance is a GM-tracked note** | `advancement.json` `limit: "perCharacter"` | `CharacterSystem` advancement purchase (not built) refuses a second purchase |
 | B. Once per purchase | `limit: "perPurchase"` | none |
+
+**Assumption:** A (`rulebook-gaps.md` G14, possible answer).
 
 ### G19. Creation totals
 
@@ -308,9 +336,19 @@ Values D has not given. The engine can represent each variant; agents never choo
 | **A. Exactly 20 points and exactly 3 Proficient + 1 Expert** | `CharacterSystem` creation check (`engine/systems/character_system.dart`, the `limits` loop): sum equals `points`; skill tier counts equal `counts`; new refusal messages; tests | `attributes.json` `creation.total: "exact"`, `proficiency.json` `creation.mode: "exact"` (field names Proposed) |
 | B. At most | same, `<=` | `"atMost"` |
 
+**Assumption:** A (`rulebook-gaps.md` G19, possible answer).
+
 ### C1. Content cut since 1.3.1
 
-**Decides:** D. The critical injury table, backlash, artifact repository, forms and personnel are in 1.3.1 and not in the current book. **Assumption:** nothing is restored unless D says so; anything restored is copied from the PC rulebook copy (via the PC session), never reconstructed. Changes land in the pack (new files) and, for rules, in the cards above (G7 for injuries).
+**Decides:** D. **Source:** coverage report §9 item 18. The critical injury table, backlash, artifact repository, forms and personnel are in 1.3.1 and not in the current book.
+
+| Option | Changes |
+|---|---|
+| A. Cut on purpose | none; remove the question from the coverage report |
+| B. Cut on purpose, but artifacts and forms move to the File Repository (the report's follow-up) | library content (12 §Library), not the pack |
+| C. Restore some (D names them) | copied from the PC rulebook copy (via the PC session), never reconstructed; pack files per item; rules through the cards above (G7 for injuries) |
+
+**Assumption:** A unless D names items (no source; coordinator default).
 
 ---
 
@@ -324,7 +362,7 @@ Source for all: library `architecture/supplemental-x0-pending.md`; 11 §Terminol
 
 | Option | Spec | Code | Firebase |
 |---|---|---|---|
-| **A. One log per operation, stored in mission segments** | Glossary rename (README, 11 §Terminology "rename pending"); 01 §Commands and events: `MissionStarted` / `MissionCompleted`; 04 §Interfaces: one sembast file per mission segment (amends 09-3); 05 §What gets migrated; 06 §Realtime Database model (prune `events`/`textlog` per segment; `phone`/`requests` pruning rule); 06 §Cloud Functions: `archiveMission` (amends P14); 12 §Archives and `missions.eventRange` (unit = segment) | `OperationSystem` (`engine/systems/operation_system.dart`) gains mission events (row 1 follow-up); `EventStore` segment files (row 12); host starts a segment from the head snapshot (row 7 follow-up); codecs (row 6) | `firebase/database.rules.json` segment pruning; emulator checks; `archiveMission` function |
+| **A. One log per operation, stored in mission segments** | Glossary rename (README, 11 §Terminology "rename pending"); 01 §Commands and events: `MissionStarted` / `MissionCompleted`; 04 §Interfaces the session depends on: one sembast file per mission segment (amends 09-3); 05 §What gets migrated; 06 §Realtime Database model (prune `events`/`textlog` per segment; `phone`/`requests` pruning rule); 06 §Cloud Functions: `archiveMission` (amends P14); 12 §Archives and `missions.eventRange` (unit = segment) | `OperationSystem` (`engine/systems/operation_system.dart`) gains mission events (row 1 follow-up); `EventStore` segment files (row 12); host starts a segment from the head snapshot (row 7 follow-up); codecs (row 6) | `firebase/database.rules.json` segment pruning; emulator checks; `archiveMission` function |
 | B. One log per mission, carry-over copied | Glossary shift; new "carry-over" section in 05 or 04; 12 `missions` | carry-over step between logs (new row); between-mission activity has no log | per-mission tree |
 | C. One unsegmented log per operation | Glossary rename only | none now; log growth unbounded | none |
 
@@ -332,34 +370,34 @@ Also decided by this card:
 
 - **P17 phone-box clearing:** "the mission ends" maps to `MissionCompleted` under A, to the end of the log under B, and has no natural point under C. The clearing mechanism itself is ruled (a function clears the box after the archive).
 - **Character carry-over** (inventory, skills, contacts, `KnownAs` from N1): state under A; part of the copy under B.
-- **GM notes (decision 13):** per operation under A (one notes document, R's leaning); per mission under B.
-- 12 §Held items: archive layout per mission, genesis `archives` fields, alias state between missions, public profile lists.
+- **GM notes (decision 13), scope only:** the storage shape (one notes document beside the log, not events) is the Opus-Gate recommendation awaiting R; whether notes are per operation, per mission or both is open there. The natural fit is per operation under A and per mission under B.
+- 12 §Held and questions for R items: archive layout per mission, genesis `archives` fields, alias state between missions, public profile lists.
 
 **Assumption:** A.
 
 ### Q5. Requests between sittings
 
-**Decides:** R. Needs X0. **Assumption:** under A, purchases and contact releases queue as ordinary requests under the operation until the Handler's client is online; purchases do not auto-confirm (auto-confirm would extend F2, which covers consequence events only). **Changes:** 04 §Offline and sync semantics; 06 RTDB `requests` (already exists); if auto-confirm is chosen, F2 amendment in 01 and 04 and an `OperationSettings` flag.
+**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`. **Today:** nothing built. **Assumption:** under A, purchases and contact releases queue as ordinary requests under the operation until the Handler's client is online; purchases do not auto-confirm (auto-confirm would extend F2, which covers consequence events only). **Changes:** 04 §Offline and sync semantics; 06 RTDB `requests` (already exists); if auto-confirm is chosen, F2 amendment in 01 and 04 and an `OperationSettings` flag.
 
 ### Q7. Messages between sessions
 
-**Decides:** R. Needs X0. **Assumption:** under A, the operation's phone box in RTDB, as designed (P17). **Changes:** none beyond X0's pruning rule.
+**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`; 06 RTDB `phone` (P17). **Assumption:** under A, the operation's phone box in RTDB, as designed (P17). **Changes:** none beyond X0's pruning rule.
 
 ### Q9. Published mission content
 
-**Decides:** R. Needs X0 and N1. **Assumption:** the debrief forms plus the `public` text log of that segment, never GM or alias branches; the mission id is generated on `MissionStarted`, independent of the operation id (which changes on migration, P12). **Changes:** 11 §Library and public content; 12 `missions/{missionId}` and a library mission kind (12 §Held). The `public` text is only safe to publish after N1's name rule.
+**Decides:** R. Needs X0 and N1. **Source:** `supplemental-x0-pending.md`. **Today:** 12 `missions/{missionId}` holds a summary; `eventRange` unit Proposed. **Assumption:** the debrief forms plus the `public` text log of that segment, never GM or alias branches; the mission id is generated on `MissionStarted`, independent of the operation id (which changes on migration, P12). **Changes:** 11 §Library and public content; 12 `missions/{missionId}` and a library mission kind (12 §Held and questions for R). The `public` text is only safe to publish after N1's name rule.
 
 ### Q33. Anonymous accounts browsing
 
-**Decides:** R and D. **Already ruled (R, 2026-10-21):** no voice, video or messaging for clearance 0. **Assumption:** they join and play, but cannot browse the glossary, bestiary, item catalog or mission library. **Changes:** 11 §Clearance tiers; 12 §Security rules: library read rules require a non-anonymous token (`libraryPublic`, `libraryData`); emulator checks. Under the other option, level-1 content is readable by tier 0 and the rules check `tier() >= 0`.
+**Decides:** R and D. **Source:** `supplemental-x0-pending.md`. **Already ruled (R, 2026-10-21):** no voice, video or messaging for clearance 0. **Assumption:** they join and play, but cannot browse the glossary, bestiary, item catalog or mission library. **Changes:** 11 §Clearance tiers; 12 §Security rules: library read rules require a non-anonymous token (`libraryPublic`, `libraryData`); emulator checks. Under the other option, level-1 content is readable by tier 0 and the rules check `tier() >= 0`.
 
 ### Q6. Currency
 
-**Decides:** D. **Provisional (R):** D defines name, prices, starting funds and income in pack data; the engine gets a generic `Funds` vocabulary. **Assumption:** confirm. **Changes:** new pack file `currency.json` (name, starting funds, income) and `price` on `items/*.json` (names Proposed); new `Funds` component and transfer command/event (new row, wallet), codecs; 11 §Currency becomes Fixed. Movement between missions needs X0.
+**Decides:** D. **Source:** 11 §Currency; `supplemental-x0-pending.md`. **Today:** no `Funds` code, no currency pack file. **Provisional (R):** D defines name, prices, starting funds and income in pack data; the engine gets a generic `Funds` vocabulary. **Assumption:** confirm. **Changes:** new pack file `currency.json` (name, starting funds, income) and `price` on `items/*.json` (names Proposed); new `Funds` component and transfer command/event (new row, wallet), codecs; 11 §Currency becomes Fixed. Movement between missions needs X0.
 
 ### Q12. Fake websites
 
-**Decides:** D. **Provisional (R):** Handlers write them, per operation, from block templates; library sharing later with moderation. **Assumption:** confirm. **Changes:** 11 §Fake occult websites becomes Fixed; `SiteRevealed` (Proposed in 11 §Amendments) for unlocks; sharing adds a library kind in 12 later.
+**Decides:** D. **Source:** 11 §Fake occult websites; `supplemental-x0-pending.md`. **Today:** nothing built. **Provisional (R):** Handlers write them, per operation, from block templates; library sharing later with moderation. **Assumption:** confirm. **Changes:** 11 §Fake occult websites becomes Fixed; `SiteRevealed` (Proposed in 11 §Amendments) for unlocks; sharing adds a library kind in 12 later.
 
 ---
 
@@ -400,8 +438,8 @@ Key test for all options: for every perspective, the host's stored variant for e
 
 ### F1. Mission library seed cases
 
-**Decides:** D. Existing closed cases from the lore and playtests, and the playtest players' consent. **Assumption:** none seeded until D lists them. **Changes:** library entries through moderation (12 §Library); no code.
+**Decides:** D. **Source:** meeting packet feature plan, item 7. **Today:** no library code. Existing closed cases from the lore and playtests, and the playtest players' consent. **Assumption:** none seeded until D lists them (no source; coordinator default). **Changes:** library entries through moderation (12 §Library); no code.
 
 ### F2. Sign-in code symbology
 
-**Decides:** D. Whether the short-lived sign-in code is also PDF417 like the public badge. **Assumption:** none yet; the sign-in function (P14) mints a value, and the symbology is a rendering choice in the companion and desktop UI. **Changes:** 11 §Sign-in code; the badge package proposal to R (11 §New dependencies) covers both symbologies.
+**Decides:** D. **Source:** meeting packet feature plan, item 11. **Today:** no sign-in code built. Whether the short-lived sign-in code is also PDF417 like the public badge. **Assumption:** none yet; the sign-in function (P14) mints a value, and the symbology is a rendering choice in the companion and desktop UI. **Changes:** 11 §Sign-in code; the badge package proposal to R (11 §New dependencies) covers both symbologies.

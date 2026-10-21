@@ -19,6 +19,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
 | [09-open-decisions.md](09-open-decisions.md) | **Decisions record** of R's rulings, plus what is still pending D, held for a probe, or deferred |
 | [10-pending-d.md](10-pending-d.md) | **Post-meeting decision kit**: every item waiting on R's meeting with D, with options, an assumed default and the edits under each option |
+| [10-pending-d-responses.md](10-pending-d-responses.md) | Fill-in sheet for D's answers at the meeting, one block per card id in 10 |
 | [11-supplemental-features.md](11-supplemental-features.md) | D's supplemental features as ruled by R: fictional profiles, clearance tiers, public badge and sign-in code, invite links, stat-gated broadcast, moderation, panic button, companion app; items waiting on the operation/mission model |
 | [12-firestore-collections.md](12-firestore-collections.md) | **Firestore collections** (Proposed): names, document shapes, draft rules, composite indexes, emulator test plan, questions for R |
 | [verification.md](verification.md) | Every Dart / Flutter / Firebase claim in this spec and the source it was checked against |
