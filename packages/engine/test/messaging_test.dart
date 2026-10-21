@@ -80,22 +80,6 @@ void main() {
     );
   });
 
-  test('an alias with several agents qualifies if any of them passes', () {
-    final t = table();
-    t.run(
-      CreateAgent(
-        name: 'Hall (second)',
-        attributes: {...validScores(), 'WIL': 1},
-        ownerAlias: hallAlias,
-      ),
-    );
-    final evaluated =
-        t.run(BroadcastToQualifying(text: 'x', condition: wilBelow3)).first
-            as BroadcastEvaluated;
-    expect(evaluated.candidates.where((c) => c.alias == hallAlias).length, 2);
-    expect(evaluated.recipients, {Table.valeAlias, hallAlias});
-  });
-
   test('when nobody qualifies only the GM record is written', () {
     final t = table();
     final events = t.run(

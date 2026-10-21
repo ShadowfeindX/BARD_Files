@@ -78,7 +78,7 @@ GM:      ClearCondition                                        → ConditionClea
 
 Both events, two rather than one, are ruled by R (2026-10-21). Players never see who else received a broadcast (R, 2026-10-21): the event's `AliasesOnly` lists every recipient for the host's filter, and the session strips the list before a player's copy goes out.
 
-Agents owned by an alias are tested in creation order; GM-controlled entities never receive it. `engine.broadcastPreview(state, condition)` is the GM's preview of the same result without sending. A broadcast does not change state.
+Each alias's agent is tested in creation order (an alias plays at most one); GM-controlled entities never receive it. `engine.broadcastPreview(state, condition)` is the GM's preview of the same result without sending. A broadcast does not change state.
 
 Conditions (`lib/src/expr/condition.dart`) are data-only, like expressions:
 
@@ -138,7 +138,7 @@ From the gate review of the engine core (2026-10-21):
 - GM-entered consequences with a `visibility` the GM chooses (default `Public`); `ConditionApplied` is a consequence, `ConditionCleared` is not (it is a direct GM edit). Players do not see that a value was edited in review, only the final value.
 - The engine does not check that an alias owns the entity it acts for; authorization is the session's (04). Applying an active condition again, or clearing one that is not active, is rejected. A consequence's `check` id is recorded, not checked.
 - `Vitals` stores losses rather than current values; `Conditions` holds only ids for now. `DerivedKeys.health` and `DerivedKeys.sanity` (`health`, `sanity`) are engine vocabulary the vitals view reads.
-- Stat-gated broadcast: event and value-type names, the `compare` JSON form and its six operators, an alias with several agents qualifying if any passes, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. No length limit on the text (none is ruled). The two-event shape is ruled (R, 2026-10-21), not Proposed.
+- Stat-gated broadcast: event and value-type names, the `compare` JSON form and its six operators, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. No length limit on the text (none is ruled). The two-event shape is ruled (R, 2026-10-21), not Proposed.
 - The narrator's English wording and line shapes. 01 says narration uses the pack's `strings/`, which has no narration templates yet; moving the wording there is open.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
 - An alias plays at most one agent in an operation (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.

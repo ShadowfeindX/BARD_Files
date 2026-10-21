@@ -34,9 +34,9 @@ final class MessagingSystem {
 
   /// Every alias's result against [condition], without sending anything.
   ///
-  /// The GM's preview of who would receive a broadcast. Agents (entity kind
-  /// `agent`) owned by an alias are tested, in creation order; an alias with several agents is
-  /// listed once per agent and qualifies if any of them passes.
+  /// The GM's preview of who would receive a broadcast. Each alias's agent
+  /// (entity kind `agent`; an alias plays at most one) is tested, in
+  /// creation order.
   List<BroadcastCandidate> candidates(
     OperationState state,
     Condition condition,
