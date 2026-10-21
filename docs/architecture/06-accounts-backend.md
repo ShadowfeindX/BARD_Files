@@ -55,7 +55,7 @@ Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED
 
 **FS5 document sizing.** Archived event and text logs are chunked into a subcollection (one document per N batches), never one document per operation, to stay under the 1 MiB document cap [V-7]. A function wrote and read back a chunk of about 920 KiB (900 items) through `firebase_admin_sdk` [V-33].
 
-**Held (P10c): the Firestore collections themselves are still to be drafted** (collection names, document shapes, rules, indexes), now that FS2 has reported. Rules are tested in the Emulator Suite (P10b).
+**Firestore collections (P10c) are drafted, Proposed, awaiting R: [12-firestore-collections.md](12-firestore-collections.md)** (collection names, document shapes, rules, indexes), now that FS2 has reported. Rules are tested in the Emulator Suite (P10b).
 
 ## Account model (Fixed concepts, Proposed fields)
 
@@ -77,7 +77,7 @@ Campaign
   └─ operations[]
 ```
 
-Profiles, aliases and campaigns are searchable account data and live in Firestore (FS1). Field-level shapes remain Proposed until the Firestore collections are drafted (Held, P10c).
+Profiles, aliases and campaigns are searchable account data and live in Firestore (FS1). Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, awaiting R).
 
 Rules:
 
@@ -96,7 +96,7 @@ Rules:
 - Anonymous data does not survive clearing local storage or switching devices [V-8]; the UI says so before an anonymous player invests in a character.
 - Enforcement: the session refuses host/GM/content commands from anonymous agents, and rules in RTDB and Firestore refuse the corresponding writes using `auth.token.firebase.sign_in_provider` [V-9]. The RTDB rules prototype refuses `meta`, head and event writes from anonymous tokens in the emulator [V-38]; live tokens carry the values the rules check (`anonymous`, `password`, `custom`) [V-39][V-41]. Rules on the deployed database are not tested yet.
 - **One alias per anonymous account** is enforced in three places:
-  1. **Backend.** The anonymous one-alias rule **moves to Firestore** (P10c): Proposed mechanism: an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. Held: the exact document path and rule wait on the Firestore collection draft (rule behaviour unproven until the Emulator Suite tests).
+  1. **Backend.** The anonymous one-alias rule **moves to Firestore** (P10c): Proposed mechanism: an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. The document path is `aliases/{uid}/items/anon` with the rule in [12-firestore-collections.md](12-firestore-collections.md#aliases-characters) (Proposed; rule behaviour unproven until the Emulator Suite tests).
   2. **App.** The account repository hides "create alias" for anonymous agents once that alias exists and offers the upgrade instead.
   3. **Session (local and LAN play without the backend).** A guest agent identity carries `kind: anonymous`; `OperationHost` refuses a `hello` that presents a second alias for the same anonymous agent id.
 
@@ -141,7 +141,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ## Realtime Database model (live play)
 
-**P10c (Fixed).** The three open items were ruled by R 2026-10-20, and the rest of the draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"). Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed design R approved (review sheet: project library `architecture/rtdb-draft-review.md`, P1-P24). The rules file is in the repository at `firebase/database.rules.json`, started from probe 8.6's prototype with the three rulings applied and the prototype's `phoneDraft` path removed (R 2026-10-21, P23). Its emulator checks are in `firebase/rtdb_rules_test/` (P10b, [08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the three rulings, the post-archive clean-up [V-50], R's rulings of 2026-10-21 on presence, `meta` validation and anonymous members [V-51] and the review follow-ups R approved the same day [V-52] (see [Rules rulings, 2026-10-21](#rules-rulings-r-2026-10-21)). Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections still to be drafted).
+**P10c (Fixed).** The three open items were ruled by R 2026-10-20, and the rest of the draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"). Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed design R approved (review sheet: project library `architecture/rtdb-draft-review.md`, P1-P24). The rules file is in the repository at `firebase/database.rules.json`, started from probe 8.6's prototype with the three rulings applied and the prototype's `phoneDraft` path removed (R 2026-10-21, P23). Its emulator checks are in `firebase/rtdb_rules_test/` (P10b, [08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the three rulings, the post-archive clean-up [V-50], R's rulings of 2026-10-21 on presence, `meta` validation and anonymous members [V-51] and the review follow-ups R approved the same day [V-52] (see [Rules rulings, 2026-10-21](#rules-rulings-r-2026-10-21)). Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed).
 
 ```
 /operations/$op/meta                     gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq
@@ -181,7 +181,7 @@ What probe 8.6 changed in the earlier draft:
 - **Resync indexes:** `events/$audience` and `textlog/$audience` declare `.indexOn: ["seq"]`; `orderBy="seq"&startAt=N` and `limitToLast` then work for members. Catch-up by key needs no index (as in [V-33]). An unindexed `orderBy` is refused with 400 on REST [V-38].
 - **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
 - **Rules do not check `seq` order or gaps.** That stays the GM client's job; rules only require a numeric `seq`, create-only keys and a valid audience [V-38].
-- **The one-alias rule is not in RTDB.** It is in Firestore (Held with the Firestore collections); RTDB only checks that a member entry carries one `aliasId` [V-38].
+- **The one-alias rule is not in RTDB.** It is in Firestore ([12](12-firestore-collections.md#aliases-characters), Proposed); RTDB only checks that a member entry carries one `aliasId` [V-38].
 - **Lookups per evaluation** are at most 3 `root.child` reads, under the limit of 10 the probe write-up cites for RTDB rules [U] (a static count, not a load test) [V-38].
 
 ### P10c rulings (R, 2026-10-20)
@@ -217,7 +217,7 @@ Second round of review follow-ups, approved by R the same day ("Yes let's fix th
 
 Not covered by the probe (carry to implementation): rules deployed to a real project with signed tokens, custom claims in RTDB rules, member removal, payload size limits, load, and `firebase_dart` listeners against these rules [V-38].
 
-Account data that the earlier draft kept in RTDB (`/users`, aliases, badges, `/campaigns` and transfers, `/packs`, `/archive/pending`, `/archive/public`, `/news`) is in Firestore under FS1 and concern 4; paths are drafted with the Firestore collections (Held).
+Account data that the earlier draft kept in RTDB (`/users`, aliases, badges, `/campaigns` and transfers, `/packs`, `/archive/pending`, `/archive/public`, `/news`) is in Firestore under FS1 and concern 4; paths are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed).
 
 Notes on the live tree:
 
@@ -229,7 +229,7 @@ Notes on the live tree:
 
 ## Library (Fixed: concern 5, ruled by R 2026-10-20)
 
-The library is the government-style public archive of verified items (Fixed). It lives in Firestore (FS1) with `pending` and `public` collections (names Held until the collection draft).
+The library is the government-style public archive of verified items (Fixed). It lives in Firestore (FS1) with `pending` and `public` collections (names drafted in [12](12-firestore-collections.md#library-packs-and-listings): `libraryPending`, `libraryPublic`, `libraryData`; Proposed).
 
 - Submissions land as pending items.
 - **Verification claim: R and D only**, at first. It is set by the roles function; more auditors are added later through the console. Revocable.
@@ -252,7 +252,7 @@ Ruled by R 2026-10-20 (P14). Dart Cloud Functions are experimental and may chang
 | Function | Does |
 |---|---|
 | Badge login | Verify badge id and secret (hash compare), `createCustomToken` (P9, conditional on probe 8.3) |
-| Roles | Set admin / moderator / tier custom claims, including the library verification claim |
+| Roles | Set admin / moderator / tier custom claims, including the library verification claim (token key `arbiter`, R 2026-10-21) |
 | Payment webhook | **Placeholder** until concern 6 (payments deferred): receive the provider's webhook (`onRequest`), set the tier claim |
 | Store receipts | **Placeholder** until concern 6: validate app-store receipts [U] |
 | Pack publishing helper | Assist publishing a pack version (index + Storage) |

@@ -94,7 +94,7 @@ R wants D's approval on these before they are designed in full. The proposals ar
 
 | Item | Waits on |
 |---|---|
-| P10c Firestore collections | Still to be drafted, now that FS2 has passed. |
+| P10c Firestore collections | Drafted (Proposed), awaiting R: [12-firestore-collections.md](12-firestore-collections.md). Rules and indexes not yet run in the Emulator Suite. |
 
 ## Deferred
 
