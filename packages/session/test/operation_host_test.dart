@@ -479,6 +479,31 @@ void main() {
             actor: e.actor,
             visibility: e.visibility,
           ),
+          // Records a value it did not replace.
+          (e) => DamageApplied(
+            entity: e.entity,
+            amount: 1,
+            overriddenFrom: 99,
+            actor: e.actor,
+            visibility: e.visibility,
+          ),
+          // Bypasses the bound `withAmount` applies.
+          (e) => DamageApplied(
+            entity: e.entity,
+            amount: maxEnteredValue + 1,
+            overriddenFrom: e.amount,
+            actor: e.actor,
+            visibility: e.visibility,
+          ),
+          // Moves the consequence to another check.
+          (e) => DamageApplied(
+            entity: e.entity,
+            amount: 1,
+            overriddenFrom: e.amount,
+            check: const CheckId('other'),
+            actor: e.actor,
+            visibility: e.visibility,
+          ),
         ];
         for (final swap in swaps) {
           await expectLater(

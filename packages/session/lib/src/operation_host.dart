@@ -340,32 +340,26 @@ final class OperationHost {
   /// A review edit must stay the same kind of consequence about the same
   /// entity (gate condition on row 7): the tray adjusts a value, it cannot
   /// swap a consequence for a roll or for something else.
+  ///
+  /// The edit is rebuilt with the engine's own `withAmount` / `withCondition`
+  /// and must equal it, so the bounds those apply (`maxEnteredValue`), the
+  /// recorded original, the check link, actor and visibility cannot be set
+  /// by hand.
   Event _checkedEdit(Event original, Event edited) {
-    EntityId? entityOf(Event e) => switch (e) {
-      DamageApplied() => e.entity,
-      SanityLost() => e.entity,
-      ConditionApplied() => e.entity,
+    if (edited == original) return edited;
+    final Event? expected = switch ((original, edited)) {
+      (final DamageApplied o, final DamageApplied e) => o.withAmount(e.amount),
+      (final SanityLost o, final SanityLost e) => o.withAmount(e.amount),
+      (final ConditionApplied o, final ConditionApplied e) => o.withCondition(
+        e.condition,
+      ),
       _ => null,
     };
-    // The log must show both values: an edit that changes the event has to
-    // record what it replaced (`withAmount`, `withCondition` do).
-    Object? replaced(Event e) => switch (e) {
-      DamageApplied() => e.overriddenFrom,
-      SanityLost() => e.overriddenFrom,
-      ConditionApplied() => e.overriddenFrom,
-      _ => null,
-    };
-    final entity = entityOf(original);
-    if (edited.runtimeType != original.runtimeType ||
-        edited is! Consequence ||
-        entity == null ||
-        entityOf(edited) != entity ||
-        edited.actor != original.actor ||
-        edited.visibility != original.visibility ||
-        (edited != original && replaced(edited) == null)) {
+    if (expected == null || expected != edited) {
       throw ArgumentError(
         'A review edit must return the same consequence type for the same '
-        'entity, actor and visibility, and record the value it replaced.',
+        'entity, check, actor and visibility, and record the value it '
+        'replaced.',
       );
     }
     return edited;
