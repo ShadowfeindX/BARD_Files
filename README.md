@@ -4,7 +4,7 @@ A Flutter application for playing *The B.A.R.D. Files* tabletop RPG remotely. It
 
 The game rules live in a pure-Dart engine driven by data packs, so the rules can be tested and reused by both the GM and player apps, and content can be edited without touching Dart.
 
-**Status:** under active development. The current build is a one-device demo (GM console, player dossier and table panel on one screen) running on the provisional example rules pack. Nothing is released yet.
+**Status:** under active development. The current build is a one-device demo (GM console, player dossier and table panel on one screen) running on the provisional example rules pack. The first pre-release, [v0.1.0-pre.1](https://github.com/ShadowfeindX/BARD_Files/releases/tag/v0.1.0-pre.1), has Windows and Linux builds.
 
 ## Repository map
 
