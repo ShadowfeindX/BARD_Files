@@ -96,4 +96,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('GM note: Vale is lying'), findsOneWidget);
   });
+
+  testWidgets('broadcast preview marks who qualifies, then sends', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('broadcast-send')),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('console-tools')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    // Strength at least 2: Vale has 2, Quill has 1.
+    await tester.enterText(find.byKey(const ValueKey('broadcast-value')), '2');
+    await tester.enterText(
+      find.byKey(const ValueKey('broadcast-text')),
+      'A cold draft.',
+    );
+    await tester.tap(find.byKey(const ValueKey('broadcast-preview')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('broadcast-preview-Agent Vale')),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('broadcast-preview-Agent Quill')),
+        matching: find.byIcon(Icons.block),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('broadcast-send')));
+    await tester.pumpAndSettle();
+    expect(find.text('A cold draft.'), findsOneWidget); // Vale's log
+    expect(
+      find.byKey(const ValueKey('broadcast-preview-Agent Vale')),
+      findsNothing,
+    );
+  });
 }

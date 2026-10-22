@@ -74,6 +74,8 @@ class SessionOperationService implements OperationService {
   final Signal<List<LogEntry>> _gmLog = signal(const []);
   final Signal<List<LogEntry>> _tableLog = signal(const []);
   final Map<String, Signal<List<LogEntry>>> _playerLogs = {};
+  final Signal<List<PhoneThreadData>> _gmPhone = signal(const []);
+  final Map<String, Signal<List<PhoneThreadData>>> _playerPhones = {};
   final Signal<String?> _error = signal(null);
   int _nextAlias = 0;
   final List<TextEntry> _notes = [];
@@ -188,6 +190,13 @@ class SessionOperationService implements OperationService {
   ReadonlySignal<List<LogEntry>> playerLog(String agentId) =>
       _playerLogs.putIfAbsent(agentId, () => signal(const []));
 
+  @override
+  ReadonlySignal<List<PhoneThreadData>> get gmPhone => _gmPhone;
+
+  @override
+  ReadonlySignal<List<PhoneThreadData>> playerPhone(String agentId) =>
+      _playerPhones.putIfAbsent(agentId, () => signal(const []));
+
   EntityId _entityOf(String alias) => _host.state.stores
       .all(Identity.componentType)
       .entries
@@ -242,6 +251,64 @@ class SessionOperationService implements OperationService {
 
   @override
   Future<void> addGmNote(String text) => _serial(() => _addGmNote(text));
+
+  @override
+  Future<List<BroadcastPreviewItem>> previewBroadcast(
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) => _serial(() async {
+    final names = _host.state.stores.all(Identity.componentType);
+    return [
+      for (final c in _host.engine.broadcastPreview(
+        _host.state,
+        _condition(attribute, op, value),
+      ))
+        BroadcastPreviewItem(
+          agentName: names[c.entity]?.name ?? '?',
+          qualifies: c.qualifies,
+          score: c.result?.left,
+        ),
+    ];
+  });
+
+  @override
+  Future<String?> broadcast(
+    String text,
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) => _serial(() async {
+    final result = await _submit(
+      BroadcastToQualifying(
+        text: text,
+        condition: _condition(attribute, op, value),
+      ),
+    );
+    return result is Refusal ? result.message : null;
+  });
+
+  @override
+  Future<void> sendPhone(String? fromAgentId, String threadId, String text) =>
+      _serial(() async {
+        final to = _partyOf(threadId);
+        await _submit(
+          SendPhoneMessage(
+            from: fromAgentId == null
+                ? const PhoneGm()
+                : PhoneAlias(AliasId(fromAgentId)),
+            to: to,
+            text: text,
+            actor: fromAgentId == null
+                ? const GmActor()
+                : AliasActor(AliasId(fromAgentId)),
+          ),
+        );
+      });
+
+  /// "[attribute] [op] [value]" as an engine condition.
+  Condition _condition(String attribute, BroadcastOp op, int value) =>
+      Compare(CompareOp.values.byName(op.name), Attr(attribute), Const(value));
 
   Future<void> _requestAction(String agentId, String description) async {
     await _submit(
@@ -361,21 +428,106 @@ class SessionOperationService implements OperationService {
                   : null,
             ),
     ];
-    final events = await _store.read(_operationId).toList();
+    final codec = const ProtocolEngineCodec();
+    final events = [
+      await for (final stored in _store.read(_operationId))
+        (stored.seq, codec.decodeEvent(stored.event)),
+    ];
     final text = {
       await for (final t in _store.readText(_operationId)) t.seq: t,
     };
     List<LogEntry> view(Perspective p, String? alias) => [
-      for (final stored in events)
-        ..._entriesFor(stored, text[stored.seq]!, p, alias, state),
+      for (final (seq, event) in events)
+        ..._entriesFor(event, text[seq]!, p, alias, state),
     ];
     _gmEvents = view(const GmPerspective(), null);
     _gmLog.value = [..._gmEvents, ..._notes];
     _tableLog.value = view(const TablePerspective(), null);
-    for (final alias in [for (final a in _agents.value) a.id]) {
+    final names = {for (final a in _agents.value) a.id: a.name};
+    _gmPhone.value = _gmThreads([for (final (_, e) in events) e], names);
+    for (final alias in names.keys) {
+      final perspective = PlayerPerspective(AliasId(alias));
       final log = _playerLogs.putIfAbsent(alias, () => signal(const []));
-      log.value = view(PlayerPerspective(AliasId(alias)), alias);
+      log.value = view(perspective, alias);
+      final visible = [
+        for (final (_, e) in events)
+          if (deliveryFor(e.visibility, perspective) == Delivery.full)
+            projectFor(e, perspective),
+      ];
+      final phone = _playerPhones.putIfAbsent(alias, () => signal(const []));
+      phone.value = _playerThreads(visible, alias, names);
     }
+  }
+
+  // --- phone -------------------------------------------------------------
+
+  /// Thread ids name the counterpart: `gm` for the Handler, `alias:<id>` for
+  /// an agent's alias.
+  PhoneParty _partyOf(String threadId) => threadId == 'gm'
+      ? const PhoneGm()
+      : PhoneAlias(AliasId(threadId.substring('alias:'.length)));
+
+  String _threadOf(PhoneParty party) => switch (party) {
+    PhoneGm() => 'gm',
+    PhoneAlias(:final alias) => 'alias:${alias.value}',
+    PhoneNpc(:final entity) => 'npc:${entity.value}',
+  };
+
+  /// The Handler's threads: one per agent, holding the messages between the
+  /// Handler and that alias. Messages between agents show in the GM log.
+  List<PhoneThreadData> _gmThreads(List<Event> log, Map<String, String> names) {
+    final byAlias = <String, List<PhoneMessageData>>{};
+    for (final c in phoneConversations(log)) {
+      final alias = switch ((c.a, c.b)) {
+        (PhoneAlias(:final alias), PhoneGm()) ||
+        (PhoneGm(), PhoneAlias(:final alias)) => alias.value,
+        _ => null,
+      };
+      if (alias == null) continue;
+      byAlias[alias] = [
+        for (final m in c.messages)
+          PhoneMessageData(text: m.text, fromMe: m.from is PhoneGm),
+      ];
+    }
+    return [
+      for (final MapEntry(key: alias, value: name) in names.entries)
+        PhoneThreadData(
+          id: 'alias:$alias',
+          title: name,
+          messages: byAlias[alias] ?? const [],
+        ),
+    ];
+  }
+
+  /// A player's threads: the Handler, then every other agent, from the
+  /// events this player may see.
+  List<PhoneThreadData> _playerThreads(
+    List<Event> visible,
+    String alias,
+    Map<String, String> names,
+  ) {
+    final me = PhoneAlias(AliasId(alias));
+    final byThread = {
+      for (final c in phoneConversations(visible, viewer: AliasId(alias)))
+        _threadOf(c.b): [
+          for (final m in c.messages)
+            PhoneMessageData(text: m.text, fromMe: m.from == me),
+        ],
+    };
+    return [
+      PhoneThreadData(
+        id: 'gm',
+        title: 'The Handler',
+        messages: byThread['gm'] ?? const [],
+      ),
+      for (final MapEntry(key: other, value: name) in names.entries)
+        if (other != alias)
+          PhoneThreadData(
+            id: 'alias:$other',
+            title: name,
+            messages: byThread['alias:$other'] ?? const [],
+          ),
+    ];
   }
 
   AgentSheet _sheet(
@@ -396,13 +548,12 @@ class SessionOperationService implements OperationService {
   }
 
   Iterable<LogEntry> _entriesFor(
-    StoredEvent stored,
+    Event event,
     TextLogLine line,
     Perspective perspective,
     String? alias,
     OperationState state,
   ) {
-    final event = const ProtocolEngineCodec().decodeEvent(stored.event);
     return switch (deliveryFor(event.visibility, perspective)) {
       Delivery.hidden => const [],
       Delivery.redacted => [

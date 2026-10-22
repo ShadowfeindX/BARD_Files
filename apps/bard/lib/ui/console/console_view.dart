@@ -7,7 +7,8 @@ import '../shared/log_entry_tile.dart';
 import 'add_agent_dialog.dart';
 import 'console_view_model.dart';
 
-/// GM console: request queue, check controls, review tray and the GM log.
+/// GM console: request queue, check controls, review tray, stat-gated
+/// broadcast, the Handler's phone and the GM log.
 class ConsoleView extends StatelessWidget {
   /// Creates the console over [model].
   const ConsoleView({super.key, required this.model});
@@ -32,6 +33,7 @@ class ConsoleView extends StatelessWidget {
         Expanded(
           flex: 2,
           child: ListView(
+            key: const ValueKey('console-tools'),
             children: [
               _ErrorBanner(model: model),
               _RequestQueue(model: model),
@@ -47,6 +49,18 @@ class ConsoleView extends StatelessWidget {
                   onTap: () => showDialog<void>(
                     context: context,
                     builder: (_) => AddAgentDialog(model: model),
+                  ),
+                ),
+              ),
+              _BroadcastCard(model: model),
+              Card(
+                child: SizedBox(
+                  key: const ValueKey('gm-phone'),
+                  height: 320,
+                  child: PhonePanel(
+                    threads: model.phone,
+                    onSend: model.sendPhone,
+                    emptyText: 'Add an agent to message them.',
                   ),
                 ),
               ),
@@ -342,6 +356,136 @@ class _NoteFieldState extends State<_NoteField> {
               icon: const Icon(Icons.send),
               onPressed: _submit,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sends a message only to the agents that meet "attribute op value". The
+/// preview shows what the engine would decide; sending asks the engine again.
+class _BroadcastCard extends StatefulWidget {
+  const _BroadcastCard({required this.model});
+
+  final ConsoleViewModel model;
+
+  @override
+  State<_BroadcastCard> createState() => _BroadcastCardState();
+}
+
+class _BroadcastCardState extends State<_BroadcastCard> {
+  final TextEditingController _text = TextEditingController();
+  final TextEditingController _value = TextEditingController(text: '3');
+  late String _attribute = widget.model.attributes.first.key;
+  BroadcastOp _op = BroadcastOp.ge;
+  List<BroadcastPreviewItem>? _preview;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    _value.dispose();
+    super.dispose();
+  }
+
+  void _changed(VoidCallback change) => setState(() {
+    change();
+    _preview = null;
+  });
+
+  Future<void> _showPreview() async {
+    final value = int.tryParse(_value.text);
+    if (value == null) return;
+    final preview = await widget.model.previewBroadcast(_attribute, _op, value);
+    if (mounted) setState(() => _preview = preview);
+  }
+
+  Future<void> _send() async {
+    final value = int.tryParse(_value.text);
+    final text = _text.text.trim();
+    if (value == null || text.isEmpty) return;
+    final refusal = await widget.model.broadcast(text, _attribute, _op, value);
+    if (refusal == null && mounted) {
+      _text.clear();
+      setState(() => _preview = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _preview;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Stat-gated broadcast',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            TextField(
+              key: const ValueKey('broadcast-text'),
+              controller: _text,
+              decoration: const InputDecoration(
+                labelText: 'Only qualifying agents see this',
+              ),
+            ),
+            Wrap(
+              spacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                DropdownButton<String>(
+                  key: const ValueKey('broadcast-attribute'),
+                  value: _attribute,
+                  items: [
+                    for (final a in widget.model.attributes)
+                      DropdownMenuItem(value: a.key, child: Text(a.name)),
+                  ],
+                  onChanged: (v) => _changed(() => _attribute = v!),
+                ),
+                DropdownButton<BroadcastOp>(
+                  key: const ValueKey('broadcast-op'),
+                  value: _op,
+                  items: [
+                    for (final op in BroadcastOp.values)
+                      DropdownMenuItem(value: op, child: Text(op.symbol)),
+                  ],
+                  onChanged: (v) => _changed(() => _op = v!),
+                ),
+                SizedBox(
+                  width: 64,
+                  child: TextField(
+                    key: const ValueKey('broadcast-value'),
+                    controller: _value,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _changed(() {}),
+                  ),
+                ),
+                OutlinedButton(
+                  key: const ValueKey('broadcast-preview'),
+                  onPressed: _showPreview,
+                  child: const Text('Preview'),
+                ),
+                FilledButton(
+                  key: const ValueKey('broadcast-send'),
+                  onPressed: _send,
+                  child: const Text('Send'),
+                ),
+              ],
+            ),
+            if (preview != null)
+              for (final p in preview)
+                ListTile(
+                  key: ValueKey('broadcast-preview-${p.agentName}'),
+                  dense: true,
+                  leading: Icon(
+                    p.qualifies ? Icons.check : Icons.block,
+                    semanticLabel: p.qualifies ? 'Receives' : 'Excluded',
+                  ),
+                  title: Text(p.agentName),
+                  trailing: Text(p.score == null ? 'no score' : '${p.score}'),
+                ),
           ],
         ),
       ),

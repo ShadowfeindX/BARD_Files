@@ -1,4 +1,5 @@
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
 import '../../data/services/operation_service.dart';
@@ -29,4 +30,12 @@ class DossierViewModel {
     if (text.isEmpty) return;
     await _service.requestAction(agentId, text);
   }
+
+  /// This player's phone threads.
+  ReadonlySignal<List<PhoneThreadData>> get phone =>
+      _service.playerPhone(agentId);
+
+  /// Sends a phone message from this player on [threadId].
+  Future<void> sendPhone(String threadId, String text) =>
+      _service.sendPhone(agentId, threadId, text);
 }

@@ -38,6 +38,12 @@ cd apps/bard && flutter test           # includes the flow tests on a real host
 
 `Add agent` in the console opens a dialog with the pack's creation limits (`OperationService.creationLimits`). The UI sends the scores through `CreateAgent` and shows the engine's refusal text; it checks only that each score is a whole number and leaves every rule to the engine. Note the engine currently checks only the per-attribute range, not the total points.
 
+## Broadcast and phone
+
+The console's **Stat-gated broadcast** card builds a `Compare(op, Attr(key), Const(n))` condition from the attribute, comparison and value the GM picks (`BroadcastOp` mirrors the engine's `CompareOp`). **Preview** calls `engine.broadcastPreview` and lists each agent, whether they qualify and the score it read; it sends nothing. **Send** submits `BroadcastToQualifying`, so the engine decides again at send time. Only qualifying players get the line; the GM log names the recipients.
+
+Phones use the ui_kit `PhonePanel`. Thread ids name the counterpart: `gm` for the Handler, `alias:<id>` for an agent's alias. The Handler's phone has one thread per agent (messages between the Handler and that alias); messages between two agents show in the GM log, not in the Handler's phone. A player's phone has the Handler and every other agent, built from the events that player may see. NPC parties (`PhoneNpc`) are not offered yet because the UI creates only player-owned agents.
+
 ## Demo data to replace
 
 `SessionOperationService` seeds two agents with a score spread and `proficient` skills, and uses the fixed `demoSeed`, so every launch rolls the same dice. These are demo values, not rules; a real new-operation flow and a per-operation seed replace them.

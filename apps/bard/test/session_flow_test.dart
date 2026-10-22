@@ -1,5 +1,6 @@
 import 'package:bard/app/composition.dart';
 import 'package:bard/main.dart';
+import 'package:bard/ui/dossier/dossier_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 /// The demo flow on a real `OperationHost` and the shipped pack. Needs
 /// `bash tool/build_pack.sh` first (see docs/developer-guide/setup.md).
-Future<void> _pump(WidgetTester tester) async {
+Future<Composition> _pump(WidgetTester tester) async {
   tester.view.physicalSize = const Size(2400, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -16,11 +17,27 @@ Future<void> _pump(WidgetTester tester) async {
   ))!;
   await tester.pumpWidget(BardApp(composition: composition));
   await tester.pumpAndSettle();
+  return composition;
 }
 
 /// Lets the host's futures and streams run, then rebuilds.
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls the console column until [finder] is built and on screen.
+Future<void> _reveal(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    200,
+    scrollable: find
+        .descendant(
+          of: find.byKey(const ValueKey('console-tools')),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
   await tester.pumpAndSettle();
 }
 
@@ -126,5 +143,81 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Add an agent to start playing.'), findsOneWidget);
     expect(find.byKey(const ValueKey('player-picker')), findsNothing);
+  });
+
+  testWidgets('a stat-gated broadcast reaches only the qualifying agent', (
+    tester,
+  ) async {
+    final composition = await _pump(tester);
+    // The demo agents have Charisma 1; Rook has 2.
+    await tester.runAsync(
+      () => composition.operation.addAgent('Agent Rook', const {
+        'STR': 3, 'DEX': 3, 'END': 2, 'PER': 2, 'INT': 2,
+        'WIS': 2, 'CHA': 2, 'WIL': 2, 'LCK': 2, //
+      }),
+    );
+    await _settle(tester);
+
+    await _reveal(tester, find.byKey(const ValueKey('broadcast-preview')));
+    final attribute = find.byKey(const ValueKey('broadcast-attribute'));
+    await tester.tap(attribute);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Charisma').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('broadcast-value')), '2');
+    await tester.enterText(
+      find.byKey(const ValueKey('broadcast-text')),
+      'You hear whispers in the walls.',
+    );
+    await tester.tap(find.byKey(const ValueKey('broadcast-preview')));
+    await _settle(tester);
+    Finder previewIcon(String agent, IconData icon) => find.descendant(
+      of: find.byKey(ValueKey('broadcast-preview-$agent')),
+      matching: find.byIcon(icon),
+    );
+    expect(previewIcon('Agent Rook', Icons.check), findsOneWidget);
+    expect(previewIcon('Agent Vale', Icons.block), findsOneWidget);
+    expect(previewIcon('Agent Quill', Icons.block), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('broadcast-send')));
+    await _settle(tester);
+    final inDossier = find.descendant(
+      of: find.byType(DossierView),
+      matching: find.textContaining('whispers in the walls'),
+    );
+    expect(inDossier, findsNothing); // Vale's dossier
+    await tester.tap(find.byKey(const ValueKey('player-picker')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Agent Rook').last);
+    await tester.pumpAndSettle();
+    expect(inDossier, findsOneWidget);
+  });
+
+  testWidgets('a player and the Handler text each other', (tester) async {
+    await _pump(tester);
+    final playerPhone = find.byKey(const ValueKey('phone-vale'));
+    final gmPhone = find.byKey(const ValueKey('gm-phone'));
+    Finder inPhone(Finder phone, Finder what) =>
+        find.descendant(of: phone, matching: what);
+
+    await tester.enterText(
+      inPhone(playerPhone, find.byType(TextField)),
+      'Need backup.',
+    );
+    await tester.pump();
+    await tester.tap(inPhone(playerPhone, find.byTooltip('Send')));
+    await _settle(tester);
+    expect(inPhone(playerPhone, find.text('Need backup.')), findsOneWidget);
+    await _reveal(tester, gmPhone);
+    expect(inPhone(gmPhone, find.text('Need backup.')), findsOneWidget);
+
+    await tester.enterText(
+      inPhone(gmPhone, find.byType(TextField)),
+      'On my way.',
+    );
+    await tester.pump();
+    await tester.tap(inPhone(gmPhone, find.byTooltip('Send')));
+    await _settle(tester);
+    expect(inPhone(playerPhone, find.text('On my way.')), findsOneWidget);
   });
 }

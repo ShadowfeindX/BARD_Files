@@ -7,7 +7,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Phone messaging
 - Engine: `SendPhoneMessage(from, to, text)` and `PhoneMessageSent` for the in-game phone, in `MessagingSystem`. Parties are the Handler, an alias or a GM-run entity; senders must match the actor; text is 1 to 2,000 UTF-16 units; visibility is the sending and receiving aliases (the session's projection gives the Handler every event). Narrator lines, and a `phoneConversations(log, viewer)` read model for the Handler's and a player's threads.
 - Codecs: `sendPhoneMessage` and `phoneMessageSent` with v1 fixtures; the engine round-trip test now includes a phone exchange.
-- `ui_kit`: `PhonePanel` (threads, compose box with the 2,000-unit counter, `sendDisabledReason`), plain-data and signal driven, with widget tests. Not wired into a console yet (row 8).
+- `ui_kit`: `PhonePanel` (threads, compose box with the 2,000-unit counter, `sendDisabledReason`), plain-data and signal driven, with widget tests. Wired into the `apps/bard` console and dossier (see UI).
 
 ### Content
 - `content_core` carries the `example-core` sample pack from the project library as the provisional pack (`assets/example-core/`, the authoring source). `null` values stay `null` (pending D); D's pack replaces it. The only edit is renaming the four `*Placeholder` annotation keys to start with `_`.
@@ -81,6 +81,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ### UI
 - `apps/bard` GM console, player dossier, review tray (held Sanity loss, edit, confirm), new-operation action (one active host, router reset), add-agent dialog showing the pack creation limits (the engine refuses bad scores), per-perspective logs and table panel, routes for separate windows, on a real `OperationHost` in one-device mode over the shipped pack; an in-memory fake service for UI tests; developer notes in `docs/developer-guide/app.md`.
+- `apps/bard` console: stat-gated broadcast card (attribute, comparison, value; Preview shows who qualifies and the score the engine read; Send goes through `BroadcastToQualifying`) and the Handler's phone (one thread per agent). Each dossier gets the player's phone (the Handler and the other agents) with a notice that the Handler can read every message. Threads come from `phoneConversations` over the events each perspective may see.
 - `packages/ui_kit` foundation: plain placeholder theme (`BardTheme`, light and dark; the dossier look waits for D), `DiceBreakdownView` with plain display data (exploded dice, modifiers, total vs DC, outcome; all numbers engine-supplied), `PerspectivePanel` scaffold bound to a `signals_flutter` list signal, widget tests, and developer notes in `docs/ui-kit.md`.
 
 ### Docs

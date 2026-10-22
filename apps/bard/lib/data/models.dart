@@ -193,3 +193,49 @@ class CreationLimits {
   /// Attributes in display order.
   final List<AttributeOption> attributes;
 }
+
+/// How a stat-gated broadcast compares an attribute with a number. Mirrors
+/// the engine's comparison operators; the engine evaluates them.
+enum BroadcastOp {
+  /// Below the number.
+  lt('<'),
+
+  /// At most the number.
+  le('≤'),
+
+  /// Equal to the number.
+  eq('='),
+
+  /// Different from the number.
+  ne('≠'),
+
+  /// At least the number.
+  ge('≥'),
+
+  /// Above the number.
+  gt('>');
+
+  const BroadcastOp(this.symbol);
+
+  /// The symbol shown to the GM.
+  final String symbol;
+}
+
+/// One agent's result in a broadcast preview, as the engine evaluated it.
+class BroadcastPreviewItem {
+  /// Creates a preview line.
+  const BroadcastPreviewItem({
+    required this.agentName,
+    required this.qualifies,
+    this.score,
+  });
+
+  /// The agent tested.
+  final String agentName;
+
+  /// Whether the agent would receive the message.
+  final bool qualifies;
+
+  /// The agent's score the condition read, or null when the agent has none.
+  final num? score;
+}

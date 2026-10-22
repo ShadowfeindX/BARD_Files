@@ -28,6 +28,7 @@ class FakeOperationService implements OperationService {
         sanity: 14,
       ),
     ];
+    _refreshPhones();
   }
 
   /// The scripted die sequence.
@@ -80,6 +81,7 @@ class FakeOperationService implements OperationService {
         sanity: 10,
       ),
     ];
+    _refreshPhones();
     return null;
   }
 
@@ -284,4 +286,114 @@ class FakeOperationService implements OperationService {
   @override
   Future<void> addGmNote(String text) async =>
       _append(_gmLog, TextEntry('GM note: $text', gmNote: true));
+
+  bool _meets(AgentSheet a, String attribute, BroadcastOp op, int value) {
+    final score = a.attributes[attribute];
+    if (score == null) return false;
+    return switch (op) {
+      BroadcastOp.lt => score < value,
+      BroadcastOp.le => score <= value,
+      BroadcastOp.eq => score == value,
+      BroadcastOp.ne => score != value,
+      BroadcastOp.ge => score >= value,
+      BroadcastOp.gt => score > value,
+    };
+  }
+
+  @override
+  Future<List<BroadcastPreviewItem>> previewBroadcast(
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) async => [
+    for (final a in _agents.value)
+      BroadcastPreviewItem(
+        agentName: a.name,
+        qualifies: _meets(a, attribute, op, value),
+        score: a.attributes[attribute],
+      ),
+  ];
+
+  @override
+  Future<String?> broadcast(
+    String text,
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) async {
+    if (text.trim().isEmpty) return 'A message is required.';
+    final names = <String>[];
+    for (final a in _agents.value) {
+      if (!_meets(a, attribute, op, value)) continue;
+      names.add(a.name);
+      _append(_playerLog(a.id), TextEntry(text));
+    }
+    _append(
+      _gmLog,
+      TextEntry(
+        'Broadcast to ${names.isEmpty ? 'no one' : names.join(', ')}: '
+        '$text',
+      ),
+    );
+    return null;
+  }
+
+  // Phone messages as (from, to, text); null is the Handler.
+  final List<(String?, String?, String)> _phoneLog = [];
+  final Signal<List<PhoneThreadData>> _gmPhone = signal(const []);
+  final Map<String, Signal<List<PhoneThreadData>>> _playerPhones = {};
+
+  @override
+  ReadonlySignal<List<PhoneThreadData>> get gmPhone => _gmPhone;
+
+  @override
+  ReadonlySignal<List<PhoneThreadData>> playerPhone(String agentId) =>
+      _playerPhones.putIfAbsent(agentId, () => signal(_threadsFor(agentId)));
+
+  @override
+  Future<void> sendPhone(
+    String? fromAgentId,
+    String threadId,
+    String text,
+  ) async {
+    final to = threadId == 'gm' ? null : threadId.substring('alias:'.length);
+    _phoneLog.add((fromAgentId, to, text));
+    _refreshPhones();
+  }
+
+  void _refreshPhones() {
+    _gmPhone.value = [
+      for (final a in _agents.value)
+        PhoneThreadData(
+          id: 'alias:${a.id}',
+          title: a.name,
+          messages: [
+            for (final (from, to, text) in _phoneLog)
+              if ((from == null && to == a.id) || (from == a.id && to == null))
+                PhoneMessageData(text: text, fromMe: from == null),
+          ],
+        ),
+    ];
+    for (final e in _playerPhones.entries) {
+      e.value.value = _threadsFor(e.key);
+    }
+  }
+
+  List<PhoneThreadData> _threadsFor(String me) {
+    List<PhoneMessageData> between(String? other) => [
+      for (final (from, to, text) in _phoneLog)
+        if ((from == me && to == other) || (from == other && to == me))
+          PhoneMessageData(text: text, fromMe: from == me),
+    ];
+    return [
+      PhoneThreadData(id: 'gm', title: 'The Handler', messages: between(null)),
+      for (final a in _agents.value)
+        if (a.id != me)
+          PhoneThreadData(
+            id: 'alias:${a.id}',
+            title: a.name,
+            messages: between(a.id),
+          ),
+    ];
+  }
 }

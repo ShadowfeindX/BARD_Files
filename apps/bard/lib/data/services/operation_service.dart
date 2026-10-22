@@ -1,4 +1,5 @@
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 import '../models.dart';
 
@@ -69,4 +70,31 @@ abstract interface class OperationService {
 
   /// GM adds a private note.
   Future<void> addGmNote(String text);
+
+  /// Which agents would receive a stat-gated broadcast whose condition is
+  /// "[attribute] [op] [value]", as the engine evaluates it. Sends nothing.
+  Future<List<BroadcastPreviewItem>> previewBroadcast(
+    String attribute,
+    BroadcastOp op,
+    int value,
+  );
+
+  /// GM sends [text] only to the agents that meet "[attribute] [op]
+  /// [value]". Returns the engine's refusal message, or null when sent.
+  Future<String?> broadcast(
+    String text,
+    String attribute,
+    BroadcastOp op,
+    int value,
+  );
+
+  /// The Handler's phone: one thread per agent.
+  ReadonlySignal<List<PhoneThreadData>> get gmPhone;
+
+  /// One player's phone: the Handler and the other agents.
+  ReadonlySignal<List<PhoneThreadData>> playerPhone(String agentId);
+
+  /// Sends a phone message on [threadId], from the player [fromAgentId], or
+  /// from the Handler when it is null. A refusal shows in [lastError].
+  Future<void> sendPhone(String? fromAgentId, String threadId, String text);
 }

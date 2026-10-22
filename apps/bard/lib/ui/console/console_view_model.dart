@@ -1,4 +1,5 @@
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
 import '../../data/services/operation_service.dart';
@@ -87,4 +88,30 @@ class ConsoleViewModel {
 
   /// Adds a private GM note.
   Future<void> addNote(String text) => _service.addGmNote(text);
+
+  /// Attributes a broadcast condition can test.
+  List<AttributeOption> get attributes => _service.creationLimits.attributes;
+
+  /// Which agents "[attribute] [op] [value]" would reach. Sends nothing.
+  Future<List<BroadcastPreviewItem>> previewBroadcast(
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) => _service.previewBroadcast(attribute, op, value);
+
+  /// Sends [text] to the agents that meet the condition; returns the
+  /// engine's refusal message, or null when sent.
+  Future<String?> broadcast(
+    String text,
+    String attribute,
+    BroadcastOp op,
+    int value,
+  ) => _service.broadcast(text, attribute, op, value);
+
+  /// The Handler's phone threads.
+  ReadonlySignal<List<PhoneThreadData>> get phone => _service.gmPhone;
+
+  /// Sends a phone message from the Handler on [threadId].
+  Future<void> sendPhone(String threadId, String text) =>
+      _service.sendPhone(null, threadId, text);
 }

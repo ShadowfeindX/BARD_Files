@@ -6,7 +6,7 @@ import '../../data/models.dart';
 import '../shared/log_entry_tile.dart';
 import 'dossier_view_model.dart';
 
-/// A player's dossier: own sheet, action request and own log.
+/// A player's dossier: own sheet, action request, own log and phone.
 class DossierView extends StatefulWidget {
   /// Creates the dossier over [model].
   const DossierView({super.key, required this.model});
@@ -88,6 +88,16 @@ class _DossierViewState extends State<DossierView> {
             items: model.log,
             itemBuilder: (context, e) => LogEntryTile(entry: e),
             emptyText: 'Nothing yet.',
+          ),
+        ),
+        Expanded(
+          child: Card(
+            key: ValueKey('phone-${model.agentId}'),
+            child: PhonePanel(
+              threads: model.phone,
+              onSend: model.sendPhone,
+              notice: 'The Handler can read every message.',
+            ),
           ),
         ),
       ],
