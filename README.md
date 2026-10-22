@@ -11,14 +11,14 @@ The game rules live in a pure-Dart engine driven by data packs, so the rules can
 | Path | What it is |
 |---|---|
 | `apps/bard` | Main app (GM and player). Windows and Linux desktop. |
-| `apps/companion` | Phone companion app (Android). |
+| `apps/companion` | Phone companion app (Android, player first). |
 | `apps/functions` | HTTPS-only Dart Cloud Functions. |
-| `packages/engine` | Pure-Dart game engine: commands, events, state, dice, rules-pack loader. |
+| `packages/engine` | Pure-Dart game engine: rules computation (commands, events, state, dice, rules-pack loader), no I/O. |
 | `packages/protocol_envelope`, `packages/protocol` | Wire envelope and the codecs between engine messages and the wire. |
-| `packages/session` | Operation host and participant, transport and store interfaces. |
+| `packages/session` | Actors, operation loop, transport and store interfaces, Rng adapter. |
 | `packages/migrator` | Transforms saved operations between engine major versions. |
 | `packages/content_core` | The default rules pack as data (`assets/`). |
-| `packages/backend` | Flutter and Firebase adapters (storage, sync). |
+| `packages/backend` | Flutter and Firebase adapters behind the session and app interfaces. |
 | `packages/ui_kit` | Shared widgets, theme and perspective panels. |
 | `tool/` | Repository checks and scripts run by CI. |
 | `firebase/` | Realtime Database rules and their emulator checks (not a workspace member). |
@@ -49,7 +49,7 @@ Run from the repository root.
 ```bash
 flutter pub get          # resolve the whole workspace
 bash tool/build_pack.sh  # generate the shipped rules pack (git-ignored); needed before analyze, run or test
-bash tool/check_all.sh   # everything CI runs: format, analyze, dependency rules, exact pins, pack check, tests
+bash tool/check_all.sh   # CI's checks: format, analyze, dependency rules, exact pins, pack check, tests (web test run below is separate)
 ```
 
 Individual steps:
@@ -74,7 +74,7 @@ bash firebase/run_rtdb_rules_test.sh               # Realtime Database rules aga
 
 The rules test needs Java and `firebase-tools` (`npm install -g firebase-tools`). It runs fully offline against the emulator, with the `demo-bard` project id, and prints one PASS or FAIL line per check.
 
-Validate a rules pack:
+Validate a rules pack (build the pack first with `bash tool/build_pack.sh`):
 
 ```bash
 (cd packages/engine && dart run engine:validate_pack ../content_core/assets/generated/example-core)
