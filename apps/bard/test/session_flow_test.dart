@@ -41,6 +41,18 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// The alias id of the agent called [name].
+String _idOf(Composition composition, String name) =>
+    composition.operation.agents.value.firstWhere((a) => a.name == name).id;
+
+/// Shows [agent]'s dossier through the player picker.
+Future<void> _showDossier(WidgetTester tester, String agent) async {
+  await tester.tap(find.byKey(const ValueKey('player-picker')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(agent).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('a request resolves into a breakdown on all three panels', (
     tester,
@@ -175,9 +187,12 @@ void main() {
       of: find.byKey(ValueKey('broadcast-preview-$agent')),
       matching: find.byIcon(icon),
     );
-    expect(previewIcon('Agent Rook', Icons.check), findsOneWidget);
-    expect(previewIcon('Agent Vale', Icons.block), findsOneWidget);
-    expect(previewIcon('Agent Quill', Icons.block), findsOneWidget);
+    expect(
+      previewIcon(_idOf(composition, 'Agent Rook'), Icons.check),
+      findsOneWidget,
+    );
+    expect(previewIcon('vale', Icons.block), findsOneWidget);
+    expect(previewIcon('quill', Icons.block), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('broadcast-send')));
     await _settle(tester);
@@ -185,12 +200,18 @@ void main() {
       of: find.byType(DossierView),
       matching: find.textContaining('whispers in the walls'),
     );
-    expect(inDossier, findsNothing); // Vale's dossier
-    await tester.tap(find.byKey(const ValueKey('player-picker')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Agent Rook').last);
-    await tester.pumpAndSettle();
-    expect(inDossier, findsOneWidget);
+    for (final (agent, receives) in [
+      ('Agent Vale', false),
+      ('Agent Quill', false),
+      ('Agent Rook', true),
+    ]) {
+      await _showDossier(tester, agent);
+      expect(
+        inDossier,
+        receives ? findsOneWidget : findsNothing,
+        reason: agent,
+      );
+    }
   });
 
   testWidgets('a player and the Handler text each other', (tester) async {
@@ -219,5 +240,48 @@ void main() {
     await tester.tap(inPhone(gmPhone, find.byTooltip('Send')));
     await _settle(tester);
     expect(inPhone(playerPhone, find.text('On my way.')), findsOneWidget);
+  });
+
+  testWidgets('a text between two agents stays out of a third phone', (
+    tester,
+  ) async {
+    final composition = await _pump(tester);
+    await tester.runAsync(
+      () => composition.operation.sendPhone('vale', 'alias:quill', 'Psst.'),
+    );
+    await _settle(tester);
+    Finder psstIn(String alias) => find.descendant(
+      of: find.byKey(ValueKey('phone-$alias')),
+      matching: find.text('Psst.'),
+    );
+    await _showDossier(tester, 'Agent Quill');
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('phone-quill')),
+        matching: find.text('Agent Vale'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(psstIn('quill'), findsOneWidget);
+
+    await tester.runAsync(
+      () => composition.operation.addAgent('Agent Rook', const {
+        'STR': 3, 'DEX': 3, 'END': 2, 'PER': 2, 'INT': 2,
+        'WIS': 2, 'CHA': 2, 'WIL': 2, 'LCK': 2, //
+      }),
+    );
+    await _settle(tester);
+    await _showDossier(tester, 'Agent Rook');
+    final rook = _idOf(composition, 'Agent Rook');
+    for (final thread in ['Agent Vale', 'Agent Quill']) {
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(ValueKey('phone-$rook')),
+          matching: find.text(thread),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(psstIn(rook), findsNothing, reason: thread);
+    }
   });
 }

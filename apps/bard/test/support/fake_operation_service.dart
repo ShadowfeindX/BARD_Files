@@ -308,6 +308,7 @@ class FakeOperationService implements OperationService {
   ) async => [
     for (final a in _agents.value)
       BroadcastPreviewItem(
+        agentId: a.id,
         agentName: a.name,
         qualifies: _meets(a, attribute, op, value),
         score: a.attributes[attribute],

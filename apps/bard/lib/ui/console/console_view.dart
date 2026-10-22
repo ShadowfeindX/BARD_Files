@@ -377,9 +377,16 @@ class _BroadcastCard extends StatefulWidget {
 class _BroadcastCardState extends State<_BroadcastCard> {
   final TextEditingController _text = TextEditingController();
   final TextEditingController _value = TextEditingController(text: '3');
-  late String _attribute = widget.model.attributes.first.key;
+  String? _chosen;
   BroadcastOp _op = BroadcastOp.ge;
   List<BroadcastPreviewItem>? _preview;
+
+  // Bumped on every input change, so a preview that arrives after an edit is
+  // dropped instead of shown against the new inputs.
+  int _inputs = 0;
+
+  /// The chosen attribute, or the pack's first.
+  String get _attribute => _chosen ?? widget.model.attributes.first.key;
 
   @override
   void dispose() {
@@ -390,14 +397,16 @@ class _BroadcastCardState extends State<_BroadcastCard> {
 
   void _changed(VoidCallback change) => setState(() {
     change();
+    _inputs++;
     _preview = null;
   });
 
   Future<void> _showPreview() async {
     final value = int.tryParse(_value.text);
     if (value == null) return;
+    final asked = _inputs;
     final preview = await widget.model.previewBroadcast(_attribute, _op, value);
-    if (mounted) setState(() => _preview = preview);
+    if (mounted && asked == _inputs) setState(() => _preview = preview);
   }
 
   Future<void> _send() async {
@@ -413,6 +422,7 @@ class _BroadcastCardState extends State<_BroadcastCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.model.attributes.isEmpty) return const SizedBox.shrink();
     final preview = _preview;
     return Card(
       child: Padding(
@@ -442,7 +452,7 @@ class _BroadcastCardState extends State<_BroadcastCard> {
                     for (final a in widget.model.attributes)
                       DropdownMenuItem(value: a.key, child: Text(a.name)),
                   ],
-                  onChanged: (v) => _changed(() => _attribute = v!),
+                  onChanged: (v) => _changed(() => _chosen = v),
                 ),
                 DropdownButton<BroadcastOp>(
                   key: const ValueKey('broadcast-op'),
@@ -477,7 +487,7 @@ class _BroadcastCardState extends State<_BroadcastCard> {
             if (preview != null)
               for (final p in preview)
                 ListTile(
-                  key: ValueKey('broadcast-preview-${p.agentName}'),
+                  key: ValueKey('broadcast-preview-${p.agentId}'),
                   dense: true,
                   leading: Icon(
                     p.qualifies ? Icons.check : Icons.block,

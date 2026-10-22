@@ -122,14 +122,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('broadcast-preview-Agent Vale')),
+        of: find.byKey(const ValueKey('broadcast-preview-vale')),
         matching: find.byIcon(Icons.check),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('broadcast-preview-Agent Quill')),
+        of: find.byKey(const ValueKey('broadcast-preview-quill')),
         matching: find.byIcon(Icons.block),
       ),
       findsOneWidget,
@@ -137,9 +137,6 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('broadcast-send')));
     await tester.pumpAndSettle();
     expect(find.text('A cold draft.'), findsOneWidget); // Vale's log
-    expect(
-      find.byKey(const ValueKey('broadcast-preview-Agent Vale')),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('broadcast-preview-vale')), findsNothing);
   });
 }

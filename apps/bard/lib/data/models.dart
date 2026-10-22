@@ -225,12 +225,16 @@ enum BroadcastOp {
 class BroadcastPreviewItem {
   /// Creates a preview line.
   const BroadcastPreviewItem({
+    required this.agentId,
     required this.agentName,
     required this.qualifies,
     this.score,
   });
 
-  /// The agent tested.
+  /// The agent tested (its alias id, as in [AgentSheet.id]).
+  final String agentId;
+
+  /// The agent's name.
   final String agentName;
 
   /// Whether the agent would receive the message.

@@ -265,6 +265,7 @@ class SessionOperationService implements OperationService {
         _condition(attribute, op, value),
       ))
         BroadcastPreviewItem(
+          agentId: c.alias.value,
           agentName: names[c.entity]?.name ?? '?',
           qualifies: c.qualifies,
           score: c.result?.left,
