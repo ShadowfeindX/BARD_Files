@@ -34,7 +34,7 @@ core/                           pack id
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  occult.json                   magic categories, sanity costs (§8; provisional, pending D)
+  occult.json                   magic categories, sanity costs (§8; "cast magic" ruled by D 2026-10-22, details open)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
   items/                        one file per item template
@@ -79,7 +79,7 @@ It is a named number supplied by the engine at evaluation time. Approved placeme
 | Placement | Expression |
 |---|---|
 | Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
-| Assistance bonus, in `difficulty.json` | 1d6 + `var(helperSkillBonus)` |
+| Assistance bonus, in `difficulty.json` | the helper's attribute score (D, 2026-10-22; replaces 1d6 + `var(helperSkillBonus)`; key name Proposed) |
 
 The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.
 

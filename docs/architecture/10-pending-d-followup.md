@@ -40,7 +40,7 @@ Suggestion: yes within the same campaign. Moving an alias to a different campaig
 - [ ] Later
 - Notes:
 
-**[FD-X4] The Handler persona.** A GM may have a different handler character for each operation.
+**[FD-X4] The Handler persona, and GM versus Handler.** A GM may have a different handler character for each operation. Is the Handler always the GM's persona in one operation (and the GM is the person running the whole campaign)?
 Suggestion: a Handler persona is a profile like an alias (name, dossier layout) that belongs to the GM's account; each operation names one; players see the persona, not the account.
 - [ ] Agree
 - [ ] Change: ______
@@ -111,14 +111,14 @@ Suggestion: no numbers. The Handler switches on "may cast anyway" for that cast.
 ## Sanity, death and combat
 
 **[FD-S1] The sanity bands.** At 20, 40, 60, 80 and 100% of maximum Sanity the check is Cat-S, A, B, C and D.
-Suggestion: 0-20% is Cat-S (DC 21), 21-40% Cat-A, 41-60% Cat-B, 61-80% Cat-C, 81-100% Cat-D.
+Suggestion: 0-20% is Cat-S (DC 21), 21-40% Cat-A, 41-60% Cat-B, 61-80% Cat-C, 81-100% Cat-D, each at the difficulty table's DC for that category.
 - [ ] Agree
 - [ ] Change: ______
 - [ ] Later
 - Notes:
 
-**[FD-S2] One roll per sanity event?**
-Suggestion: one roll (Willpower) against the band's DC when the Handler calls for it after a loss; failing it rolls 1d6 on the disorder table.
+**[FD-S2] One roll per sanity event?** (The book used a fixed Willpower DC 10 disorder check; your note makes the DC depend on current Sanity.)
+Suggestion: one roll (Willpower) against the band's DC when the Handler calls for it after a loss, replacing the DC 10 check; failing it rolls 1d6 on the disorder table.
 - [ ] Agree
 - [ ] Change: ______
 - [ ] Later
@@ -166,7 +166,7 @@ Suggestion: yes, as a logged Handler action; players cannot.
 - [ ] Later
 - Notes:
 
-**[FD-A1] Helping: must the helper pass the easy (Cat-D) check first?** (Helpers now add their flat attribute score.)
+**[FD-A1] Helping: must the helper pass the easy (Cat-D) check first, and may someone with no training in the skill help?** (Helpers now add their flat attribute score.)
 Suggestion: yes, as in the book (page 10).
 - [ ] Agree
 - [ ] Change: ______
@@ -183,6 +183,13 @@ Suggestion: the helper's own score in the same attribute the roll uses. The numb
 **[FD-C1] Aim and defending.**
 Suggestion: Aim is a Minor action for +1 on a shot (and is needed beyond 500 ft); Dodge works against any attack and Parry only against melee.
 - [ ] Agree
+- [ ] Change: ______
+- [ ] Later
+- Notes:
+
+**[FD-G9] Weapon damage.** You set the lowest total damage (MIN) for ranged and melee weapons. Does Strength also add to melee damage dice, or only act as the floor? And what are the MIN values per weapon category?
+No suggestion for the values. Suggestion for Strength: it only acts as the floor.
+- [ ] Agree (floor only)
 - [ ] Change: ______
 - [ ] Later
 - Notes:
@@ -222,6 +229,13 @@ No suggestion. What are the limits for the remaining attributes, and what is the
 - Notes:
 
 **[FD-G4] SKALD skills.** At most one Expert and one Proficient, neither required.
+- [ ] Agree
+- [ ] Change: ______
+- [ ] Later
+- Notes:
+
+**[FD-G6] Is an Occult Organization member a separate kind of character, or an agent alias?** (You gave them the agent limits.)
+Suggestion: the same limits as an agent alias, chosen as the character's kind at creation.
 - [ ] Agree
 - [ ] Change: ______
 - [ ] Later

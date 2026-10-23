@@ -130,7 +130,7 @@ The engine implements these **kinds** of mechanics from the rulebook. All number
 | Partial success | within X of the DC (§2, §4) | X |
 | Fumble | total ≤ fraction of DC (§2) | fraction |
 | Opposed check | both sides roll, higher wins, ties to GM (§5, §7) | — |
-| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is `1d6 + var(helperSkillBonus)` | gate DC, bonus expression |
+| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (D, 2026-10-22; was `1d6 + var(helperSkillBonus)`) | gate DC, cap, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
 | Damage | category → dice and minimum (§6), DR subtracts first (§7) | damage table, DR formula |
 | Sanity check | resist roll, outcome band → full/half/none/extra loss (§4) | bands, losses |
@@ -147,7 +147,7 @@ A **condition** (approved by R with the stat-gated broadcast, 11 §Messaging) is
 | Placement | Expression | `var` supplied by the engine |
 |---|---|---|
 | Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
-| Assistance bonus (`difficulty.json`) | `1d6 + var(helperSkillBonus)` | the helper's skill bonus |
+| Assistance bonus (`difficulty.json`) | the helper's attribute score (D, 2026-10-22; replaces `1d6 + var(helperSkillBonus)`; key name Proposed, `helperAttribute`) | the helper's score in the check's attribute |
 
 Any new `var` key or placement goes to R first.
 
@@ -164,12 +164,12 @@ The engine can represent each variant; the **values** come from the rulebook as 
 Settled by D (2026-10-22; the cards are in [10-pending-d.md](10-pending-d.md), the record in [09](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)):
 
 6. **Rounding (K1).** Always to the benefit of the player; each rounding names its direction.
-7. **"Roll" means the total (K2, G1)** unless a rule says "the die". A fumble is a total at or below 25% of the DC, rounded down.
+7. **"Roll" means the total (K2, G1)** in most cases, unless otherwise specified (D). A fumble is a total at or below 25% of the DC, rounded down.
 8. **Exploding dice (G3).** The primary d6 and damage dice; not the proficiency die or any other.
 9. **Assistance (G4, G18).** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score. The `helperSkillBonus` variable above is replaced (open questions: FD-A1, FD-A2).
 10. **Sanity (G5).** The Handler sets the loss; the resist DC follows current Sanity (20/40/60/80/100% = Cat-S/A/B/C/D); half loss rounds down; a failed disorder check rolls 1d6 on the disorder table. D will rework the sanity tables.
-11. **Death (G7).** 0 Health is death; 0 Sanity passes the character to the Handler; the Handler can kill at any time. No incapacitated state, no critical-injury table (C1).
-12. **Weapon MIN (G9).** A floor on the total damage; melee floor is the greater of MIN and the STR score; Strength is never added to damage.
+11. **Death (G7).** 0 Health is death; 0 Sanity passes the character to the Handler; the Handler can kill at any time. The 1.3.1 critical-injury table is cut (C1); whether the incapacitated state is also gone is FD-D1.
+12. **Weapon MIN (G9).** A floor on the total damage; melee floor is the greater of MIN and the STR score; Whether Strength also adds to damage dice is not ruled (FD-G9).
 13. **Turn (G10).** One Major, one Minor and one reaction by default; Handler-granted items, bonuses or skills may raise them.
 14. **Creation (G19).** Limits by character kind (agent alias or Occult Organization member: 20 points, one attribute at 5, two at 4, at least 1 Expert; SKALD civilian: 15 points).
 15. **Advantage and disadvantage (G2)** are to be replaced by flashback (FB1); nothing is built for them.

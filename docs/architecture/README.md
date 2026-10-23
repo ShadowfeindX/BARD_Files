@@ -47,10 +47,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | Operation | A long-horizon goal or story arc, a collection of missions (1 to 10 on average), managed by a Handler; missions run concurrently but not simultaneously (D, 2026-10-22). |
 | Mission | A scenario or objective the agents try to complete, played across a series of sessions (1 to 3 on average). |
 | Session | One unit of play between players (1 to 3 hours on average). Each of the four levels is archived. |
-
-*Naming note.* Chapters 01 to 08 and 12 still say "operation" for the unit of live play (one event log, one RTDB tree, one sembast file), which in D's terms is a **session**. Which level owns the log, and the spec-wide rename, are R's to rule ([10-pending-d.md](10-pending-d.md#r-only-items), R-X0).
-
-| Handler / GM | The rulebook calls the GM the Handler. This spec uses GM. |
+| Handler / GM | The rulebook calls the GM the Handler. D (2026-10-22) uses both: the GM runs a campaign; the Handler is the GM's persona managing one operation (FD-X4). Until that is settled this spec writes GM. |
 | Command | A request to change the game ("attack this target", "require a check"). May be rejected. |
 | Event | A fact that happened ("check resolved: 11, success"). Never changes once written. |
 | Engine | The pure-Dart package that turns commands into events and events into state. |
@@ -58,3 +55,5 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | Vocabulary | The kinds of things the engine understands and how they compute. Owned by the engine. |
 | Values | The concrete numbers, names and tables. Owned by rules packs. |
 | Perspective | What a given viewer (GM, a player, the table) is allowed to see. |
+
+*Naming note.* Chapters 01 to 08 and 12 still say "operation" for the unit of live play (one event log, one RTDB tree, one sembast file), which in D's terms is a **session**. Which level owns the log, and the spec-wide rename, are R's to rule ([10-pending-d.md](10-pending-d.md#r-only-items), R-X0).

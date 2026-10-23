@@ -190,15 +190,15 @@ These are applied to the named chapters in a later change:
 | 01 Engine | A new command for the stat-gated broadcast, plus comparison nodes in condition expressions. Proposed `ContactRevealed` and `SiteRevealed` events. |
 | P14 | Adds functions: sign-in code minting, badge-number generation, the panic-button proxy. |
 
-## Currency (provisional, D to confirm)
+## Currency (provisional; D: later)
 
 Provisionally (R): D defines the currency name, prices, starting funds and income in pack data, and the engine gets a generic `Funds` vocabulary (a component plus transfer commands and events), so balance arithmetic stays in the engine. D confirms at the meeting (Q6). How money moves between missions waits on X0.
 
 ## Waiting on X0 (R's meeting with D)
 
-Under R's terms an operation is the whole campaign, but the spec still gives each operation (one session) its own event log. Which unit owns the log decides the items below, so they wait for R's meeting with D (options and the edits under each: [10-pending-d.md](10-pending-d.md#operations-and-missions-x0)):
+Under D's terms (Campaign > Operation > Mission > Session, 2026-10-22) the spec still gives each operation (in the code's sense, one session) its own event log. Which unit owns the log decides the items below, so they wait for R's ruling (R-X0) (options and the edits under each: [10-pending-d.md](10-pending-d.md#operations-and-missions-x0)):
 
-- **Q24:** whether the event log belongs to the operation, stored in mission segments, or to each mission.
+- **Q24 (restated as R-X0):** which of campaign, operation, mission and session owns the event log.
 - **Q5:** requests made between sittings (purchases, contact releases), and whether purchases may auto-confirm.
 - **Q7:** where messages between sessions live.
 - **Q9 (content):** what a published mission contains and how it is identified.

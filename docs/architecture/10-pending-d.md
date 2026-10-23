@@ -22,7 +22,7 @@ D's answers are in [10-pending-d-responses.md](10-pending-d-responses.md) (each 
 
 ## How to apply a ruling
 
-1. Write the ruling into the **Ruled** column of the [index](#index) (date and R's or D's words), and add a row to the [09 decisions record](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20).
+1. Write the ruling into the **Ruled** column of the [index](#index) (date and R's or D's words), and add a row to the 09 decisions record ([R's](09-open-decisions.md#decisions-record-ruled-by-r-2026-10-20) or [D's](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
 2. Do the edits listed under the chosen option, on a branch named for the work (`feature/`, `bugfix/` or `docs/`), with the developer guide and `CHANGELOG.md` in the same PR (CLAUDE.md §10).
 3. For a pack value: replace the placeholder object in the pack source, run `bash tool/build_pack.sh`, and check that the path left `RulesPack.pendingPaths` (`engine/pack/rules_pack.dart`). If the ruling adds a field, the parser in `engine/pack/files/` and the pack loader tests change with it.
 4. Delete the card from this chapter, or shorten it to "Ruled, see 09". Remove the gap from the library's `rulebook/rulebook-gaps.md` and from the pack's `openItems`.
@@ -55,7 +55,7 @@ D's answers are in [10-pending-d-responses.md](10-pending-d-responses.md) (each 
 | [C1](#c1-content-cut-since-131) | Was content cut since 1.3.1 on purpose? | D | None restored without D | Leave out (D, 2026-10-22) |
 | [X0](#x0-which-unit-owns-the-event-log-q24) | Which unit owns the event log (Q24) | R and D | A: one log per operation, mission segments | Changed: Campaign > Operation > Mission > Session (D, 2026-10-22) |
 | [Q5](#q5-requests-between-sittings) | Requests between sittings; auto-confirm purchases | R | Queue under the operation; no auto-confirm | Open: R ([R-only items](#r-only-items)) |
-| [Q7](#q7-messages-between-sessions) | Where messages between sessions live | R | The operation's phone box | Open: R ([R-only items](#r-only-items)) |
+| [Q7](#q7-messages-between-sessions) | Where messages between sessions live | R | The mission's phone box | Open: R ([R-only items](#r-only-items)) |
 | [Q9](#q9-published-mission-content) | Published mission content and id | R | Debriefs + public text log; id from `MissionStarted` | Open: R ([R-only items](#r-only-items)) |
 | [Q33](#q33-anonymous-accounts-browsing) | Anonymous accounts browsing the library | R and D | Play yes, browsing no | No: tier 0 may browse free entries (D, 2026-10-22) |
 | [Q6](#q6-currency) | Currency | D | Pack data + generic `Funds` | Later (D, 2026-10-22) |
@@ -121,8 +121,8 @@ The book gives three answers:
 ### M3. Casting details (G6)
 
 **Ruled (D, 2026-10-22):**
-- **a. Changed:** the Handler decides when a sanity check is needed (for example when casting against a supernatural entity); the default is **on success only**. Apply: `occult.json` `sanityCheckOn: "success"`; the cast carries a Handler flag that requires the check on any cast.
-- **b. Changed:** every player present at the ritual pays sanity on a **success**, whether or not they cast; on a **fail** only the players taking part in the cast pay. Sanity cost is the result of the effect going off, not a cost of the magic ("people go crazy when they see a demon appear, whoever summoned it"). This replaces "each caster pays half". Apply: `groupCost` removed; `occult.json` `sanityPayers: {onSuccess: "present", onFail: "participants"}` (shape Proposed); the cast records who is present and who takes part (Handler selects, FD-M1); amounts are suggested per payer through the review tray (G5).
+- **a. Changed:** the GM decides when a sanity check is needed (D wrote "GM"; the cards say Handler for the GM running the operation, FD-X4) (for example when casting against a supernatural entity); the default is **on success only**. Apply: `occult.json` `sanityCheckOn: "success"`; the cast carries a Handler flag that requires the check on any cast.
+- **b. Changed:** every player present at the ritual pays sanity on a **success**, whether or not they cast; on a **fail** only the players taking part in the cast pay. Sanity cost is the result of the effect going off, not a cost of the magic ("people go crazy when they see a demon appear, whoever summoned it"). This replaces "each caster pays half". Apply: the p29 group-cost note in `occult.json` (`sanityCheckOptions`) is replaced by Proposed `sanityPayers: {onSuccess: "present", onFail: "participants"}` (shape Proposed); the cast records who is present and who takes part (Handler selects, FD-M1); amounts are suggested per payer through the review tray (G5).
 - **c. Not applied (contradiction, FD-M2):** the box says Agree (the spell's category) but the notes say a better focus item *reduces* the sanity cost and that its category follows relevance to the player, not value. That is not the p29 rule (+2 per category above D). Held until D states the rule.
 - **d. Changed:** casting normally needs skill, training, knowledge or guidance; high-affinity individuals (high WIL, related skills, Handler discretion) may cast under extreme circumstances or spontaneously. Apply: a missing prerequisite is refused unless the Handler allows it on that cast (`RejectionCode` in `engine/decision.dart`, Proposed name `missingOccultTraining`, with a Handler allowance flag); no numeric affinity threshold (FD-M4).
 
@@ -249,7 +249,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 ### G3. Which dice explode
 
 **Ruled (D, 2026-10-22): Agree.** Primary d6 and damage dice explode; not the proficiency die, helper dice (helpers now add a flat score, G4), focus-item die or advantage dice.
-**Apply:** option A: `explode: true` on `damage.json` and `threats.json` damage dice; `false` on the proficiency tiers, `advancement.json` dice and the `occult.json` focus die (the occult focus die is removed by M2/M3c anyway); data only.
+**Apply:** option A: `explode: true` on `damage.json` and `threats.json` damage dice; `false` on the proficiency tiers, `advancement.json` dice and the `occult.json` focus die (the occult focus die is removed by M2 anyway); data only.
 
 **Today:** every `explode: null` in the pack means "not ruled"; the evaluator rolls `null` as not exploding (`Dice.explodes` in `engine/expr/expr.dart`). Only the primary die is `true`.
 
@@ -266,7 +266,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 **Ruled (D, 2026-10-22): Changed (both parts).**
 - **Cap:** the number of helpers on a check equals the score of the attribute the roll uses, plus 1 (STR 3 means up to 4 helpers).
 - **Helper bonus:** each helper adds their flat attribute score (4 helpers with STR 3 each add 12). The 1d6 and the proficiency die are gone.
-**Apply:** `difficulty.json` `assistance.cap` becomes `{"type": "attributePlus", "plus": 1}` and `assistance.bonus` becomes the helper's own score in the check's attribute (`var` `helperAttribute`; `helperSkillBonus` in `engine/expr/vars.dart` is dropped with a deprecation per P11 if a pack has shipped it); 01 §Dice and checks and 02 §Named variables change the assistance placement; engine: assistance in `CheckSystem` (row 5 follow-up) with refusal `tooManyHelpers` (Proposed) and one breakdown line per helper. Open before building: FD-A1, FD-A2.
+**Apply:** `difficulty.json` `assistance.cap` becomes `{"type": "attributePlus", "plus": 1}` and `assistance.bonus` becomes the helper's own score in the check's attribute (`var` `helperAttribute` (Proposed name); `helperSkillBonus` in `engine/expr/vars.dart` is dropped with a deprecation per P11 if a pack has shipped it); 01 §Dice and checks and 02 §Named variables change the assistance placement; engine: assistance in `CheckSystem` (row 5 follow-up) with refusal `tooManyHelpers` (Proposed) and one breakdown line per helper. Open before building: FD-A1, FD-A2.
 
 **Today:** `assistance` is loaded (gate Cat-D, bonus `1d6 + var(helperSkillBonus)`), `cap` is a placeholder; assistance is not built. `helperSkillBonus` has no defined value since proficiency became dice (G16).
 
@@ -282,11 +282,11 @@ Values D has not given. The engine can represent each variant; agents never choo
 
 **Ruled (D, 2026-10-22): Changed.** Sanity loss for events and disorders gets reworked.
 - **a.** The Handler sets the loss; the ranges are suggested values only (no automatic roll).
-- **b.** The DC to resist is set by current Sanity: at 20, 40, 60, 80 and 100% of maximum Sanity the check is Cat-S, A, B, C and D (at 20% it is Cat-S, DC 21).
+- **b.** The DC to resist is set by current Sanity: breakpoints at 20, 40, 60, 80 and 100% of maximum Sanity for categories S to D (at 20% it is Cat-S, DC 21). Reading the other breakpoints as A, B, C and D in order is an assumption (FD-S1).
 - **c.** Half loss rounds **down**: "when rounding in B.A.R.D. we ALWAYS round to the benefit of the player" (K1).
 - **d.** Anomalous attacks: a partial success halves the loss, or the Handler sets a narrative effect.
 - **e.** Fumbling the resist roll: full loss plus 1; the Handler describes the complication. **f.** A failed disorder check rolls 1d6 on the disorder table.
-**Apply:** `sanity_events.json` ranges become suggestions (`pick: "gm"`), `resistDc.bands` (20 to S, 40 to A, 60 to B, 80 to C, 100 to D; boundary inclusivity assumed, FD-S1), `halfRounding: "down"`, `fumbleExtra: 1`; `disorders.json` `rollDie: {"type":"dice","count":1,"sides":6}`; 01 §Systems `VitalsSystem` and `ConditionSystem` rows; no automatic sanity roll in the engine. D will supply the reworked tables (FD-S3); until then the book's ranges stay as suggestions.
+**Apply:** `sanity_events.json` ranges become suggestions (`pick: "gm"`), Proposed `resistDc.bands` (20 to S, 40 to A, 60 to B, 80 to C, 100 to D: an assumption, FD-S1), Proposed `halfRounding: "down"`, `fumbleExtra: 1`; `disorders.json` `rollDie: {"type":"dice","count":1,"sides":6}`; 01 §Systems `VitalsSystem` and `ConditionSystem` rows; no automatic sanity roll in the engine. D will supply the reworked tables (FD-S3); until then the book's ranges stay as suggestions.
 
 **Today:** the GM enters every sanity amount through `VitalsSystem`, and the session holds it for review (F2, `session/lib/src/operation_host.dart`). `sanity_events.json` has ranges with placeholders; `disorders.json` `rollDie` is `null` (a pending value in the source too).
 
@@ -302,7 +302,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 ### G7. Dying and critical injury
 
 **Ruled (D, 2026-10-22): Changed.** A character reaching 0 Health dies (the app flashes a death screen). A character at 0 Sanity passes to the Handler's control, very likely ending in a bad narrative event and death. The Handler can kill a character at any time. The Handler chooses the DC and the mechanical effect from a list of automated effects, plus a custom option.
-**Apply:** no incapacitated state, no accumulating damage rule and no critical-injury table (C1 leaves the 1.3.1 table out); 01 §Systems `VitalsSystem`; new events `CharacterDied` and `ControlTransferred` and Handler command `KillCharacter` (names Proposed; row 1 follow-up, codecs in row 6); the Handler's effect list is the engine's existing consequence events (damage, sanity loss, condition, modifier) plus a custom text option (D names more, FD-D2); death screen in `ui_kit` and `apps/bard` (row 8 follow-up). Whether death at 0 Health goes through the review gate is R's call (R7).
+**Apply:** no critical-injury table (C1 leaves the 1.3.1 table out); whether the incapacitated state and the accumulating-damage rule are also gone is FD-D1; 01 §Systems `VitalsSystem`; new events `CharacterDied` and `ControlTransferred` and Handler command `KillCharacter` (names Proposed; row 1 follow-up, codecs in row 6); the Handler's effect list is the engine's existing consequence events (damage, sanity loss, condition, modifier) plus a custom text option (D names more, FD-D2); death screen in `ui_kit` and `apps/bard` (row 8 follow-up). Whether death at 0 Health goes through the review gate is R's call (R7).
 
 **Today:** `VitalsSystem` does not clamp; nothing happens at or below 0 (its doc comment).
 
@@ -330,7 +330,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 ### G9. Weapon MIN and melee Strength
 
 **Ruled (D, 2026-10-22): Changed.** MIN is the lowest total damage a ranged weapon attack can do, including all modifiers. For a melee weapon the lowest total is the weapon's MIN or the flat STR score, whichever is greater.
-**Apply:** `damage.json` `min` read as a floor on the **total**; `meleeFloor: "max(min, STR)"` (shape Proposed); Strength is never added to melee damage dice; damage suggestion in the review tray is floored (VitalsSystem follow-up). Weapon MIN values themselves are still `null` where D has not given them.
+**Apply:** `damage.json` `min` read as a floor on the **total**; `meleeFloor: "max(min, STR)"` (shape Proposed); whether Strength also adds to damage dice is not ruled (FD-G9); damage suggestion in the review tray is floored (VitalsSystem follow-up). Weapon MIN values themselves are still `null` where D has not given them.
 
 **Today:** `damage.json` `min` is pending where unclear.
 
@@ -399,7 +399,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 
 **Ruled (D, 2026-10-22): Changed.** Limits, not exact totals, and two character kinds:
 - **Agent alias or Occult Organization member:** at most 20 attribute points in total; one attribute may be 5, two at most 4. Proficiencies are not mandatory (2 Expert and no Proficient is allowed); at least 1 Expert is mandatory.
-- **SKALD (civilian character, not an agent alias):** at most 15 points in total; one attribute at most 4, two at most 3. One Expert and one Proficient at most; neither is mandatory.
+- **SKALD (civilian character, not an agent alias):** at most 15 points in total; one attribute at most 4, two at most 3. D wrote "1 expertise and 1 proficiency and neither is mandatory"; reading it as at most one of each is an assumption (FD-G4).
 **Apply:** pack creation profiles `agent` and `skald` replace the single `AttributeCreation` range and `ProficiencyCreation.counts` (`attributes.json`, `proficiency.json`; names Proposed); `CharacterSystem` creation (`character_system.dart`) takes a profile and checks the total, the per-attribute caps and the skill rules; 11 §Agents, aliases and profiles gains SKALD as a character kind. Not building until FD-G1 to FD-G4 are answered (minimum score, the rest of the attribute caps, how many skills an agent may take).
 
 **Today:** `CharacterSystem` checks each attribute's 1 to 3 range only (`AttributeCreation.points` is loaded but unused; `ProficiencyCreation.counts` likewise).
@@ -439,7 +439,7 @@ Source for all: library `architecture/supplemental-x0-pending.md`; 11 §Terminol
 - **Mission:** a scenario or objective the agents try to complete, accomplished across a series of sessions (1 to 3 on average).
 - **Operation:** a long-horizon goal, story arc or other collection of missions (1 to 10 on average), managed by a Handler. An operation can have several missions running concurrently but not simultaneously.
 - **Campaign:** a series of operations managed by a GM. A campaign can have several operations running concurrently or simultaneously.
-- A GM may have more than one handler character, persona or alias, one per operation. A player may have more than one alias in an operation or a mission, and an alias may appear in several missions.
+- A GM may have more than one handler character, persona or alias, for different operations. A player may have more than one alias in an operation or a mission, and an alias may appear in several missions.
 
 This **supersedes** R's 2026-10-20 terms ("operation = the whole campaign") in 11 §Terminology and the glossary. The options below (A to C) were written for the old terms and are **not** the decision any more; the open design question (which of these units owns an event log, an RTDB tree and a sembast file) is restated for R in R-X0. D's follow-up questions are FD-X1 to FD-X8.
 **Apply now (docs only):** README glossary and 11 §Terminology use D's four terms; the spec-wide rename of chapters 01 to 08 and 12 waits on R-X0 (until then those chapters' "operation" means the unit of live play, which in D's terms is a session). Per level, archive and summaries are listed under R-X0.
@@ -467,11 +467,11 @@ Also decided by this card:
 
 ### Q7. Messages between sessions
 
-**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`; 06 RTDB `phone` (P17). **Assumption:** under A, the operation's phone box in RTDB, as designed (P17). **Changes:** none beyond X0's pruning rule.
+**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`; 06 RTDB `phone` (P17). **Assumption:** the mission's phone box in RTDB, as designed (P17), now spanning the mission's 1 to 3 sessions and cleared when the mission ends. **Changes:** none beyond R-X0's pruning rule.
 
 ### Q9. Published mission content
 
-**Decides:** R. Needs X0 and N1. **Source:** `supplemental-x0-pending.md`. **Today:** 12 `missions/{missionId}` holds a summary; `eventRange` unit Proposed. **Assumption:** the debrief forms plus the `public` text log of that segment, never GM or alias branches; the mission id is generated on `MissionStarted`, independent of the operation id (which changes on migration, P12). **Changes:** 11 §Library and public content; 12 `missions/{missionId}` and a library mission kind (12 §Held and questions for R). The `public` text is only safe to publish after N1's name rule.
+**Decides:** R. Needs X0 and N1. **Source:** `supplemental-x0-pending.md`. **Today:** 12 `missions/{missionId}` holds a summary; `eventRange` unit Proposed. **Assumption:** the debrief forms plus the `public` text log of the mission's sessions, never GM or alias branches; the mission id is generated when the mission starts, independent of the operation id (which changes on migration, P12). **Changes:** 11 §Library and public content; 12 `missions/{missionId}` and a library mission kind (12 §Held and questions for R). The `public` text is only safe to publish after N1's name rule.
 
 ### Q33. Anonymous accounts browsing
 
@@ -536,12 +536,12 @@ Key test for all options: for every perspective, the host's stored variant for e
 ### K1. Rounding convention
 
 **Ruled (D, 2026-10-22):** "When rounding in B.A.R.D. we ALWAYS round to the benefit of the player." Stated with G5c (half sanity loss rounds down).
-**Apply:** 01 gains a "Rounding" paragraph; every place the engine or a pack rounds names its direction (fumble threshold down, half sanity loss down, others as FD-K1 confirms); packs carry the direction beside each fraction (`rounding: "down" | "up"`).
+**Apply:** 01 gains a "Rounding" paragraph (done); every place the engine or a pack rounds names its direction (fumble threshold down, half sanity loss down, others as FD-K1 confirms); packs carry the direction beside each fraction (`rounding: "down" | "up"`).
 
 ### K2. "Roll" means the total
 
 **Ruled (D, 2026-10-22):** "Roll means total in most cases unless otherwise specified" (stated with G1).
-**Apply:** 01 §Dice and checks defines "roll" as the final total unless a rule says "the die"; rule text in packs and the manual follows.
+**Apply:** 01 §Dice and checks defines "roll" as the final total in most cases, unless otherwise specified; rule text in packs and the manual follows.
 
 ### FB1. Flashback replaces advantage and disadvantage
 
@@ -553,11 +553,11 @@ Key test for all options: for every perspective, the host's stored variant for e
 ### HA1. Human adversaries use gear like players
 
 **Direction (D, 2026-10-22):** human adversaries get their stats from weapons and gear in the same way as players.
-**Effect:** G11 (Later) shrinks to the supernatural classes; human NPC templates use attributes, skills and `items/` like a player alias (FD-H1). **Apply:** none yet; 02 §Content kinds notes it when G11 is ruled.
+**Effect (assumed, FD-H1):** G11 (Later) would apply only to supernatural classes, and human NPC templates would use attributes, skills and `items/` like a player alias. **Apply:** none yet; 02 §Content kinds notes it when G11 is ruled.
 
 ### UI1. Reminders and tooltips for Handler features
 
-**Idea (D, 2026-10-22):** pop-up reminders and tooltips for Handler features and abstract rulings. D's feature ideas go through R. **Today:** `ui_kit` has no tooltip layer. **Likely edits (not started):** a Handler-hint component in `ui_kit` and hint text in the pack's `strings/` (editable by R and D without Dart); the first list of hints is D's (FD-T1). Natural home for the `ritualDefaults` guidance (M2) and the sanity suggestions (G5).
+**Idea (D, 2026-10-22):** pop-up reminders and tooltips for "GM features" (D's words; read as the Handler's tools) and abstract rulings. D's feature ideas go through R. **Today:** `ui_kit` has no tooltip layer. **Likely edits (not started):** a Handler-hint component in `ui_kit` and hint text in the pack's `strings/` (editable by R and D without Dart); the first list of hints is D's (FD-T1). Natural home for the `ritualDefaults` guidance (M2) and the sanity suggestions (G5).
 
 ### Revisit later in v1 development
 
