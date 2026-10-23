@@ -16,17 +16,17 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | P4 | Data-only dice expressions and formulas, no scripting. Adds the `var` node `{"type":"var","key":<name>}`, a named number the engine supplies at evaluation time (advancement XP = 10 × `newScore`; assist bonus = 1d6 + `helperSkillBonus`). | [01](01-engine.md), [02](02-rules-packs.md) |
 | P5 | RNG from pub package `xrandom` 0.7.2, class `Xoshiro128pp` (one of the generators `xrandom` marks as working on JS), never the `Xrandom`/`Drandom`/`Qrandom` aliases. Adapter behind the engine's `Rng` interface lives in `session`; engine stays SDK-only. Pinned exactly; known-seed test vectors on native and web [V-28]. | [01](01-engine.md), [04](04-session.md) |
 | P11 | Deprecation record (`since`, `replacedBy`, `removeIn`, `note`) for engine schema and pack entries. | [01](01-engine.md), [02](02-rules-packs.md) |
-| F1 | Rulebook gaps settled: proficiency bonus is an additional dice roll (G16); Health = END × LCK; Sanity = WIS × LCK; top category Cat-Ω, values decided by the Handler (G12); disorder table is a clean 1–6. Only the occult check attribute (C5/G6) stays open, pending D. | [01](01-engine.md), [08](08-testing.md) |
+| F1 | Rulebook gaps settled: proficiency bonus is an additional dice roll (G16); Health = END × LCK; Sanity = WIS × LCK; top category Cat-Ω, values decided by the Handler (G12); disorder table is a clean 1–6. The occult check attribute (C5/G6) was ruled by D on 2026-10-22. | [01](01-engine.md), [08](08-testing.md) |
 | F2 | GM review gate in `OperationHost`: consequence events (damage, sanity loss, conditions, any category value) are held as a GM-only pending batch; the GM confirms or edits; an edit is recorded on the event (`overriddenFrom`); only then seq, narrate, store and broadcast. Per-operation auto-confirm. Rolls are never gated: `CheckResolved` broadcasts immediately and rolled faces are never altered. Covers rulebook decision 21. | [01](01-engine.md), [04](04-session.md) |
 | F3 (2) | Skill = name, description, category (one of five, organizational only), attribute, proficiency. No "allowed uses". | [01](01-engine.md), [02](02-rules-packs.md) |
 | F3 (3) | Operation-scoped pack tier under Campaign for per-session GM content: same schema and validator, pinned and logged. | [02](02-rules-packs.md) |
-| Concern 7 | `CheckResolved` reserves `source` (`rng` \| `entered`, plus who entered: GM or alias). The physical-dice feature itself is pending D. | [01](01-engine.md) |
+| Concern 7 | `CheckResolved` reserves `source` (`rng` \| `entered`, plus who entered: GM or alias). The physical-dice feature is approved by D (2026-10-22), built after the demo. | [01](01-engine.md) |
 
 ### Packs and content
 
 | # | Ruling | Where |
 |---|---|---|
-| P3 | Packs are JSON + manifest (not YAML); UI editing is planned since GMs publish packs too. The exact pack shape is pending D. | [02](02-rules-packs.md) |
+| P3 | Packs are JSON + manifest (not YAML); UI editing is planned since GMs publish packs too. The exact pack shape was confirmed by D on 2026-10-22. | [02](02-rules-packs.md) |
 | Packs | Authoring annotations (`note`, `source`, `openItems`, `placeholder`, `gap`, `*Note` keys) are stripped before shipping; no reserved annotation key, so unknown keys stay errors in shipped packs. | [02](02-rules-packs.md) |
 | Concern 5 | Library verification claim held by R and D only at first (set by the roles function; more auditors later through the console). Revocable: the item returns to pending with a reason; copies already in GM packs are unchanged. The item records verifier, date and version. | [02](02-rules-packs.md), [06](06-accounts-backend.md) |
 
@@ -39,7 +39,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | P12 | Text log narrated during play (after the GM confirms a consequence batch), one variant per perspective; `textlog` message; genesis `archives`; new op id with seq restart. Rolling autosave: native hosts write events, text and head snapshot to the local store every batch, followed by a commit marker in its own transaction; on open, everything after the last marker is discarded [V-31]. The head snapshot is mirrored to RTDB on a GM-configurable per-operation interval (proposed default 5 minutes, plus on pause, close and before migration); event and text batches go to RTDB every batch. No power-loss protection in v1 (accepted). | [01](01-engine.md), [04](04-session.md), [05](05-migrator.md), [06](06-accounts-backend.md) |
 | 09-4 | Transport build order: in-process, LAN, RTDB relay, P2P. Transport packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled. | [04](04-session.md) |
 | Targets | v1 targets (R, 2026-10-20): Windows and Linux desktop, plus the web player build. macOS and iOS are not in v1, and their pending checks are dropped. | [00](00-overview.md), [07](07-apps.md) |
-| W1 | Web build is player-only for now (no GM hosting). Revisit with D. | [04](04-session.md), [07](07-apps.md) |
+| W1 | Web build is player-only (no GM hosting). Confirmed by D, 2026-10-22. | [04](04-session.md), [07](07-apps.md) |
 | P8 | Migrator works on frozen JSON-level schemas; steps are pure `(json, decisions) -> (json, report)`. | [05](05-migrator.md) |
 | P13 | Migration confirmation on a separate warning screen: tick "cannot be recovered" and type the operation name; a single tap never confirms. | [05](05-migrator.md) |
 
@@ -78,17 +78,33 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 
 Ruled before this review and unchanged: archived logs are frozen, not converted; a plain-text rendering is kept beside them; the new log starts at `OperationMigrated`; the GM explicitly confirms the unrecoverable loss.
 
+## Decisions record (ruled by D, 2026-10-22)
+
+D answered the decision kit in the R + D meeting. Cards and edits: [10-pending-d.md](10-pending-d.md); D's own answers: [10-pending-d-responses.md](10-pending-d-responses.md); questions they raised: [10-pending-d-followup.md](10-pending-d-followup.md). Rulings on game content are D's; none of the code edits is made yet.
+
+| # | Ruling | Where |
+|---|---|---|
+| M1 | Casting attribute: WIL by default, or the named skill's attribute. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| M2 | "Cast magic" is one roll; the Handler sets the final DC from the circumstances. | [01](01-engine.md#systems) |
+| M3 | Sanity check on success by default, the Handler decides otherwise; everyone present pays on success, only those casting on failure; casting needs training unless the Handler allows an affinity exception. Focus-item rule held (FD-M2). | [10](10-pending-d.md#m3-casting-details-g6) |
+| P1, P2 | Pack layout kept; Eldritch Lore (INT), Vehicle Modification (INT) added, Insight WIS. | [02](02-rules-packs.md) |
+| W1 | Web stays player-only (confirms the R ruling above). | [04](04-session.md), [07](07-apps.md) |
+| C7 | Physical dice approved, built after the demo. | [01](01-engine.md), [04](04-session.md) |
+| G1, G3, G13 | Fumble on the total, rounded down; primary d6 and damage dice explode; old difficulty names dropped. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| G4/G18, G5, G7, G9, G10, G19 | Changed as described on their cards (assistance by flat attribute score, sanity rework, death at 0 Health, weapon MIN floor, action counts, creation limits and SKALD). Follow-ups open. | [10](10-pending-d.md#rulebook-gaps) |
+| G2 | Superseded: flashback replaces advantage and disadvantage (details open). | [10](10-pending-d.md#fb1-flashback-replaces-advantage-and-disadvantage) |
+| K1, K2 | Rounding always favours the player; "roll" means the total. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| C1 | 1.3.1 critical injury table, backlash, artifact repository, forms and personnel cut on purpose. | [10](10-pending-d.md#c1-content-cut-since-131) |
+| X0 | Campaign > Operation > Mission > Session, each archived; supersedes "operation = campaign". Log ownership is R's (R-X0). | [11](11-supplemental-features.md#terminology-ruled-rename-pending), [README](README.md) |
+| Q33 | Anonymous accounts may browse free entries. | [11](11-supplemental-features.md#clearance-tiers) |
+| N1 | Reveal rules D1-D3, D5-D7 as proposed; D4: live session log shows the new name, archives unchanged. R1-R5 open. | [10](10-pending-d.md#n1-narrator-lines-and-name-reveals) |
+| F1, F2 | Playtest players agreed (cases to list); sign-in code is any scannable code. | [11](11-supplemental-features.md) |
+
+Later (D): G8, G11, G14, Q6 currency; Q12 fake websites is not in v1.
+
 ## Pending D
 
-R wants D's approval on these before they are designed in full. The proposals are carried in a separate PR for R's meeting with D (Thursday 2026-10-22 at the earliest). Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
-
-| Item | What is undecided | Already fixed |
-|---|---|---|
-| C5/G6 occult check attribute | Which attribute the occult check uses. | Engine supports any attribute. |
-| F3 (1) occult system | "Cast magic" as one roll kind with a GM-set DC, and how much of `OccultSystem` (ritual time, participants, focus items) stays. | Spells have no schema (R's game-rules model, 2026-10-16). |
-| P3 pack shape | Exact files, fields and details of a content pack. An example pack is in the project library for D. | JSON + manifest; validator; annotations stripped. |
-| W1 web hosting | Whether web hosting returns later, for onboarding new users. | Web is player-only for now. |
-| Concern 7 physical dice | GM and remote players entering real dice faces on their own clients, behind a per-operation GM setting (off by default; without it entered faces are refused). | `source` field reserved on `CheckResolved`. |
+Still waiting on D: the follow-up questions in [10-pending-d-followup.md](10-pending-d-followup.md); G8, G11, G14 and Q6 (Later); the flashback details and the mission-library seed cases. Waiting on R: the items in [10-pending-d.md](10-pending-d.md#r-only-items). The original table of five items is answered (see the record above).
 
 ## Held
 
@@ -115,8 +131,8 @@ Each was raised once, per CLAUDE.md §2, and R's answer stands.
 
 1. **Firebase on desktop vs "all Flutter targets". Resolved by R:** `firebase_dart` on desktop [V-21], RTDB for live play, Firestore at rest over REST (FS1, FS2), HTTPS-only Dart functions; Linux required in v1.
 2. **Web GM cannot host LAN. Accepted by R;** web is player-only for now (W1).
-3. **Rulebook inconsistencies. Resolved by R (F1)** except the occult check attribute, pending D.
+3. **Rulebook inconsistencies. Resolved by R (F1)** and, for the occult check attribute, by D (2026-10-22).
 4. **Alias transfer approval. Ruled** (concern 4 above).
 5. **Library verification workflow. Ruled** (concern 5 above).
 6. **Payments. Deferred.**
-7. **Physical dice. Field reserved;** feature pending D.
+7. **Physical dice. Field reserved;** feature approved by D (2026-10-22), built after the demo.

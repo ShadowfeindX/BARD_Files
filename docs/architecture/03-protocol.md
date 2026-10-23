@@ -53,7 +53,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 
 There is no message by which a client sends an *event*. Only the GM produces events (Fixed authority model).
 
-A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is not built. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and not built yet.
 
 ### Message bodies (Proposed)
 
