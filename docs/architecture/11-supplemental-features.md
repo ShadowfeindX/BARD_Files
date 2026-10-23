@@ -6,17 +6,19 @@ Where this chapter changes an earlier ruling, it says so under [Amendments to ea
 
 ## Terminology (ruled, rename pending)
 
-R ruled the game's terms on 2026-10-20:
+D ruled the game's levels on 2026-10-22, replacing R's 2026-10-20 terms (which made "operation" the whole campaign):
 
 | Term | Meaning |
 |---|---|
 | Agent | The player's account profile, in-world and fictional. |
-| Alias | A character played inside an operation. An agent owns aliases. |
-| Operation | The whole campaign, spanning many game sessions, months or years. |
-| Mission | A segment of play inside an operation. One operation has many missions. Character and player data is preserved between missions. |
-| Handler | The GM. A paid account tier (see [Clearance tiers](#clearance-tiers)). "Tier" in this chapter always means an account tier, not a content tier as in [02](02-rules-packs.md#content-kinds-and-tiers). |
+| Alias | A character played in missions. An agent owns aliases; a player may have several aliases in an operation or a mission, and an alias may appear in several missions. |
+| Session | One unit of play between players (1 to 3 hours on average). |
+| Mission | A scenario or objective the agents try to complete, accomplished across a series of sessions (1 to 3 on average). Character and player data is preserved between missions. |
+| Operation | A long-horizon goal, story arc or other collection of missions (1 to 10 on average), managed by a Handler. Several missions can run concurrently, not simultaneously. |
+| Campaign | A series of operations managed by a GM. Operations can run concurrently or simultaneously. |
+| Handler | The GM role in an operation. A paid account tier (see [Clearance tiers](#clearance-tiers)). A GM may have a different handler character, persona or alias per operation. "Tier" in this chapter always means an account tier, not a content tier as in [02](02-rules-packs.md#content-kinds-and-tiers). |
 
-The rest of this spec still uses "campaign" for the long-running game and "operation" for one session (glossary in [README.md](README.md)). The spec-wide rename, and which unit owns an event log, wait on X0. This chapter uses R's terms.
+Every level is archived. Open design questions about these levels (settings level, rosters, endings, what is published) are FD-X1 to FD-X8 in [10-pending-d-followup.md](10-pending-d-followup.md). Chapters 01 to 08 and 12 still say "operation" for the unit of live play, which in D's terms is a session; which level owns the event log, and the spec-wide rename, are R's to rule (R-X0 in [10-pending-d.md](10-pending-d.md#r-only-items)). The mission rows below (library, debrief, last 3 missions) read as written: they are about missions.
 
 ## Agents, aliases and profiles
 
@@ -46,7 +48,7 @@ D's tiers, as given by R:
 
 | Tier | Clearance | Access |
 |---|---|---|
-| Anonymous user | 0 | No data access |
+| Anonymous user | 0 | Free (level-1) entries, the same as a free user's browsing (D, 2026-10-22); no profile, voice, video or messaging |
 | Free user | 1 | Clearance 1 data; clearance 2 summaries |
 | $2.99 user | 2 | Clearance 1 and 2 data; clearance 3 and 4 summaries |
 | $5.99 user | 3 | Clearance 1-4 data |
@@ -75,7 +77,7 @@ There are two separate codes (R, 2026-10-20). This replaces P9's single printed 
 | Purpose | Opens the agent's public profile | Signs the player into a desktop, web or mobile session |
 | Visible to | Everyone; printed on physical objects | Only the player, on their signed-in phone |
 | Payload | An https link to the public profile, keyed by **badge number only** (never the agent id, which is the Firebase Auth uid) | A short-lived, single-use credential |
-| Symbology | PDF417 (for the look, R) | PDF417 (proposed, from D's list; D to confirm) |
+| Symbology | PDF417 (for the look, R) | Any scannable code, QR allowed (D, 2026-10-22) |
 | Scanned with | The companion app | The other device, or the reverse flow below |
 
 ### Badge numbers
@@ -128,7 +130,7 @@ The invite link is `bard://join/<op>?invite=<token>`. A Firestore invite documen
 
 The in-app browseable manual uses the same gating as the PDF manual: it is available to the handler tier, or to anyone who buys it. That purchase is a payment product (concern 6). The manual content is D's.
 
-## Fake occult websites (provisional, Q12 with D)
+## Fake occult websites (provisional, Q12 with D; post-v1: not in v1, D 2026-10-22)
 
 - A site is a document of typed blocks (heading, text, image, link to another fake page, form-like widgets), rendered by `ui_kit`. Raw HTML or JavaScript is never allowed.
 - Provisionally (R, D to confirm): sites are written by handlers, scoped to an operation, and shared beyond it only later through the library with moderation.
@@ -201,4 +203,4 @@ Under R's terms an operation is the whole campaign, but the spec still gives eac
 - **Q7:** where messages between sessions live.
 - **Q9 (content):** what a published mission contains and how it is identified.
 - Bank, storefront and wallet between missions; "last 3 completed missions"; how the contact book persists.
-- **Q33:** what anonymous (clearance 0) accounts can do.
+- **Q33 (ruled by D, 2026-10-22):** anonymous (clearance 0) accounts may browse free entries; still no voice, video or messaging (R).

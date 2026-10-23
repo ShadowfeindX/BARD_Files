@@ -18,7 +18,7 @@ If a new rule needs a new *kind* of thing, that is an engine change. If it needs
 
 **Format (Fixed, P3).** A pack is a folder of JSON files plus a manifest, not YAML. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too. Ruled by R 2026-10-20 (P3).
 
-**Exact pack shape and details: Provisional, pending D.** The file list below is the current draft and may change after review with D. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). The example pack for D lives in the project library, not in this repository.
+**Pack shape: confirmed by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).** The file list below stays; files and fields added by D's other rulings (creation profiles, combat defaults, assistance) are additive. The example pack for D lives in the project library, not in this repository.
 
 ```
 core/                           pack id
@@ -64,7 +64,7 @@ core/                           pack id
 
 ### Skills (Fixed, F3 part 2)
 
-A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). Whether "cast magic" becomes one roll kind, and the trimming of `OccultSystem`, is part of the occult system review: Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). D ruled on 2026-10-22 that "cast magic" is one roll kind with a Handler-set DC ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
 
 ### Named variables in pack formulas (Fixed)
 

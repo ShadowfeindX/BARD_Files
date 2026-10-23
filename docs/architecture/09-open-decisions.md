@@ -78,17 +78,33 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 
 Ruled before this review and unchanged: archived logs are frozen, not converted; a plain-text rendering is kept beside them; the new log starts at `OperationMigrated`; the GM explicitly confirms the unrecoverable loss.
 
+## Decisions record (ruled by D, 2026-10-22)
+
+D answered the decision kit in the R + D meeting. Cards and edits: [10-pending-d.md](10-pending-d.md); D's own answers: [10-pending-d-responses.md](10-pending-d-responses.md); questions they raised: [10-pending-d-followup.md](10-pending-d-followup.md). Rulings on game content are D's; none of the code edits is made yet.
+
+| # | Ruling | Where |
+|---|---|---|
+| M1 | Casting attribute: WIL by default, or the named skill's attribute. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| M2 | "Cast magic" is one roll; the Handler sets the final DC from the circumstances. | [01](01-engine.md#systems) |
+| M3 | Sanity check on success by default, the Handler decides otherwise; everyone present pays on success, only those casting on failure; casting needs training unless the Handler allows an affinity exception. Focus-item rule held (FD-M2). | [10](10-pending-d.md#m3-casting-details-g6) |
+| P1, P2 | Pack layout kept; Eldritch Lore (INT), Vehicle Modification (INT) added, Insight WIS. | [02](02-rules-packs.md) |
+| W1 | Web stays player-only. | [04](04-session.md), [07](07-apps.md) |
+| C7 | Physical dice approved, built after the demo. | [01](01-engine.md), [04](04-session.md) |
+| G1, G3, G13 | Fumble on the total, rounded down; primary d6 and damage dice explode; old difficulty names dropped. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| G4/G18, G5, G7, G9, G10, G19 | Changed as described on their cards (assistance by flat attribute score, sanity rework, death at 0 Health, weapon MIN floor, action counts, creation limits and SKALD). Follow-ups open. | [10](10-pending-d.md#rulebook-gaps) |
+| G2 | Superseded: flashback replaces advantage and disadvantage (details open). | [10](10-pending-d.md#fb1-flashback-replaces-advantage-and-disadvantage) |
+| K1, K2 | Rounding always favours the player; "roll" means the total. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
+| C1 | 1.3.1 critical injury table, backlash, artifact repository, forms and personnel cut on purpose. | [10](10-pending-d.md#c1-content-cut-since-131) |
+| X0 | Campaign > Operation > Mission > Session, each archived; supersedes "operation = campaign". Log ownership is R's (R-X0). | [11](11-supplemental-features.md#terminology-ruled-rename-pending), [README](README.md) |
+| Q33 | Anonymous accounts may browse free entries. | [11](11-supplemental-features.md#clearance-tiers) |
+| N1 | Reveal rules D1-D3, D5-D7 as proposed; D4: live session log shows the new name, archives unchanged. R1-R5 open. | [10](10-pending-d.md#n1-narrator-lines-and-name-reveals) |
+| F1, F2 | Playtest players agreed (cases to list); sign-in code is any scannable code. | [11](11-supplemental-features.md) |
+
+Later (D): G8, G11, G14, Q6 currency; Q12 fake websites is not in v1.
+
 ## Pending D
 
-R wants D's approval on these before they are designed in full. Every item to handle after R's meeting with D (Thursday 2026-10-22 at the earliest) has a card in [10-pending-d.md](10-pending-d.md): the decision it waits on, the options, the assumed default and the spec, code and pack edits under each option. The table below is the original five; 10 also covers the rulebook gaps, the X0 questions, narrator lines and name reveals (N1), and the feature-plan questions. Nothing approved in this spec depends on them beyond the reserved fields and interfaces noted.
-
-| Item | What is undecided | Already fixed |
-|---|---|---|
-| C5/G6 occult check attribute | Which attribute the occult check uses. | Engine supports any attribute. |
-| F3 (1) occult system | "Cast magic" as one roll kind with a GM-set DC, and how much of `OccultSystem` (ritual time, participants, focus items) stays. | Spells have no schema (R's game-rules model, 2026-10-16). |
-| P3 pack shape | Exact files, fields and details of a content pack. An example pack is in the project library for D. | JSON + manifest; validator; annotations stripped. |
-| W1 web hosting | Whether web hosting returns later, for onboarding new users. | Web is player-only for now. |
-| Concern 7 physical dice | GM and remote players entering real dice faces on their own clients, behind a per-operation GM setting (off by default; without it entered faces are refused). | `source` field reserved on `CheckResolved`. |
+Still waiting on D: the follow-up questions in [10-pending-d-followup.md](10-pending-d-followup.md); G8, G11, G14 and Q6 (Later); the flashback details and the mission-library seed cases. Waiting on R: the items in [10-pending-d.md](10-pending-d.md#r-only-items). The original table of five items is answered (see the record above).
 
 ## Held
 
