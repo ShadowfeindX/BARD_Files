@@ -200,7 +200,7 @@ Under D's terms (Campaign > Operation > Mission > Session, 2026-10-22) the spec 
 
 - **Q24 (restated as R-X0):** which of campaign, operation, mission and session owns the event log.
 - **Q5:** requests made between sittings (purchases, contact releases), and whether purchases may auto-confirm.
-- **Q7:** where messages between sessions live.
-- **Q9 (content):** what a published mission contains and how it is identified.
+- **Q7 (ruled by R, 2026-10-27):** the phone contact list belongs to the campaign; phone box messages belong to the operation.
+- **Q9 (ruled by R, 2026-10-27):** a published mission is the debrief forms only; text logs are never made public.
 - Bank, storefront and wallet between missions; "last 3 completed missions"; how the contact book persists.
 - **Q33 (ruled by D, 2026-10-22):** anonymous (clearance 0) accounts may browse free entries; still no voice, video or messaging (R).

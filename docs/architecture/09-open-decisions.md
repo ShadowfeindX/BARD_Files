@@ -99,6 +99,7 @@ D answered the decision kit in the R + D meeting. Cards and edits: [10-pending-d
 | Q33 | Anonymous accounts may browse free entries. | [11](11-supplemental-features.md#clearance-tiers) |
 | N1 | Reveal rules D1-D3, D5-D7 as proposed; D4: live session log shows the new name, archives unchanged. R1-R5 open. | [10](10-pending-d.md#n1-narrator-lines-and-name-reveals) |
 | F1, F2 | Playtest players agreed (cases to list); sign-in code is any scannable code. | [11](11-supplemental-features.md) |
+| Q7, Q9, R-X0b, R7, R8 | R, 2026-10-27: phone contacts belong to the campaign and phone box messages to the operation; a published mission is debrief forms only (text logs never public); settings, pack pins, join links and listings live at campaign level; death at 0 Health goes through the review gate; flashback is an additive logged event beside the roll. | [10](10-pending-d.md#r-only-items) |
 
 Later (D): G8, G11, G14, Q6 currency; Q12 fake websites is not in v1.
 

@@ -463,13 +463,21 @@ Also decided by this card:
 
 ### Q5. Requests between sittings
 
+**Not ruled: R asked what "requests" means (2026-10-27).** Answer: requests a player makes outside a live session. The ones in the supplemental plan are a store purchase (a wallet and storefront item, item 4) and a contact release (asking the Handler to hand over an NPC's details), plus anything similar later. They wait for the Handler to approve, because the Handler may not be online when they are made.
+
 **Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`. **Today:** nothing built. **Assumption:** under A, purchases and contact releases queue as ordinary requests under the operation until the Handler's client is online; purchases do not auto-confirm (auto-confirm would extend F2, which covers consequence events only). **Changes:** 04 §Offline and sync semantics; 06 RTDB `requests` (already exists); if auto-confirm is chosen, F2 amendment in 01 and 04 and an `OperationSettings` flag.
 
 ### Q7. Messages between sessions
 
-**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`; 06 RTDB `phone` (P17). **Assumption:** the mission's phone box in RTDB, as designed (P17), now spanning the mission's 1 to 3 sessions and cleared when the mission ends. **Changes:** none beyond R-X0's pruning rule.
+**Ruled (R, 2026-10-27):** the phone **contact list** belongs to the **campaign**; the phone **box messages** belong to the **operation**.
+**Apply:** 04 §In-game phone and 06 §Realtime Database model: the box is keyed under the operation; the contact book (and `ContactRevealed` state) persists at campaign level (11 §Messaging). Open for R: P17 clears the box when the mission ends; with operation scope, clearing at the end of the operation is the natural reading, and the clearing function follows it.
+
+**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`; 06 RTDB `phone` (P17).
 
 ### Q9. Published mission content
+
+**Ruled (R, 2026-10-27):** a published mission is the **debrief forms only**. Text logs are not made public.
+**Apply:** 11 §Library and public content and 12 `missions/{missionId}`: the submission carries the debrief forms and summary, never an event or text log; the `public` text variant is no longer published, so N1's "safe to publish" point drops out. Mission id: still generated when the mission starts (assumption).
 
 **Decides:** R. Needs X0 and N1. **Source:** `supplemental-x0-pending.md`. **Today:** 12 `missions/{missionId}` holds a summary; `eventRange` unit Proposed. **Assumption:** the debrief forms plus the `public` text log of the mission's sessions, never GM or alias branches; the mission id is generated when the mission starts, independent of the operation id (which changes on migration, P12). **Changes:** 11 §Library and public content; 12 `missions/{missionId}` and a library mission kind (12 §Held and questions for R). The `public` text is only safe to publish after N1's name rule.
 
@@ -570,18 +578,18 @@ D's answers leave these for R. Defaults are assumptions, not rulings.
 | # | Item | Assumption | Edits if taken |
 |---|---|---|---|
 | R-X0 | Which of Campaign, Operation, Mission and Session owns the event log, the RTDB live tree, the sembast file and the host (Q24 restated for D's terms) | The **session** is the unit of live play (what the code and chapters 01 to 08 call an operation today); mission, operation and campaign are containers whose state carries forward through head snapshots and which are archived separately | Spec-wide rename plan; 04 §Interfaces, 06 §RTDB model, 05, 12 §Archives and `missions`; if kept, the code identifiers `operation` stay until one mechanical `refactor/` PR |
-| R-X0b | Firestore layout and archives per level (campaign, operation, mission, session) and which level carries settings, pack pins, join links and listings | Pack pinned per operation, settings per operation with per-session override, membership and join links per operation | 12 §Operations, §Archives, §Library; 02 §Operations pin packs; 11 §Invite links |
+| R-X0b | **Ruled (R, 2026-10-27): the campaign** carries settings, pack pins, join links and listings (Firestore layout and per-level archives follow) | Ruled | 12 §Operations, §Archives, §Library (campaign as the root); 02 §Operations pin packs (pin per campaign; operation-scoped packs stay below it); 11 §Invite links (join a campaign) |
 | Q5 | Requests between sittings; auto-confirm purchases | Queue under the operation until the Handler is online; no auto-confirm | 04 §Offline and sync semantics; F2 amendment only if auto-confirm |
-| Q7 | Where messages between sessions live | The phone box of the mission; cleared when the mission ends (P17, now spanning 1 to 3 sessions) | none beyond R-X0 pruning |
-| Q9 | Published mission content and id | Debrief forms plus the public text log of the mission's sessions; id generated when the mission starts | 11 §Library; 12 `missions/{missionId}` |
+| Q7 | **Ruled (R, 2026-10-27):** the phone contact list belongs to the **campaign**; the phone box messages belong to the **operation** | Ruled. Open: when the box is cleared (P17 said when the mission ends; with operation scope, at the end of the operation?) | 04 §In-game phone; 06 RTDB `phone`, contact book persistence; 11 §Messaging |
+| Q9 | **Ruled (R, 2026-10-27):** a published mission is the **debrief forms only**; text logs are never made public | Ruled; mission id generated when the mission starts (assumption) | 11 §Library and public content; 12 `missions/{missionId}`; the N1 "public text is safe to publish" argument no longer applies |
 | N1-R1 | How lines are produced (decision 15) | Hybrid | as in N1 |
 | N1-R2 | Name rule | Explicit reveal + fallback (`RevealName` / `NameRevealed` / `KnownAs`) | as in N1 |
 | N1-R3 | Per-batch `textlog` relay | Keep (existing ruling) | none |
 | N1-R4 | Fix per-audience narration before D's wording | Now | row 7 follow-up |
 | N1-R5 | Reveals through the review gate | Not gated | none |
 | R6 | D4 needs re-narration of the current session's stored text | Regenerate on a reveal or at session end; archived sessions untouched | row 7 follow-up; 04 §The operation loop; 05 text-log paragraph |
-| R7 | Death at 0 Health: through the review gate? | Yes: part of the confirmed damage batch, so the Handler can edit the damage before death; Handler `KillCharacter` is not gated | 01 §Commands and events; 04 §The operation loop (F2) |
-| R8 | Flashback against F2 ("rolled faces are never altered") | Additive logged event beside the roll; faces untouched | 01, 03 |
+| R7 | **Ruled (R, 2026-10-27): correct.** Death at 0 Health goes through the review gate | Part of the confirmed damage batch, so the Handler can edit the damage before death; Handler `KillCharacter` is not gated | 01 §Commands and events; 04 §The operation loop (F2) |
+| R8 | **Ruled (R, 2026-10-27): correct, use the suggestion.** Flashback against F2 | Additive logged event beside the roll; faces untouched | 01, 03 |
 | R9 | Which of D's rulings unblock builds | Unblocked now (data and small engine changes): G1, G3, G13, P2, M1, G9. Waiting on D's follow-ups: M2 and M3 roll details, G4, G5, G7, G10, G19, FB1. Waiting on R-X0: everything touching mission or session records, Q33 rules | R sequences the rows |
 
 ## Feature plan items
