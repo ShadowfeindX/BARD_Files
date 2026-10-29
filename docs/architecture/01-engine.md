@@ -87,7 +87,7 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 | `ConditionSystem` | applying, ticking and clearing conditions, afflictions, disorders (§4) |
 | `CombatSystem` | initiative, rounds, turn order, action economy (major/minor/reaction), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
-| `OccultSystem` | Provisional, pending D: occult action checks, ritual time and participants, focus items, sanity cost (§8). Whether "cast magic" is one roll kind, and how much of this system stays, is undecided. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). |
+| `OccultSystem` | Settled by D (2026-10-22): one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (M2, M3). Details still open: focus-item rule (FD-M2). |
 | `InventorySystem` | items, equipment, transfer |
 | `MessagingSystem` | in-game phone messages (see [04-session.md](04-session.md#in-game-phone)) |
 | `GmSystem` | GM-only edits: spawn NPC, set value, reveal/hide, award XP, free-form narrative events |
@@ -112,7 +112,7 @@ GM:      ApplyConsequence(...)                                      → (held fo
 - Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
 - **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `OperationHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-operation auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
-- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-operation GM setting that is off by default) is Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-operation GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
@@ -130,7 +130,7 @@ The engine implements these **kinds** of mechanics from the rulebook. All number
 | Partial success | within X of the DC (§2, §4) | X |
 | Fumble | total ≤ fraction of DC (§2) | fraction |
 | Opposed check | both sides roll, higher wins, ties to GM (§5, §7) | — |
-| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is `1d6 + var(helperSkillBonus)` | gate DC, bonus expression |
+| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (D, 2026-10-22; was `1d6 + var(helperSkillBonus)`) | gate DC, cap, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
 | Damage | category → dice and minimum (§6), DR subtracts first (§7) | damage table, DR formula |
 | Sanity check | resist roll, outcome band → full/half/none/extra loss (§4) | bands, losses |
@@ -147,7 +147,7 @@ A **condition** (approved by R with the stat-gated broadcast, 11 §Messaging) is
 | Placement | Expression | `var` supplied by the engine |
 |---|---|---|
 | Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
-| Assistance bonus (`difficulty.json`) | `1d6 + var(helperSkillBonus)` | the helper's skill bonus |
+| Assistance bonus (`difficulty.json`) | the helper's attribute score (D, 2026-10-22; replaces `1d6 + var(helperSkillBonus)`; key name Proposed, `helperAttribute`) | the helper's score in the check's attribute |
 
 Any new `var` key or placement goes to R first.
 
@@ -159,7 +159,20 @@ The engine can represent each variant; the **values** come from the rulebook as 
 2. **Derived stats (settled).** Health = END × LCK. Sanity = WIS × LCK.
 3. **Top category (settled, G12).** The category above S is Cat-Ω. Its values (DC, damage, vehicle and threat-class values) are decided by the Handler, not fixed by the book.
 4. **Disorder table (settled).** §4 reads as a clean table of rolls 1 to 6.
-5. **Occult check attribute (open, Pending D).** §8 gives the Occult Action Check as `1d6 + (WIL/INT) + Proficiency` and casting as `1d6 + (WIS or INT) + Skill`; which attribute set is canonical (C5/G6) is not ruled. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+5. **Occult check attribute (settled by D, 2026-10-22, C5/G6).** WIL by default, or the attribute of the skill the player names. "Cast magic" is one roll: the Handler sets the final DC from the circumstances (time, helpers, focus items). See the D rulings below.
+
+Settled by D (2026-10-22; the cards are in [10-pending-d.md](10-pending-d.md), the record in [09](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)):
+
+6. **Rounding (K1).** Always to the benefit of the player; each rounding names its direction.
+7. **"Roll" means the total (K2, G1)** in most cases, unless otherwise specified (D). A fumble is a total at or below 25% of the DC, rounded down.
+8. **Exploding dice (G3).** The primary d6 and damage dice; not the proficiency die or any other.
+9. **Assistance (G4, G18).** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score. The `helperSkillBonus` variable above is replaced (open questions: FD-A1, FD-A2).
+10. **Sanity (G5).** The Handler sets the loss; the resist DC follows current Sanity (20/40/60/80/100% = Cat-S/A/B/C/D); half loss rounds down; a failed disorder check rolls 1d6 on the disorder table. D will rework the sanity tables.
+11. **Death (G7).** 0 Health is death; 0 Sanity passes the character to the Handler; the Handler can kill at any time. The 1.3.1 critical-injury table is cut (C1); whether the incapacitated state is also gone is FD-D1.
+12. **Weapon MIN (G9).** A floor on the total damage; melee floor is the greater of MIN and the STR score; Whether Strength also adds to damage dice is not ruled (FD-G9).
+13. **Turn (G10).** One Major, one Minor and one reaction by default; Handler-granted items, bonuses or skills may raise them.
+14. **Creation (G19).** Limits by character kind (agent alias or Occult Organization member: 20 points, one attribute at 5, two at 4, at least 1 Expert; SKALD civilian: 15 points).
+15. **Advantage and disadvantage (G2)** are to be replaced by flashback (FB1); nothing is built for them.
 
 With the proficiency question ruled, the worked examples in §2 are unblocked as tests ([08-testing.md](08-testing.md#engine)).
 

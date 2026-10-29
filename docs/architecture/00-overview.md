@@ -14,7 +14,7 @@ These come from R and are not reopened here. Items ruled on 2026-10-20 keep thei
 | Area | Decision |
 |---|---|
 | Stack | Flutter / Dart only. |
-| Targets | v1 (R, 2026-10-20): **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now (W1, option A, ruled by R 2026-10-20). Revisiting W1 (web GM hosting, new-user onboarding) is Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). |
+| Targets | v1 (R, 2026-10-20): **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now (W1, option A, ruled by R 2026-10-20). D confirmed player-only on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)). |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
 | Repository | Pub workspace monorepo, `packages/` plus `apps/` (P2, fixed). Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` (P1, fixed), shared by the main app and the companion app; the functions app depends only on `protocol_envelope` (F4). |
 | Engine purity | The engine has no Flutter, Firebase or UI imports, and no wire-format concerns: the envelope and message types live in `protocol_envelope` (F4, option A), engine codecs in `protocol`. |
@@ -36,7 +36,7 @@ These come from R and are not reopened here. Items ruled on 2026-10-20 keep thei
 
 ## Still open
 
-- **Pending D** (R wants the creative director's approval first): occult check attribute (C5/G6); "cast magic" and the rest of the occult system (F3); exact pack shape and details (P3; the JSON + manifest format is fixed); the physical-dice feature (concern 7); revisiting W1. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+- **Pending D**: the five items R took to D (occult attribute, cast magic, pack shape, physical dice, W1) were ruled on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)). What still waits on D is the follow-up list in [10-pending-d-followup.md](10-pending-d-followup.md); what waits on R is in [10-pending-d.md](10-pending-d.md#r-only-items).
 - **P10c Firestore collections** are drafted (Proposed, awaiting R) in [12-firestore-collections.md](12-firestore-collections.md). The Realtime Database live-play model is Fixed (open items ruled 2026-10-20, the rest approved 2026-10-21; rulings 1-3 shown by the emulator rules checks in `firebase/` [V-50]) ([06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play)).
 - **Probes:** all scheduled backend probes are done ([verification.md](verification.md#probe-status)); 8.1c, 8.7, Storage through `firebase_dart` and long sessions are not scheduled.
 

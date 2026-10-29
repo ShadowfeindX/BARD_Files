@@ -66,7 +66,7 @@ Theme (the "Top Secret" dossier look), typography, the dice-breakdown widget, pe
 
 ### Web build role (W1, Fixed for now; ruled by R 2026-10-20)
 
-The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. Revisiting W1 is Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. D confirmed player-only on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
 
 ## The app shell never affects outcomes (Fixed)
 
