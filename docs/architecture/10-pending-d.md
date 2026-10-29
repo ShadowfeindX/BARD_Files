@@ -428,6 +428,10 @@ Values D has not given. The engine can represent each variant; agents never choo
 
 ---
 
+## Round 2 status (2026-10-29)
+
+D's round-2 sheet was partly answered: see [10-pending-d-followup.md](10-pending-d-followup.md) for the record, [10-pending-d-followup-2-for-d.md](10-pending-d-followup-2-for-d.md) for what is re-asked, and [10-pending-d-followup-2-for-r.md](10-pending-d-followup-2-for-r.md) for R's items. D's answers are in [09](09-open-decisions.md). Card assumptions for X0, X1, X4, X5, X7, X8 and M2/M3c are superseded by those answers where they differ; the R follow-up lists the reconciliations.
+
 ## Operations and missions (X0)
 
 Source for all: library `architecture/supplemental-x0-pending.md`; 11 §Terminology, §Waiting on X0.

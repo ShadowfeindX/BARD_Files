@@ -4,6 +4,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Docs: round-2 follow-ups
+- Recorded D's partly answered round-2 sheet (`10-pending-d-followup.md`); added the next-round question sheet for D, a follow-up sheet for R, and a homework and discussion notes document for D (automated single and multiplayer play, damage reduction, currency). `09-open-decisions.md` records D's 2026-10-29 answers.
+
 ### Phone messaging
 - Engine: `SendPhoneMessage(from, to, text)` and `PhoneMessageSent` for the in-game phone, in `MessagingSystem`. Parties are the Handler, an alias or a GM-run entity; senders must match the actor; text is 1 to 2,000 UTF-16 units; visibility is the sending and receiving aliases (the session's projection gives the Handler every event). Narrator lines, and a `phoneConversations(log, viewer)` read model for the Handler's and a player's threads.
 - Codecs: `sendPhoneMessage` and `phoneMessageSent` with v1 fixtures; the engine round-trip test now includes a phone exchange.
