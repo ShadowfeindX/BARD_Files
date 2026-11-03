@@ -1,6 +1,5 @@
 # The bard app
 
-
 `apps/bard` is the GM and player app. This page covers the D demo slice: one device, all panels on screen.
 
 ## Layout

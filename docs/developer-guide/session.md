@@ -1,6 +1,5 @@
 # Session
 
-
 `packages/session` is the runtime: the GM's `EpisodeHost`, a player's `EpisodeParticipant`, and the interfaces they stand on (04-session.md). It imports the wire types through `protocol`, which re-exports `protocol_envelope`.
 
 ## Pieces

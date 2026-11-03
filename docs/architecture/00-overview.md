@@ -1,6 +1,5 @@
 # 00. Overview
 
-
 ## Goals
 
 1. Run *The B.A.R.D. Files* remotely, in person, or offline, with a **GM experience** (run the world, NPCs, checks) and a **player experience** (as immersive as a 2D screen allows).

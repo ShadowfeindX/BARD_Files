@@ -96,7 +96,7 @@ final class Envelope {
   /// `e`: the sender's engine version.
   final EngineVersion engineVersion;
 
-  /// `op`: episode id.
+  /// `op`: episode id (the v1 wire key).
   final String episodeId;
 
   /// `seq`: the first event's `seq`; present on `events` frames only.

@@ -1,6 +1,5 @@
 # 05. Migrator (`packages/migrator`)
 
-
 ## Purpose (Fixed)
 
 Move one episode's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
@@ -56,7 +55,7 @@ seq=1044  2026-10-16T20:14:40Z  vis=gm      <GM-only note>.
 **After migration.** The N+1 episode starts a new log whose first event is the genesis event:
 
 ```
-EpisodeMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, opId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
+EpisodeMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, episodeId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
 ```
 
 followed by the migrated snapshot as its initial state. The migrator transforms the **head snapshot** (the state at the N-major log's last `seq`, written by the N engine with every batch; see [04-session.md](04-session.md#the-episode-loop-gm-canonical-fixed)), so it never needs to fold events itself. Rolling autosave keeps the local head snapshot current after every batch and refreshes its RTDB copy before migration (P12). If the head snapshot is missing or its `seq` is not the log's last `seq`, the migrator refuses and nothing is written.

@@ -1169,10 +1169,10 @@ Future<void> main() async {
         }) &&
         (jsonDecode(t) as Map).length == 3,
   );
-  await expectCode(
+  await expectBody(
     'clean-up: player still reads own phone box until the operation ends',
     call('GET', o('phone/p1'), p1),
-    200,
+    (c, t) => c == 200 && (jsonDecode(t) as Map).containsKey('m4'),
   );
   await expectBody(
     'clean-up: meta stays locked',

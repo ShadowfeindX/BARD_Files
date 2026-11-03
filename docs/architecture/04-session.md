@@ -1,6 +1,5 @@
 # 04. Session (`packages/session`)
 
-
 The session package is the runtime layer: it owns live episodes, talks to transports and stores, enforces who may send what, and feeds the engine. It is pure Dart. Platform-specific pieces (sockets, Firebase, databases) are injected through interfaces.
 
 ## Coarse actors (Fixed)

@@ -1,6 +1,5 @@
 # 02. Rules packs and content
 
-
 ## Vocabulary vs values (Fixed)
 
 | Owned by the engine (vocabulary) | Owned by a pack (values) |

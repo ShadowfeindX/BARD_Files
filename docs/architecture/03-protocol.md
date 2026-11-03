@@ -1,6 +1,5 @@
 # 03. Protocol (`packages/protocol`)
 
-
 Two packages define what crosses a process or device boundary (F4, option A, ruled by R 2026-10-20: no wire-format concerns in the engine):
 
 - **`protocol_envelope`** (SDK-only): the envelope, the message types and version negotiation. It does not depend on `engine`, so `apps/functions` can depend on it alone.

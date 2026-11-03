@@ -1,6 +1,5 @@
 # 01. Engine (`packages/engine`)
 
-
 The engine is the game. It is pure Dart, imports only the Dart SDK, performs no I/O and never reads a clock or a random source it was not handed. Given the same inputs it always produces the same outputs.
 
 ## Responsibilities

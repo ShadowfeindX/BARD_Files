@@ -1,6 +1,5 @@
 # Engine core
 
-
 The engine (`packages/engine`) is the game: pure Dart, Dart SDK only, no I/O, no clock and no randomness it was not handed. Design: [01-engine.md](../architecture/01-engine.md). Everything public is exported from `package:engine/engine.dart`.
 
 ## The loop

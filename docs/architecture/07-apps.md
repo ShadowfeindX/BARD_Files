@@ -1,6 +1,5 @@
 # 07. Applications
 
-
 ## The three apps
 
 | App | Platforms (Fixed scope) | Who | Role |

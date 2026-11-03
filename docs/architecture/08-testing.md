@@ -1,6 +1,5 @@
 # 08. Testing
 
-
 Every package is testable on its own, with in-memory implementations of everything it depends on. A task is done only when `flutter analyze` and `flutter test` pass (CLAUDE.md §8).
 
 ## Engine
