@@ -13,7 +13,7 @@ Labels: **[P]** proven by a probe this session, **[V]** read from a source this 
 5. **Firebase features without any code:** Auth (email, anonymous), RTDB + rules, Storage + rules, Hosting, console editing for D. Notifications on Windows/Linux must be in-app (RTDB inbox); FCM is mobile/web only.
 6. **Not available in Dart functions in production:** database, Auth and scheduled triggers [V]. Design so none are needed (client-driven writes plus `onCall` actions), or accept one small Node function set.
 
-## 2. Evidence from probes (test project `web-portfolio-2d5c2`)
+## 2. Evidence from probes (test project `<test-project-id>`)
 
 Probe machine: R's PC, Windows 10, Dart 3.13.2, Flutter 3.47.2. Credentials were passed as per-command env vars only; nothing was written to files.
 
@@ -28,7 +28,7 @@ Probe machine: R's PC, Windows 10, Dart 3.13.2, Flutter 3.47.2. Credentials were
 | Sign in as email user while anonymous | PASS (new uid, `isAnonymous=false`) |
 | `authStateChanges` | PASS (emitted null, user, null, user, user) |
 | `signInWithCustomToken('bad')` | PASS: normal `FirebaseAuthException`, code `invalid-custom-token`. Real token not tested (needs a server). |
-| RTDB at `https://web-portfolio-2d5c2.firebaseio.com` (legacy-style host; the `-default-rtdb` host 404s because no instance lives there) | **PASS** (rerun with R's URL, scratch inside `C:\GAMES\BARD`): signed-in read of `games/test` and of the root returned `null` (database empty, reads allowed). Write `probe-scratch/<uid>/ping`: set 1 and 2 acked in about 50 ms; an `onValue` listener on a second instance received `null, 1, 2` and then `null` after delete (first event 4 ms, i.e. local cache). `goOffline`, write 3, `goOnline`: the write stayed pending, then reached the server (REST showed 3). App restart while offline not tested, so durability of queued writes is unknown. |
+| RTDB at `https://<test-project-id>.firebaseio.com` (legacy-style host; the `-default-rtdb` host 404s because no instance lives there) | **PASS** (rerun with R's URL, scratch inside `C:\GAMES\BARD`): signed-in read of `games/test` and of the root returned `null` (database empty, reads allowed). Write `probe-scratch/<uid>/ping`: set 1 and 2 acked in about 50 ms; an `onValue` listener on a second instance received `null, 1, 2` and then `null` after delete (first event 4 ms, i.e. local cache). `goOffline`, write 3, `goOnline`: the write stayed pending, then reached the server (REST showed 3). App restart while offline not tested, so durability of queued writes is unknown. |
 | Unauthenticated REST GET `<url>/games/test.json` | HTTP 200 `null`. Not a rules denial, so reads are open on the empty node; whether rules require auth on real data is not shown [U]. |
 | Firestore REST read `documents/games/test` with the ID token | PASS, HTTP 200, `{"test-value":"Hello from Firebase!"}` |
 
@@ -40,7 +40,7 @@ Probe machine: R's PC, Windows 10, Dart 3.13.2, Flutter 3.47.2. Credentials were
 - Build notes: first build failed because the long Temp path broke MSBuild (FTK1011); moved to a short path. Linker PDB warnings (LNK4099, libcurl). No production-use warning printed.
 
 ### 2.3 Linux (native, WSL2 Ubuntu) [P]
-Dart SDK 3.13.5 stable linux_x64, `firebase_dart` 1.6.2, `dart run`, RTDB at `https://web-portfolio-2d5c2.firebaseio.com`. Every step passes and matches Windows: email sign-in (487 ms), `getIdToken` and forced refresh (both 918 chars, identical token), signOut, anonymous sign-in, anon-to-email switch, `authStateChanges`, bad custom token rejected with `invalid-custom-token`, RTDB read of `games/test` (null, 277 ms) and root (null), write/listen/delete on a scratch path (writes acked about 52 ms, listener saw null, 1, 2), offline write delivered after `goOnline`, and Firestore REST read with the ID token (200). The same uid is returned on Windows and Linux. Not tested: queued-write survival across an app restart.
+Dart SDK 3.13.5 stable linux_x64, `firebase_dart` 1.6.2, `dart run`, RTDB at `https://<test-project-id>.firebaseio.com`. Every step passes and matches Windows: email sign-in (487 ms), `getIdToken` and forced refresh (both 918 chars, identical token), signOut, anonymous sign-in, anon-to-email switch, `authStateChanges`, bad custom token rejected with `invalid-custom-token`, RTDB read of `games/test` (null, 277 ms) and root (null), write/listen/delete on a scratch path (writes acked about 52 ms, listener saw null, 1, 2), offline write delivered after `goOnline`, and Firestore REST read with the ID token (200). The same uid is returned on Windows and Linux. Not tested: queued-write survival across an app restart.
 - Earlier failures in my cloud container (`auth/internal-error`) were the sandbox proxy (tunnel closed mid-exchange), not the package.
 - Allowlist for cloud threads needs both `*.firebaseio.com` and `*.firebasedatabase.app`, plus `identitytoolkit.googleapis.com` working end to end.
 
@@ -112,7 +112,7 @@ Items 1 and 2 are proven on Windows and native Linux for Auth + RTDB (sections 2
 6. Keep Windows FlutterFire Auth out of the plan unless a need arises; it is the same Auth, with more native build risk.
 
 ## 8. Open items and next probes
-1. **Done:** RTDB instance confirmed at `https://web-portfolio-2d5c2.firebaseio.com`; probe passed on Windows. Remaining RTDB checks: queued-write survival across an app restart, rules (auth-required reads on real data), long-session token expiry. Cloud-thread allowlist needs both `*.firebaseio.com` and `*.firebasedatabase.app`.
+1. **Done:** RTDB instance confirmed at `https://<test-project-id>.firebaseio.com`; probe passed on Windows. Remaining RTDB checks: queued-write survival across an app restart, rules (auth-required reads on real data), long-session token expiry. Cloud-thread allowlist needs both `*.firebaseio.com` and `*.firebasedatabase.app`.
 1b. **Probe the RTDB REST route** from a server: service-account OAuth token, `PUT/PATCH` to `<databaseURL>/path.json`, to decide whether the gateway can write RTDB.
 1c. **Probe native Windows RTDB via FlutterFire** (`firebase_database` 13.0.0 lists Windows) as an alternative to `firebase_dart`.
 2. **Done:** native Linux run passed (section 2.3).

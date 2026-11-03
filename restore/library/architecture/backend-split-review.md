@@ -41,7 +41,7 @@ Labels: **Confirmed** (matches a source read this review), **Wrong** (source con
 | 24 | Anonymous upgrade keeps uid | Partly | Firebase docs: linked credentials make the user "identifiable by the same Firebase user ID." That supports the claim for the SDK path. The REST path is still unprobed (report's [U] is correct). |
 | 25 | Firebase Storage on Linux via `firebase_dart` [U] | Partly | pub.dev lists Storage as supported and Linux as a platform. Can be relabelled as "listed, unprobed." |
 | 26 | FlutterFire Windows Firestore link failure; "vendor says dev-only" | Partly | Link failure: probe result, unchanged. "Dev-only" source: the Firebase C++ desktop SDK doc says it is "a beta feature... intended only for workflows during the development of your game, not for publicly shipping code." That statement is for the C++ SDK. Attributing it to FlutterFire is an inference. See W4. |
-| 27 | RTDB default URL 404 means "likely no instance" | Partly | Docs give two URL forms: `DATABASE_NAME.firebaseio.com` (us-central1) and `DATABASE_NAME.REGION.firebasedatabase.app` (other regions). The probe used both correct forms. A 404 on all three most likely means no RTDB instance exists in `web-portfolio-2d5c2`. See W5. |
+| 27 | RTDB default URL 404 means "likely no instance" | Partly | Docs give two URL forms: `DATABASE_NAME.firebaseio.com` (us-central1) and `DATABASE_NAME.REGION.firebasedatabase.app` (other regions). The probe used both correct forms. A 404 on all three most likely means no RTDB instance exists in `<test-project-id>`. See W5. |
 
 ## 2. Findings that need correction
 
@@ -53,7 +53,7 @@ Labels: **Confirmed** (matches a source read this review), **Wrong** (source con
 
 **W4. "Vendor says dev-only" needs a correct source.** The quoted restriction is from the Firebase C++ desktop SDK doc, which is beta and development-only. Cite that doc, and mark the FlutterFire Windows inference as [U].
 
-**W5. RTDB probe conclusion.** Given the docs' URL forms, the 404s point to a missing instance. The next step is to open the console (Realtime Database page, test project `web-portfolio-2d5c2`) and create or confirm an instance, then rerun the probe. The report's 8.1 ("get the exact databaseURL") should say that.
+**W5. RTDB probe conclusion.** Given the docs' URL forms, the 404s point to a missing instance. The next step is to open the console (Realtime Database page, test project `<test-project-id>`) and create or confirm an instance, then rerun the probe. The report's 8.1 ("get the exact databaseURL") should say that.
 
 ## 3. Internal inconsistencies
 
