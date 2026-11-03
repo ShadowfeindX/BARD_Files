@@ -122,7 +122,17 @@ final class Narrator {
       ConditionCleared() =>
         '${_name(state, event.entity)} is no longer '
             '${_condition(event.condition)}.',
+      TableRolled() => _tableRolled(state, event),
     };
+  }
+
+  String _tableRolled(EpisodeState state, TableRolled event) {
+    final who = event.entity == null
+        ? 'The Handler rolled'
+        : '${_name(state, event.entity!)} rolled';
+    final table = pack.randomTable(event.table)?.name ?? event.table;
+    return '$who on $table: ${event.faces.length}d${event.sides} '
+        '${event.faces.join(' + ')} = ${event.total}. ${event.text}';
   }
 
   /// A party's name; the Handler is "the Handler" to everyone.
@@ -190,7 +200,9 @@ final class Narrator {
 
   /// The line players read when the GM rolls or acts in secret.
   String _redacted(Event event) => switch (event) {
-    CheckRequired() || CheckResolved() => 'The Handler rolled something.',
+    CheckRequired() ||
+    CheckResolved() ||
+    TableRolled() => 'The Handler rolled something.',
     _ => 'Something happened out of sight.',
   };
 

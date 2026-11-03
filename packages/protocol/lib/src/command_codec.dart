@@ -22,6 +22,7 @@ const _commandTypes = {
   'applySanityLoss',
   'broadcastToQualifying',
   'sendPhoneMessage',
+  'rollTable',
 };
 
 /// Encodes an engine [Command] as JSON for the `request` message body.
@@ -145,6 +146,14 @@ JsonMap encodeCommand(Command command) {
       'broadcastToQualifying',
       {'text': text, 'condition': encodeCondition(condition)},
     ),
+    RollTable(:final table, :final entity, :final visibility) => (
+      'rollTable',
+      {
+        'table': table,
+        'entity': entity?.value,
+        'visibility': encodeVisibility(visibility),
+      },
+    ),
   };
   return {
     'v': shapeVersion,
@@ -255,6 +264,14 @@ Command decodeCommand(Object? json) {
         return BroadcastToQualifying(
           text: map.string('text'),
           condition: decodeConditionField(map, 'condition'),
+          actor: actor,
+        );
+      case 'rollTable':
+        final entity = map.optString('entity');
+        return RollTable(
+          table: map.string('table'),
+          entity: entity == null ? null : EntityId(entity),
+          visibility: decodeVisibility(map.object('visibility')),
           actor: actor,
         );
       case final other:

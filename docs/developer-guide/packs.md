@@ -13,7 +13,7 @@ Validate the generated pack, not the source: authoring annotations (`note`, `sou
 
 ## What the loader does
 
-1. Accepts only known files: the top-level files in `packFiles` and one `.json` per entry in `items/`, `techniques/`, `npcs/`, `strings/`. A standalone pack needs `requiredPackFiles` (manifest, attributes, proficiency, skills, derived, difficulty).
+1. Accepts only known files: the top-level files in `packFiles` and one `.json` per entry in `items/`, `techniques/`, `npcs/`, `tables/`, `strings/`. A standalone pack needs `requiredPackFiles` (manifest, attributes, proficiency, skills, derived, difficulty).
 2. Reads the manifest and refuses any `engineApi` other than the engine's. `requires` (packs on top of packs) is not supported yet and is an error.
 3. Parses each file with its own parser, in `packages/engine/lib/src/pack/files/<file>.dart`, beside that file's value types. When D changes a file's shape, that one Dart file changes.
 4. Checks cross-references: skill attributes and categories, formula attributes, the assistance gate category, damage categories used by ranges, items and threats, NPC threat classes, `replacedBy` targets, duplicate keys.

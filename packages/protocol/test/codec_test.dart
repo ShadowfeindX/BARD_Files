@@ -412,6 +412,25 @@ void main() {
       );
     });
 
+    test('a table roll with impossible faces is refused', () {
+      for (final edit in <void Function(Map<String, Object?>)>[
+        (j) => j['faces'] = [7],
+        (j) => j['faces'] = [0],
+        (j) => j['faces'] = <Object?>[],
+        (j) => j['faces'] = ['4'],
+        (j) => j['sides'] = 0,
+      ]) {
+        final json =
+            onTheWire(encodeEvent(sampleEvents['tableRolled']!))!
+                as Map<String, Object?>;
+        edit(json);
+        expect(
+          () => decodeEvent(json),
+          throwsA(isA<ProtocolFormatException>()),
+        );
+      }
+    });
+
     test('terms the engine would refuse are refused', () {
       Map<String, Object?> withPrimary(Object? term) {
         final json =

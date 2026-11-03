@@ -22,6 +22,7 @@ import 'files/ranges.dart';
 import 'files/sanity_events.dart';
 import 'files/skills.dart';
 import 'files/strings.dart';
+import 'files/tables.dart';
 import 'files/techniques.dart';
 import 'files/threats.dart';
 import 'files/vehicles.dart';
@@ -89,6 +90,7 @@ final class RulesPack {
     List<ItemTemplate> items = const [],
     List<TechniqueTemplate> techniques = const [],
     List<NpcTemplate> npcs = const [],
+    List<RandomTable> randomTables = const [],
     Map<String, PackStrings> strings = const {},
     this.occultPending,
     Set<String> pendingPaths = const {},
@@ -110,6 +112,7 @@ final class RulesPack {
        items = List.unmodifiable(items),
        techniques = List.unmodifiable(techniques),
        npcs = List.unmodifiable(npcs),
+       randomTables = List.unmodifiable(randomTables),
        strings = Map.unmodifiable(strings),
        pendingPaths = Set.unmodifiable(pendingPaths);
 
@@ -188,6 +191,9 @@ final class RulesPack {
   /// NPC templates, by file name order.
   final List<NpcTemplate> npcs;
 
+  /// Random tables (R-B2), by file name order.
+  final List<RandomTable> randomTables;
+
   /// Display text by language code.
   final Map<String, PackStrings> strings;
 
@@ -216,6 +222,9 @@ final class RulesPack {
 
   /// The condition with [id], or `null`.
   ConditionDef? condition(String id) => _find(conditions, (c) => c.id, id);
+
+  /// The random table with [id], or `null`.
+  RandomTable? randomTable(String id) => _find(randomTables, (t) => t.id, id);
 
   static T? _find<T>(List<T> items, String Function(T) keyOf, String key) {
     for (final item in items) {
@@ -253,6 +262,7 @@ final class RulesPack {
       listEquals(other.items, items) &&
       listEquals(other.techniques, techniques) &&
       listEquals(other.npcs, npcs) &&
+      listEquals(other.randomTables, randomTables) &&
       _mapEquals(other.strings, strings) &&
       other.pendingPaths.length == pendingPaths.length &&
       other.pendingPaths.containsAll(pendingPaths);
@@ -284,6 +294,7 @@ final class RulesPack {
     Object.hashAll(items),
     Object.hashAll(techniques),
     Object.hashAll(npcs),
+    Object.hashAll(randomTables),
     Object.hashAllUnordered(strings.keys),
     Object.hashAllUnordered(pendingPaths),
   ]);

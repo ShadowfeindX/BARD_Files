@@ -19,6 +19,7 @@ part 'character_commands.dart';
 part 'check_commands.dart';
 part 'condition_commands.dart';
 part 'messaging_commands.dart';
+part 'table_commands.dart';
 part 'episode_commands.dart';
 part 'vitals_commands.dart';
 

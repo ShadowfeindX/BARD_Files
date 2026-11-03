@@ -61,6 +61,11 @@ final Map<String, Command> sampleCommands = {
     text: 'A low groaning voice.',
     condition: Compare(CompareOp.lt, Attr('WIL'), Const(3)),
   ),
+  'rollTable': const RollTable(
+    table: 'catastrophic-failure',
+    entity: vale,
+    visibility: GmOnly(),
+  ),
 };
 
 final _spec = CheckSpec(
@@ -204,5 +209,15 @@ final Map<String, Event> sampleEvents = {
     text: 'A low groaning voice.',
     actor: const GmActor(),
     visibility: AliasesOnly({valeAlias, quinnAlias}),
+  ),
+  'tableRolled': TableRolled(
+    table: 'catastrophic-failure',
+    entity: vale,
+    sides: 6,
+    faces: const [4],
+    text: 'The artifact answers.',
+    draws: DrawRange(3, 4),
+    actor: const GmActor(),
+    visibility: const GmOnly(),
   ),
 };
