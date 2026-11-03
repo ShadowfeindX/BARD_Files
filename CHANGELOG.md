@@ -11,7 +11,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - RTDB: the live tree is `/episodes/$ep` and presence `/presence/$ep` in `firebase/database.rules.json` and its emulator suite (200 of 200, V-56).
 - The post-archive clean-up no longer deletes the phone box, which clears at operation end (R, 2026-11-03); the clean-up checks now expect `phone` beside the locked stub.
 - Docs: identifiers, function names (`archiveEpisode`, `EpisodeMigrated`) and RTDB paths updated in the spec and developer guide; the "Code still says Operation" notes removed.
-- Chapter 12: the Firestore draft is rewritten for the split: `campaigns/{campaignId}` (roster, invites, join requests, transfers, pack pins, base settings), `operations/{opId}` (story arc) with `missions`, `episodes/{episodeId}` with `members`, archives and `archiveIndex` keyed by episode, listings keyed by campaign; rules, indexes and test plan follow. Where the campaign document lives is question 9 for R.
+- Chapter 12: the Firestore draft is rewritten for the split: `campaigns/{campaignId}` (roster, invites, join requests, transfers, pack pins, base settings), `operations/{opId}` (story arc) with `missions`, `episodes/{episodeId}` with `members`, archives and `archiveIndex` keyed by episode, listings keyed by campaign; rules, indexes and test plan follow. The campaign document is top-level `campaigns/{campaignId}` (R, 2026-11-03).
 
 ### Docs: Episode naming
 - Chapter 12 proposes splitting the Firestore `operations` node: a new `episodes/{episodeId}` node for live-game data under its own rules, with the operation record keeping arc and handler data (R, 2026-11-03). The phone box now clears when the operation ends, not at mission end.
