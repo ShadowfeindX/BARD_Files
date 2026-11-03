@@ -4,7 +4,7 @@ import '../decision.dart';
 import '../events/events.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 
 /// Conditions and afflictions on entities (rulebook §4).
 ///
@@ -18,14 +18,14 @@ final class ConditionSystem {
   final RulesPack pack;
 
   /// Decides a [ConditionCommand].
-  Decision decide(OperationState state, ConditionCommand command) =>
+  Decision decide(EpisodeState state, ConditionCommand command) =>
       switch (command) {
         ApplyCondition() => _apply(state, command),
         ClearCondition() => _clear(state, command),
       };
 
   /// Applies a [ConditionEvent].
-  OperationState evolve(OperationState state, ConditionEvent event) =>
+  EpisodeState evolve(EpisodeState state, ConditionEvent event) =>
       switch (event) {
         ConditionApplied(:final entity, :final condition) => _set(
           state,
@@ -39,7 +39,7 @@ final class ConditionSystem {
         ),
       };
 
-  Decision _apply(OperationState state, ApplyCondition command) {
+  Decision _apply(EpisodeState state, ApplyCondition command) {
     final problem = _check(state, command.entity, command.condition);
     if (problem != null) return problem;
     if (_active(state, command.entity).contains(command.condition)) {
@@ -61,7 +61,7 @@ final class ConditionSystem {
     ]);
   }
 
-  Decision _clear(OperationState state, ClearCondition command) {
+  Decision _clear(EpisodeState state, ClearCondition command) {
     final problem = _check(state, command.entity, command.condition);
     if (problem != null) return problem;
     if (!_active(state, command.entity).contains(command.condition)) {
@@ -82,7 +82,7 @@ final class ConditionSystem {
     ]);
   }
 
-  Rejected? _check(OperationState state, EntityId entity, String condition) {
+  Rejected? _check(EpisodeState state, EntityId entity, String condition) {
     if (!state.stores.has(Identity.componentType, entity)) {
       return Rejected(
         Rejection(RejectionCode.unknownEntity, 'No entity "${entity.value}".'),
@@ -99,10 +99,10 @@ final class ConditionSystem {
     return null;
   }
 
-  Set<String> _active(OperationState state, EntityId entity) =>
+  Set<String> _active(EpisodeState state, EntityId entity) =>
       state.stores.get(Conditions.componentType, entity)?.ids ?? const {};
 
-  OperationState _set(OperationState state, EntityId entity, Set<String> ids) =>
+  EpisodeState _set(EpisodeState state, EntityId entity, Set<String> ids) =>
       state.copyWith(
         stores: ids.isEmpty
             ? state.stores.remove(Conditions.componentType, entity)

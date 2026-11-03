@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'support/engine_pack.dart';
 
-/// Runs a short operation through the real engine and checks that every
+/// Runs a short episode through the real engine and checks that every
 /// command and every event it produced survives the codecs unchanged, and
 /// that the decoded log replays to the same state (gate review, row 6).
 void main() {
@@ -17,7 +17,7 @@ void main() {
   // Exploding d6 (6 then 3), proficiency d4, then more faces for later rolls.
   final rng = ScriptedRng([6, 3, 4, 2, 1, 5, 6, 6, 1, 3]);
   final ids = SequentialIdSource();
-  var state = const OperationState.initial();
+  var state = const EpisodeState.initial();
   final commands = <Command>[];
   final log = <Event>[];
 
@@ -33,7 +33,7 @@ void main() {
   }
 
   setUpAll(() {
-    run(const StartOperation(operationId: 'op_rt'));
+    run(const StartEpisode(episodeId: 'op_rt'));
     final vale = run(
       CreateAgent(
         name: 'Vale',
@@ -161,9 +161,9 @@ void main() {
   test('the decoded log replays to the same state', () {
     final decoded = [for (final e in log) decodeEvent(wire(encodeEvent(e)))];
     expect(
-      engine.replay(const OperationState.initial(), decoded),
-      engine.replay(const OperationState.initial(), log),
+      engine.replay(const EpisodeState.initial(), decoded),
+      engine.replay(const EpisodeState.initial(), log),
     );
-    expect(engine.replay(const OperationState.initial(), log), state);
+    expect(engine.replay(const EpisodeState.initial(), log), state);
   });
 }

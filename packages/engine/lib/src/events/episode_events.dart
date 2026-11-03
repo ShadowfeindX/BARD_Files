@@ -1,15 +1,15 @@
 part of 'events.dart';
 
-/// Events applied by `OperationSystem`.
-sealed class OperationEvent extends Event {
-  const OperationEvent();
+/// Events applied by `EpisodeSystem`.
+sealed class EpisodeEvent extends Event {
+  const EpisodeEvent();
 }
 
-/// The operation started: the genesis event of every log.
-final class OperationStarted extends OperationEvent {
+/// The episode started: the genesis event of every log.
+final class EpisodeStarted extends EpisodeEvent {
   /// Creates the event.
-  const OperationStarted({
-    required this.operationId,
+  const EpisodeStarted({
+    required this.episodeId,
     required this.engineVersion,
     required this.packRef,
     required this.settings,
@@ -17,17 +17,17 @@ final class OperationStarted extends OperationEvent {
     this.visibility = const Public(),
   });
 
-  /// The operation's id.
-  final String operationId;
+  /// The episode's id.
+  final String episodeId;
 
-  /// Engine version that started the operation.
+  /// Engine version that started the episode.
   final String engineVersion;
 
   /// The pinned pack.
   final PackRef packRef;
 
   /// Initial GM settings.
-  final OperationSettings settings;
+  final EpisodeSettings settings;
 
   @override
   final Actor actor;
@@ -37,8 +37,8 @@ final class OperationStarted extends OperationEvent {
 
   @override
   bool operator ==(Object other) =>
-      other is OperationStarted &&
-      other.operationId == operationId &&
+      other is EpisodeStarted &&
+      other.episodeId == episodeId &&
       other.engineVersion == engineVersion &&
       other.packRef == packRef &&
       other.settings == settings &&
@@ -47,8 +47,8 @@ final class OperationStarted extends OperationEvent {
 
   @override
   int get hashCode => Object.hash(
-    OperationStarted,
-    operationId,
+    EpisodeStarted,
+    episodeId,
     engineVersion,
     packRef,
     settings,
@@ -58,5 +58,5 @@ final class OperationStarted extends OperationEvent {
 
   @override
   String toString() =>
-      'OperationStarted($operationId, engine $engineVersion, $packRef)';
+      'EpisodeStarted($episodeId, engine $engineVersion, $packRef)';
 }

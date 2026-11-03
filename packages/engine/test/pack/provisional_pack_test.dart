@@ -166,10 +166,10 @@ void main() {
   test('an engine runs on the loaded pack', () {
     final engine = Engine(pack);
     final ids = SequentialIdSource();
-    final started = engine.replay(const OperationState.initial(), [
+    final started = engine.replay(const EpisodeState.initial(), [
       ...(engine.decide(
-        const OperationState.initial(),
-        const StartOperation(operationId: 'op'),
+        const EpisodeState.initial(),
+        const StartEpisode(episodeId: 'op'),
         ScriptedRng([]),
         ids,
       ) as Accepted).events,

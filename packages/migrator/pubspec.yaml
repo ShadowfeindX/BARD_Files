@@ -1,5 +1,5 @@
 name: migrator
-description: "Pure-Dart transforms of serialized operations from engine major N to N+1."
+description: "Pure-Dart transforms of serialized episodes from engine major N to N+1."
 version: 0.0.0
 publish_to: none
 resolution: workspace

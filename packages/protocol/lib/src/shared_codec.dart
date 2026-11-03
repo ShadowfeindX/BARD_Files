@@ -164,7 +164,7 @@ AliasesOnly decodeAliasesOnly(JsonMap json) {
 }
 
 /// Encodes the settings as JSON.
-JsonMap encodeSettings(OperationSettings s) => {
+JsonMap encodeSettings(EpisodeSettings s) => {
   'autoResolveChecks': s.autoResolveChecks,
   'autoConfirmConsequences': s.autoConfirmConsequences,
   'autoApplyEngineUpdates': s.autoApplyEngineUpdates,
@@ -172,9 +172,9 @@ JsonMap encodeSettings(OperationSettings s) => {
 };
 
 /// Settings added later decode to their defaults when absent.
-OperationSettings decodeSettings(JsonMap json) {
-  const defaults = OperationSettings();
-  return OperationSettings(
+EpisodeSettings decodeSettings(JsonMap json) {
+  const defaults = EpisodeSettings();
+  return EpisodeSettings(
     autoResolveChecks: json.boolOr(
       'autoResolveChecks',
       defaults.autoResolveChecks,

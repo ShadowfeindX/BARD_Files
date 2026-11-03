@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-import 'support/fake_operation_service.dart';
+import 'support/fake_episode_service.dart';
 
 Future<void> _pump(WidgetTester tester) async {
   tester.view.physicalSize = const Size(2400, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
-    BardApp(composition: Composition(operation: FakeOperationService())),
+    BardApp(composition: Composition(episode: FakeEpisodeService())),
   );
   await tester.pumpAndSettle();
 }

@@ -177,10 +177,10 @@ void main() {
       );
     });
 
-    test('an operation that has not started refuses', () {
+    test('an episode that has not started refuses', () {
       final t = Table();
       final fresh = t.engine.decide(
-        const OperationState.initial(),
+        const EpisodeState.initial(),
         send(valeParty, gm, 'x'),
         t.rng,
         t.ids,

@@ -2,7 +2,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
-import '../../data/services/operation_service.dart';
+import '../../data/services/episode_service.dart';
 
 /// State and commands for one player's dossier.
 class DossierViewModel {
@@ -13,7 +13,7 @@ class DossierViewModel {
     );
   }
 
-  final OperationService _service;
+  final EpisodeService _service;
 
   /// The agent this dossier belongs to.
   final String agentId;

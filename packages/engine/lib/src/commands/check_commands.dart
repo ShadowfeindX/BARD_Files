@@ -81,7 +81,7 @@ final class DeclineRequest extends CheckCommand {
 /// modifiers` against a DC (§2).
 ///
 /// [attribute] may be left out when [skill] names a skill whose pack
-/// attribute is set; the skill's attribute is used. With the operation's
+/// attribute is set; the skill's attribute is used. With the episode's
 /// auto-resolve setting on, the check rolls at once.
 final class RequireCheck extends CheckCommand {
   /// Creates the command.

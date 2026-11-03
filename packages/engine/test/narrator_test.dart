@@ -58,8 +58,8 @@ void main() {
     expect(
       [for (final e in table.log) narrator.narrate(table.state, e).gm],
       [
-        'The operation began (pack test-core 0.0.1).',
-        'Agent Vale joined the operation.',
+        'The episode began (pack test-core 0.0.1).',
+        'Agent Vale joined the episode.',
         'Vale asks to act: "Shoot the lock" (suggests Firearms).',
         'Vale must make a Firearms (DEX) check against DC 10 (Cat-C).',
         'Vale rolled Firearms (DEX): die 6+2, DEX 2, Proficient 3, Cover -1 '

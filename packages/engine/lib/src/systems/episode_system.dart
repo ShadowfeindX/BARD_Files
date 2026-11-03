@@ -2,30 +2,30 @@ import '../commands/commands.dart';
 import '../decision.dart';
 import '../events/events.dart';
 import '../pack/rules_pack.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../version.dart';
 
-/// The operation's lifecycle: starting it and its settings. Proposed system;
+/// The episode's lifecycle: starting it and its settings. Proposed system;
 /// 01 §Systems does not list one for this.
-final class OperationSystem {
+final class EpisodeSystem {
   /// Creates the system for [pack].
-  const OperationSystem(this.pack);
+  const EpisodeSystem(this.pack);
 
   /// The pack the engine is bound to.
   final RulesPack pack;
 
-  /// Decides an [OperationCommand].
-  Decision decide(OperationState state, OperationCommand command) =>
+  /// Decides an [EpisodeCommand].
+  Decision decide(EpisodeState state, EpisodeCommand command) =>
       switch (command) {
-        StartOperation() => _start(state, command),
+        StartEpisode() => _start(state, command),
       };
 
-  /// Applies an [OperationEvent].
-  OperationState evolve(OperationState state, OperationEvent event) =>
+  /// Applies an [EpisodeEvent].
+  EpisodeState evolve(EpisodeState state, EpisodeEvent event) =>
       switch (event) {
-        OperationStarted() => state.copyWith(
-          meta: OperationMeta(
-            operationId: event.operationId,
+        EpisodeStarted() => state.copyWith(
+          meta: EpisodeMeta(
+            episodeId: event.episodeId,
             engineVersion: event.engineVersion,
             packRef: event.packRef,
             settings: event.settings,
@@ -33,23 +33,23 @@ final class OperationSystem {
         ),
       };
 
-  Decision _start(OperationState state, StartOperation command) {
+  Decision _start(EpisodeState state, StartEpisode command) {
     if (state.started) {
       return const Rejected(
         Rejection(
           RejectionCode.alreadyStarted,
-          'The operation has already started.',
+          'The episode has already started.',
         ),
       );
     }
-    if (command.operationId.isEmpty) {
+    if (command.episodeId.isEmpty) {
       return const Rejected(
-        Rejection(RejectionCode.invalidValue, 'The operation id is empty.'),
+        Rejection(RejectionCode.invalidValue, 'The episode id is empty.'),
       );
     }
     return Accepted([
-      OperationStarted(
-        operationId: command.operationId,
+      EpisodeStarted(
+        episodeId: command.episodeId,
         engineVersion: engineVersion,
         packRef: pack.ref,
         settings: command.settings,

@@ -10,7 +10,7 @@ const v140 = EngineVersion(1, 4, 0);
 Envelope wrap(Message m, {int? seq}) => Envelope.of(
   m,
   engineVersion: v140,
-  operationId: 'op_1',
+  episodeId: 'op_1',
   from: gmSender,
   seq: seq,
 );
@@ -192,7 +192,7 @@ void main() {
           Envelope(
             protocol: 1,
             engineVersion: v140,
-            operationId: 'op_1',
+            episodeId: 'op_1',
             from: 'gm',
             type: type,
             body: body,
@@ -302,14 +302,14 @@ void main() {
           reason: RefusalReason.updateRequired,
           message: 'update',
           hostProtocolMajor: 1,
-          operationEngineMajor: 1,
+          episodeEngineMajor: 1,
           requiredEngineVersion: EngineVersion(1, 5, 0),
         ),
       ) as Refused;
       expect(m.reason, RefusalReason.updateRequired);
       expect(m.message, 'update');
       expect(m.hostProtocolMajor, 1);
-      expect(m.operationEngineMajor, 1);
+      expect(m.episodeEngineMajor, 1);
       expect(m.requiredEngineVersion, const EngineVersion(1, 5, 0));
     });
 
@@ -325,7 +325,7 @@ void main() {
       final envelope = Envelope(
         protocol: 1,
         engineVersion: v140,
-        operationId: 'op_1',
+        episodeId: 'op_1',
         from: 'gm',
         type: 'refused',
         body: {'reason': 'quotaExceeded'},
@@ -375,12 +375,12 @@ void main() {
 
       final log = roundTrip(
         const TextLog(
-          archiveOperationId: 'op_0',
+          archiveEpisodeId: 'op_0',
           engineMajor: 0,
           lines: [TextLine(seq: 1, text: 'Hall rolls.')],
         ),
       ) as TextLog;
-      expect(log.archiveOperationId, 'op_0');
+      expect(log.archiveEpisodeId, 'op_0');
       expect(log.engineMajor, 0);
       expect(log.lines.single.text, 'Hall rolls.');
 
@@ -396,7 +396,7 @@ void main() {
       const text = 'Sanity −3 \u{1F480} “quoted”';
       final m = roundTrip(
         const TextLog(
-          archiveOperationId: 'o',
+          archiveEpisodeId: 'o',
           engineMajor: 0,
           lines: [TextLine(seq: 1, text: text)],
         ),
@@ -439,7 +439,7 @@ void main() {
       clientProtocol: clientP,
       clientEngine: client,
       hostProtocol: hostP,
-      operationEngineMajor: opMajor,
+      episodeEngineMajor: opMajor,
       requiredEngine: required,
     );
 
@@ -466,7 +466,7 @@ void main() {
       ]) {
         final r = hello(client: client)!;
         expect(r.reason, RefusalReason.engineMajorMismatch);
-        expect(r.operationEngineMajor, 1);
+        expect(r.episodeEngineMajor, 1);
       }
     });
 
@@ -518,7 +518,7 @@ void main() {
         final rebuilt = Envelope(
           protocol: envelope.protocol,
           engineVersion: envelope.engineVersion,
-          operationId: envelope.operationId,
+          episodeId: envelope.episodeId,
           seq: envelope.seq,
           from: envelope.from,
           type: envelope.type,

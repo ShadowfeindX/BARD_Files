@@ -81,7 +81,7 @@ final class HeadSnapshot {
   final int nextEntityNumber;
 }
 
-/// Where a device keeps an operation's log (04 §Interfaces).
+/// Where a device keeps an episode's log (04 §Interfaces).
 ///
 /// `append` is one durable batch: after it returns, all of events, text and
 /// head are stored or none are. The sembast store (row 12) adds the commit
@@ -89,27 +89,27 @@ final class HeadSnapshot {
 abstract interface class EventStore {
   /// Appends a batch. [events] continue the stored sequence without a gap.
   Future<void> append(
-    String operationId,
+    String episodeId,
     List<StoredEvent> events,
     List<TextLogLine> text,
     HeadSnapshot head,
   );
 
   /// Events from [fromSeq] on, in order.
-  Stream<StoredEvent> read(String operationId, {int fromSeq = 1});
+  Stream<StoredEvent> read(String episodeId, {int fromSeq = 1});
 
   /// Text lines from [fromSeq] on, in order.
-  Stream<TextLogLine> readText(String operationId, {int fromSeq = 1});
+  Stream<TextLogLine> readText(String episodeId, {int fromSeq = 1});
 
   /// The state at the last committed `seq`, or null when nothing is stored.
-  Future<HeadSnapshot?> headSnapshot(String operationId);
+  Future<HeadSnapshot?> headSnapshot(String episodeId);
 
   /// Records the RNG's real draw count outside a batch, for draws made by a
   /// command that produced no stored events (rejected, or held for review).
-  Future<void> saveRngDrawCount(String operationId, int drawCount);
+  Future<void> saveRngDrawCount(String episodeId, int drawCount);
 
   /// The largest draw count ever saved or appended; 0 when none.
-  Future<int> rngDrawCount(String operationId);
+  Future<int> rngDrawCount(String episodeId);
 }
 
 /// [EventStore] in memory, for tests and single-device play.
@@ -121,12 +121,12 @@ final class InMemoryEventStore implements EventStore {
 
   @override
   Future<void> append(
-    String operationId,
+    String episodeId,
     List<StoredEvent> events,
     List<TextLogLine> text,
     HeadSnapshot head,
   ) async {
-    final log = _events.putIfAbsent(operationId, () => []);
+    final log = _events.putIfAbsent(episodeId, () => []);
     var next = log.length + 1;
     for (final event in events) {
       if (event.seq != next++) {
@@ -137,37 +137,36 @@ final class InMemoryEventStore implements EventStore {
       }
     }
     log.addAll(events);
-    _text.putIfAbsent(operationId, () => []).addAll(text);
-    _head[operationId] = head;
-    _draws[operationId] = _max(_draws[operationId], head.rngDrawCount);
+    _text.putIfAbsent(episodeId, () => []).addAll(text);
+    _head[episodeId] = head;
+    _draws[episodeId] = _max(_draws[episodeId], head.rngDrawCount);
   }
 
   @override
-  Stream<StoredEvent> read(String operationId, {int fromSeq = 1}) =>
+  Stream<StoredEvent> read(String episodeId, {int fromSeq = 1}) =>
       Stream.fromIterable([
-        for (final e in _events[operationId] ?? const <StoredEvent>[])
+        for (final e in _events[episodeId] ?? const <StoredEvent>[])
           if (e.seq >= fromSeq) e,
       ]);
 
   @override
-  Stream<TextLogLine> readText(String operationId, {int fromSeq = 1}) =>
+  Stream<TextLogLine> readText(String episodeId, {int fromSeq = 1}) =>
       Stream.fromIterable([
-        for (final l in _text[operationId] ?? const <TextLogLine>[])
+        for (final l in _text[episodeId] ?? const <TextLogLine>[])
           if (l.seq >= fromSeq) l,
       ]);
 
   @override
-  Future<HeadSnapshot?> headSnapshot(String operationId) async =>
-      _head[operationId];
+  Future<HeadSnapshot?> headSnapshot(String episodeId) async =>
+      _head[episodeId];
 
   @override
-  Future<void> saveRngDrawCount(String operationId, int drawCount) async {
-    _draws[operationId] = _max(_draws[operationId], drawCount);
+  Future<void> saveRngDrawCount(String episodeId, int drawCount) async {
+    _draws[episodeId] = _max(_draws[episodeId], drawCount);
   }
 
   @override
-  Future<int> rngDrawCount(String operationId) async =>
-      _draws[operationId] ?? 0;
+  Future<int> rngDrawCount(String episodeId) async => _draws[episodeId] ?? 0;
 
   static int _max(int? a, int b) => a == null || b > a ? b : a;
 }

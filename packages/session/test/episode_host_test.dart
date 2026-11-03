@@ -107,7 +107,7 @@ void main() {
         Envelope.of(
           const Hello(agentId: 'ann', aliasId: 'hall', authProof: 'ann'),
           engineVersion: EngineVersion.parse(engineVersion),
-          operationId: 'op1',
+          episodeId: 'op1',
           from: 'hall',
         ),
       );
@@ -133,7 +133,7 @@ void main() {
         Envelope.of(
           hello,
           engineVersion: EngineVersion.parse(engine),
-          operationId: 'op1',
+          episodeId: 'op1',
           from: 'x',
           protocol: protocol,
         ),
@@ -221,8 +221,8 @@ void main() {
     test('anonymous accounts cannot host', () async {
       rig = await Rig.create();
       await expectLater(
-        OperationHost.open(
-          operationId: 'op1',
+        EpisodeHost.open(
+          episodeId: 'op1',
           gm: const Principal(agentId: 'g', isGm: true, isAnonymous: true),
           engine: Engine(testPack()),
           codec: Rig.codec,
@@ -336,7 +336,7 @@ void main() {
       Envelope wrap(Message m, String from) => Envelope.of(
         m,
         engineVersion: EngineVersion.parse(engineVersion),
-        operationId: 'op1',
+        episodeId: 'op1',
         from: from,
       );
       await connection.send(
@@ -380,7 +380,7 @@ void main() {
             command: Rig.codec.encodeCommand(rig.agent('X', owner: 'hall')),
           ),
           engineVersion: EngineVersion.parse(engineVersion),
-          operationId: 'op1',
+          episodeId: 'op1',
           from: 'hall',
         ),
       );
@@ -526,7 +526,7 @@ void main() {
     test('auto-confirm skips the wait', () async {
       rig = await Rig.create();
       await rig.start(
-        settings: const OperationSettings(autoConfirmConsequences: true),
+        settings: const EpisodeSettings(autoConfirmConsequences: true),
       );
       await rig.host.submit(rig.agent('Hall'));
       final agent = rig.host.state.stores.entities.single;
@@ -734,7 +734,7 @@ void main() {
     });
 
     test(
-      'a verified GM flag that is not this operation\'s GM is refused',
+      'a verified GM flag that is not this episode\'s GM is refused',
       () async {
         rig = await Rig.create(
           identities: {'imposter': const Principal(agentId: 'imp', isGm: true)},
@@ -749,7 +749,7 @@ void main() {
           Envelope.of(
             const Hello(agentId: 'imp', authProof: 'imposter'),
             engineVersion: EngineVersion.parse(engineVersion),
-            operationId: 'op1',
+            episodeId: 'op1',
             from: 'imp',
           ),
         );
@@ -773,7 +773,7 @@ void main() {
         Envelope.of(
           const Resync(0),
           engineVersion: EngineVersion.parse(engineVersion),
-          operationId: 'op1',
+          episodeId: 'op1',
           from: 'x',
         ),
       );

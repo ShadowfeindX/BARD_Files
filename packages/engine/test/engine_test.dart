@@ -6,15 +6,15 @@ import 'support/test_pack.dart';
 
 void main() {
   late Engine engine;
-  late OperationState started;
+  late EpisodeState started;
 
   setUp(() {
     engine = Engine(testPack());
-    started = engine.replay(const OperationState.initial(), [
+    started = engine.replay(const EpisodeState.initial(), [
       ...accepted(
         engine.decide(
-          const OperationState.initial(),
-          const StartOperation(operationId: 'op1'),
+          const EpisodeState.initial(),
+          const StartEpisode(episodeId: 'op1'),
           ScriptedRng([]),
           SequentialIdSource(),
         ),
@@ -22,7 +22,7 @@ void main() {
     ]);
   });
 
-  Decision decide(OperationState state, Command command, {IdSource? ids}) =>
+  Decision decide(EpisodeState state, Command command, {IdSource? ids}) =>
       engine.decide(
         state,
         command,
@@ -30,18 +30,18 @@ void main() {
         ids ?? SequentialIdSource(),
       );
 
-  group('StartOperation', () {
+  group('StartEpisode', () {
     test('records the engine version, pinned pack and settings', () {
-      const settings = OperationSettings(autoConfirmConsequences: true);
+      const settings = EpisodeSettings(autoConfirmConsequences: true);
       final decision = decide(
-        const OperationState.initial(),
-        const StartOperation(operationId: 'op1', settings: settings),
+        const EpisodeState.initial(),
+        const StartEpisode(episodeId: 'op1', settings: settings),
       );
       expect(
         decision,
         Accepted([
-          OperationStarted(
-            operationId: 'op1',
+          EpisodeStarted(
+            episodeId: 'op1',
             engineVersion: engineVersion,
             packRef: engine.pack.ref,
             settings: settings,
@@ -53,14 +53,14 @@ void main() {
 
     test('evolve fills meta', () {
       expect(started.started, isTrue);
-      expect(started.meta!.operationId, 'op1');
+      expect(started.meta!.episodeId, 'op1');
       expect(started.meta!.packRef, engine.pack.ref);
-      expect(started.meta!.settings, const OperationSettings());
+      expect(started.meta!.settings, const EpisodeSettings());
     });
 
     test('a second start is rejected', () {
       expect(
-        rejection(decide(started, const StartOperation(operationId: 'op2'))),
+        rejection(decide(started, const StartEpisode(episodeId: 'op2'))),
         RejectionCode.alreadyStarted,
       );
     });
@@ -69,8 +69,8 @@ void main() {
       expect(
         rejection(
           decide(
-            const OperationState.initial(),
-            const StartOperation(operationId: ''),
+            const EpisodeState.initial(),
+            const StartEpisode(episodeId: ''),
           ),
         ),
         RejectionCode.invalidValue,
@@ -82,7 +82,7 @@ void main() {
     expect(
       rejection(
         decide(
-          const OperationState.initial(),
+          const EpisodeState.initial(),
           CreateAgent(name: 'Hall', attributes: validScores()),
         ),
       ),
@@ -275,10 +275,10 @@ void main() {
 
   test('replay of a recorded log equals the state built step by step', () {
     final ids = SequentialIdSource();
-    var state = const OperationState.initial();
+    var state = const EpisodeState.initial();
     final log = <Event>[];
     for (final command in <Command>[
-      const StartOperation(operationId: 'op1'),
+      const StartEpisode(episodeId: 'op1'),
       CreateAgent(name: 'Hall', attributes: validScores()),
       CreateAgent(
         name: 'Vale',
@@ -292,7 +292,7 @@ void main() {
       log.addAll(events);
       state = engine.replay(state, events);
     }
-    expect(engine.replay(const OperationState.initial(), log), state);
+    expect(engine.replay(const EpisodeState.initial(), log), state);
     expect(state.stores.all(Identity.componentType).length, 2);
   });
 }

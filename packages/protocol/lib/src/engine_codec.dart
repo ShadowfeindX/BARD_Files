@@ -22,8 +22,8 @@ abstract interface class EngineCodec {
   Event decodeEvent(JsonMap json);
 
   /// Encodes [state] for a head or periodic snapshot.
-  JsonMap encodeState(OperationState state);
+  JsonMap encodeState(EpisodeState state);
 
   /// Decodes a snapshot written by [encodeState].
-  OperationState decodeState(JsonMap json);
+  EpisodeState decodeState(JsonMap json);
 }

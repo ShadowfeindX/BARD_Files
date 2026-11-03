@@ -3,19 +3,19 @@ enum RefusalReason {
   /// The client's protocol major differs from the GM's.
   protocolMismatch('protocolMismatch'),
 
-  /// The client's engine major differs from the operation's.
+  /// The client's engine major differs from the episode's.
   engineMajorMismatch('engineMajorMismatch'),
 
   /// Same engine major, but older than the version the log requires.
   updateRequired('updateRequired'),
 
-  /// The agent is not invited to this operation.
+  /// The agent is not invited to this episode.
   notInvited('notInvited'),
 
-  /// The alias is locked to another campaign or operation.
+  /// The alias is locked to another campaign or episode.
   aliasLocked('aliasLocked'),
 
-  /// The agent is banned from this operation.
+  /// The agent is banned from this episode.
   banned('banned'),
 
   /// Proposed (06 §Account model, anonymous one-alias rule, Session): an anonymous agent

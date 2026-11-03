@@ -151,7 +151,7 @@ final class Hello extends Message {
   };
 }
 
-/// The pinned pack an operation uses: `(id, version, contentHash)`.
+/// The pinned pack an episode uses: `(id, version, contentHash)`.
 final class PackPin {
   /// Creates a pack reference.
   const PackPin({
@@ -229,10 +229,10 @@ final class Welcome extends Message {
     events: body['events'] == null ? const [] : reqMapList(body, 'events'),
   );
 
-  /// Operation settings visible to the client (opaque).
+  /// Episode settings visible to the client (opaque).
   final JsonMap settings;
 
-  /// The operation's pinned pack.
+  /// The episode's pinned pack.
   final PackPin? pack;
 
   /// A filtered snapshot, when the client cannot catch up from events.
@@ -260,7 +260,7 @@ final class Refused extends Message {
     required this.reason,
     this.message,
     this.hostProtocolMajor,
-    this.operationEngineMajor,
+    this.episodeEngineMajor,
     this.requiredEngineVersion,
     this.unrecognizedCode,
   });
@@ -274,7 +274,7 @@ final class Refused extends Message {
       reason: reason,
       message: optString(body, 'message'),
       hostProtocolMajor: optInt(body, 'protocolMajor'),
-      operationEngineMajor: optInt(body, 'engineMajor'),
+      episodeEngineMajor: optInt(body, 'engineMajor'),
       requiredEngineVersion: required == null
           ? null
           : EngineVersion.parse(required),
@@ -291,9 +291,9 @@ final class Refused extends Message {
   /// Proposed: the GM's protocol major, on [RefusalReason.protocolMismatch].
   final int? hostProtocolMajor;
 
-  /// Proposed: the operation's engine major, on
+  /// Proposed: the episode's engine major, on
   /// [RefusalReason.engineMajorMismatch].
-  final int? operationEngineMajor;
+  final int? episodeEngineMajor;
 
   /// Proposed: the minimum engine version, on [RefusalReason.updateRequired].
   final EngineVersion? requiredEngineVersion;
@@ -309,7 +309,7 @@ final class Refused extends Message {
     'reason': unrecognizedCode ?? reason.wire,
     if (message != null) 'message': message,
     if (hostProtocolMajor != null) 'protocolMajor': hostProtocolMajor,
-    if (operationEngineMajor != null) 'engineMajor': operationEngineMajor,
+    if (episodeEngineMajor != null) 'engineMajor': episodeEngineMajor,
     if (requiredEngineVersion != null)
       'requiredEngine': requiredEngineVersion.toString(),
   };
@@ -449,22 +449,22 @@ final class TextLine {
 final class TextLog extends Message {
   /// Creates a text log message.
   const TextLog({
-    required this.archiveOperationId,
+    required this.archiveEpisodeId,
     required this.engineMajor,
     required this.lines,
   });
 
   /// Decodes a text log body.
   factory TextLog.fromBody(JsonMap body) => TextLog(
-    archiveOperationId: reqString(body, 'archive'),
+    archiveEpisodeId: reqString(body, 'archive'),
     engineMajor: reqInt(body, 'engineMajor'),
     lines: [
       for (final line in reqMapList(body, 'lines')) TextLine.fromJson(line),
     ],
   );
 
-  /// The archived operation these lines come from.
-  final String archiveOperationId;
+  /// The archived episode these lines come from.
+  final String archiveEpisodeId;
 
   /// The engine major that wrote the events.
   final int engineMajor;
@@ -477,7 +477,7 @@ final class TextLog extends Message {
 
   @override
   JsonMap toBody() => {
-    'archive': archiveOperationId,
+    'archive': archiveEpisodeId,
     'engineMajor': engineMajor,
     'lines': [for (final line in lines) line.toJson()],
   };

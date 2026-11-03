@@ -81,7 +81,7 @@ class _Origin {
   final String requestId;
 }
 
-/// A live, read-only view of one perspective on the host's operation.
+/// A live, read-only view of one perspective on the host's episode.
 final class PerspectiveView {
   PerspectiveView._(this.perspective, this._feed);
 
@@ -89,17 +89,17 @@ final class PerspectiveView {
   final Perspective perspective;
 
   final PerspectiveFeed _feed;
-  final StreamController<OperationState> _changes =
-      StreamController<OperationState>.broadcast();
+  final StreamController<EpisodeState> _changes =
+      StreamController<EpisodeState>.broadcast();
 
   /// The state this perspective may see.
-  OperationState get state => _feed.state;
+  EpisodeState get state => _feed.state;
 
   /// The last `seq` this view has applied.
   int get lastSeq => _feed.lastSeq;
 
   /// Emits the new state after each applied batch.
-  Stream<OperationState> get states => _changes.stream;
+  Stream<EpisodeState> get states => _changes.stream;
 }
 
 class _Committed {
@@ -118,17 +118,17 @@ class _Connection {
   Perspective? perspective;
 }
 
-/// The canonical engine of one operation, on the GM's device (04 §The
-/// operation loop).
+/// The canonical engine of one episode, on the GM's device (04 §The
+/// episode loop).
 ///
 /// Every input, from a connected player or from the GM's own UI, goes
 /// through one mailbox, so the order of decisions is the order of the log.
 /// The loop is: authorize, dedupe, decide, hold consequences for review,
 /// assign `seq`, store, filter, broadcast. An event is stored before it is
 /// broadcast.
-final class OperationHost {
-  OperationHost._({
-    required this.operationId,
+final class EpisodeHost {
+  EpisodeHost._({
+    required this.episodeId,
     required this.gm,
     required this.engine,
     required this.codec,
@@ -141,7 +141,7 @@ final class OperationHost {
     required this.onProtocolError,
     required Rng rng,
     required _CountingIds ids,
-    required OperationState state,
+    required EpisodeState state,
     required List<_Committed> log,
     required Map<String, Refusal?> answered,
     required EngineVersion requiredEngine,
@@ -152,16 +152,16 @@ final class OperationHost {
        _answered = answered,
        _requiredEngine = requiredEngine;
 
-  /// Opens the operation [operationId] from [store]: an empty store is a new
-  /// operation (give the host `StartOperation` to begin it), a stored log is
+  /// Opens the episode [episodeId] from [store]: an empty store is a new
+  /// episode (give the host `StartEpisode` to begin it), a stored log is
   /// replayed to the same state.
   ///
   /// Throws an [ArgumentError] when [gm] is anonymous: anonymous accounts
   /// cannot host (06 §Account model). [rngFactory] receives the draw count to
   /// resume at: the larger of the state's count and the last count the host
   /// persisted, so draws made by a rejected command are never reused.
-  static Future<OperationHost> open({
-    required String operationId,
+  static Future<EpisodeHost> open({
+    required String episodeId,
     required Principal gm,
     required Engine engine,
     required EngineCodec codec,
@@ -177,13 +177,13 @@ final class OperationHost {
       throw ArgumentError.value(
         gm,
         'gm',
-        'Only a signed-in account can host an operation.',
+        'Only a signed-in account can host an episode.',
       );
     }
-    final stored = await store.read(operationId).toList();
+    final stored = await store.read(episodeId).toList();
     final log = <_Committed>[];
     final answered = <String, Refusal?>{};
-    var state = const OperationState.initial();
+    var state = const EpisodeState.initial();
     var required = const EngineVersion(0, 0, 0);
     for (final item in stored) {
       final event = codec.decodeEvent(item.event);
@@ -198,13 +198,13 @@ final class OperationHost {
       final written = EngineVersion.parse(item.engineVersion);
       if (required < written) required = written;
     }
-    final head = await store.headSnapshot(operationId);
-    final persisted = await store.rngDrawCount(operationId);
+    final head = await store.headSnapshot(episodeId);
+    final persisted = await store.rngDrawCount(episodeId);
     final draws = persisted > state.rng.drawCount
         ? persisted
         : state.rng.drawCount;
-    return OperationHost._(
-      operationId: operationId,
+    return EpisodeHost._(
+      episodeId: episodeId,
       gm: gm,
       engine: engine,
       codec: codec,
@@ -229,8 +229,8 @@ final class OperationHost {
     );
   }
 
-  /// The operation's id.
-  final String operationId;
+  /// The episode's id.
+  final String episodeId;
 
   /// The GM's identity.
   final Principal gm;
@@ -270,24 +270,24 @@ final class OperationHost {
   final List<PerspectiveView> _views = [];
   final List<PendingBatch> _pending = [];
   final Map<String, Refusal?> _answered;
-  final StreamController<OperationState> _stateChanges =
-      StreamController<OperationState>.broadcast();
+  final StreamController<EpisodeState> _stateChanges =
+      StreamController<EpisodeState>.broadcast();
   final StreamController<List<PendingBatch>> _pendingChanges =
       StreamController<List<PendingBatch>>.broadcast();
   final List<StreamSubscription<Link>> _listeners = [];
-  OperationState _state;
+  EpisodeState _state;
   EngineVersion _requiredEngine;
   int _persistedDraws = 0;
   bool _closed = false;
 
   /// The GM's full state.
-  OperationState get state => _state;
+  EpisodeState get state => _state;
 
   /// The last committed `seq`.
   int get lastSeq => _log.isEmpty ? 0 : _log.last.seq;
 
   /// Emits the GM state after each committed batch.
-  Stream<OperationState> get states => _stateChanges.stream;
+  Stream<EpisodeState> get states => _stateChanges.stream;
 
   /// Batches waiting for the GM (visible to the GM only).
   List<PendingBatch> get pending => List.unmodifiable(_pending);
@@ -442,7 +442,7 @@ final class OperationHost {
       clientProtocol: envelope.protocol,
       clientEngine: envelope.engineVersion,
       hostProtocol: protocolMajor,
-      operationEngineMajor: _operationEngineMajor,
+      episodeEngineMajor: _episodeEngineMajor,
       requiredEngine: _log.isEmpty ? null : _requiredEngine,
     );
     if (refusal != null) {
@@ -461,7 +461,7 @@ final class OperationHost {
       );
       return;
     }
-    // The verifier's word on who the GM is must match this operation's GM.
+    // The verifier's word on who the GM is must match this episode's GM.
     if (identity.isGm != (identity.agentId == gm.agentId) ||
         (identity.isGm && identity.isAnonymous) ||
         (!identity.isGm && identity.aliasId == null)) {
@@ -469,7 +469,7 @@ final class OperationHost {
         c,
         const Refused(
           reason: RefusalReason.notInvited,
-          message: 'The identity does not fit this operation.',
+          message: 'The identity does not fit this episode.',
         ),
       );
       return;
@@ -487,7 +487,7 @@ final class OperationHost {
     await _sendEntries(c, hello.lastSeq + 1, welcome: true);
   }
 
-  int get _operationEngineMajor {
+  int get _episodeEngineMajor {
     final meta = _state.meta;
     return EngineVersion.parse(meta?.engineVersion ?? engine_lib.engineVersion)
         .major;
@@ -558,7 +558,7 @@ final class OperationHost {
     // same dice out again.
     if (_rng.drawCount != _persistedDraws) {
       _persistedDraws = _rng.drawCount;
-      await store.saveRngDrawCount(operationId, _persistedDraws);
+      await store.saveRngDrawCount(episodeId, _persistedDraws);
     }
     switch (decision) {
       case Rejected(:final reason):
@@ -585,7 +585,7 @@ final class OperationHost {
   TextLogLine _narrate(
     int seq,
     Event event,
-    OperationState after,
+    EpisodeState after,
     DateTime time,
   ) {
     final n = narrator.narrate(after, event);
@@ -631,7 +631,7 @@ final class OperationHost {
     // Stored before broadcast: if this throws, nothing was sent and the
     // in-memory state is untouched.
     await store.append(
-      operationId,
+      episodeId,
       stored,
       text,
       HeadSnapshot(
@@ -739,7 +739,7 @@ final class OperationHost {
       '${agentId.length}:$agentId/$requestId';
 
   JsonMap _settingsJson() {
-    final s = _state.meta?.settings ?? const OperationSettings();
+    final s = _state.meta?.settings ?? const EpisodeSettings();
     return {
       'autoResolveChecks': s.autoResolveChecks,
       'autoConfirmConsequences': s.autoConfirmConsequences,
@@ -754,7 +754,7 @@ final class OperationHost {
         Envelope.of(
           message,
           engineVersion: EngineVersion.parse(engine_lib.engineVersion),
-          operationId: operationId,
+          episodeId: episodeId,
           from: gmSender,
           seq: seq,
         ),
@@ -769,7 +769,7 @@ final class OperationHost {
   /// past the largest `e<N>` id in [state], so ids never repeat after a
   /// reopen (04 §Coarse actors; ids drawn by commands that recorded nothing
   /// may be reused, because nothing refers to them).
-  static int _nextIdNumber(OperationState state) {
+  static int _nextIdNumber(EpisodeState state) {
     var highest = 0;
     final pattern = RegExp(r'^e(\d+)$');
     for (final id in state.stores.entities) {

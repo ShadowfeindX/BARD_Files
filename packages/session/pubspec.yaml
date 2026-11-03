@@ -1,5 +1,5 @@
 name: session
-description: "Pure-Dart actors, operation loop, transport and store interfaces, Rng adapter."
+description: "Pure-Dart actors, episode loop, transport and store interfaces, Rng adapter."
 version: 0.0.0
 publish_to: none
 resolution: workspace

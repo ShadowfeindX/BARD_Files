@@ -89,9 +89,9 @@ void main() {
         difficulty: const FixedDifficulty(12),
       ),
       CreateAgent(name: 'Nobody', attributes: {'WIL': 1}),
-      const StartOperation(
-        operationId: 'op_2',
-        settings: OperationSettings(
+      const StartEpisode(
+        episodeId: 'op_2',
+        settings: EpisodeSettings(
           autoResolveChecks: true,
           autoConfirmConsequences: true,
           autoApplyEngineUpdates: false,
@@ -262,7 +262,7 @@ void main() {
           onTheWire(encodeCommand(sampleCommands['startOperation']!))!
               as Map<String, Object?>;
       (json['settings']! as Map).remove('autoApplyEngineUpdates');
-      final back = decodeCommand(json) as StartOperation;
+      final back = decodeCommand(json) as StartEpisode;
       expect(back.settings.autoApplyEngineUpdates, isTrue);
     });
 
@@ -501,7 +501,7 @@ void main() {
         envelope.Envelope.of(
           request,
           engineVersion: const envelope.EngineVersion(1, 0, 0),
-          operationId: 'op_1',
+          episodeId: 'op_1',
           from: 'al_vale',
         ),
       );

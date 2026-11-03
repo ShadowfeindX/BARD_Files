@@ -2,7 +2,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
-import '../../data/services/operation_service.dart';
+import '../../data/services/episode_service.dart';
 
 /// State and commands for the GM console. It forwards intents to the service
 /// and never computes an outcome (07 §The app shell never affects outcomes).
@@ -13,7 +13,7 @@ class ConsoleViewModel {
     difficultyKey = signal(_service.difficulties.first.key);
   }
 
-  final OperationService _service;
+  final EpisodeService _service;
 
   /// The request the GM is working on, or null.
   final Signal<String?> selectedRequest = signal(null);

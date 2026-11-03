@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:engine/engine.dart' as engine_lib;
-import 'package:engine/engine.dart' show Command, Engine, OperationState;
+import 'package:engine/engine.dart' show Command, Engine, EpisodeState;
 import 'package:protocol/protocol.dart' hide Rejected;
 import 'package:protocol/protocol.dart' as wire show Rejected;
 
@@ -25,17 +25,17 @@ final class RequestRejected {
   final String? message;
 }
 
-/// A player's side of an operation (04 §Participants): a non-canonical
+/// A player's side of an episode (04 §Participants): a non-canonical
 /// engine fed by the events the GM sends.
 ///
 /// It never applies its own guess to state: a request changes nothing until
 /// the GM's events come back. Pending requests are kept and sent again after
 /// a reconnect; the GM deduplicates by request id, so a retry never decides
 /// twice.
-final class OperationParticipant {
+final class EpisodeParticipant {
   /// Creates a participant for [agentId], playing [aliasId].
-  OperationParticipant({
-    required this.operationId,
+  EpisodeParticipant({
+    required this.episodeId,
     required this.agentId,
     required this.aliasId,
     required this.engine,
@@ -49,8 +49,8 @@ final class OperationParticipant {
            DateTime.now().microsecondsSinceEpoch.toRadixString(36),
        _feed = PerspectiveFeed(engine);
 
-  /// The operation to join.
-  final String operationId;
+  /// The episode to join.
+  final String episodeId;
 
   /// The agent (account profile).
   final String agentId;
@@ -80,8 +80,8 @@ final class OperationParticipant {
   final PerspectiveFeed _feed;
   final Mailbox _mailbox = Mailbox();
   final Map<String, JsonMap> _pending = {};
-  final StreamController<OperationState> _states =
-      StreamController<OperationState>.broadcast();
+  final StreamController<EpisodeState> _states =
+      StreamController<EpisodeState>.broadcast();
   final StreamController<RequestRejected> _rejections =
       StreamController<RequestRejected>.broadcast();
   ConnectionActor? _connection;
@@ -89,7 +89,7 @@ final class OperationParticipant {
   int? _resyncFrom;
 
   /// The state built from what this alias may see.
-  OperationState get state => _feed.state;
+  EpisodeState get state => _feed.state;
 
   /// The last `seq` applied (readable or not).
   int get lastSeq => _feed.lastSeq;
@@ -109,7 +109,7 @@ final class OperationParticipant {
   bool _joined = false;
 
   /// Emits the new state after each applied batch.
-  Stream<OperationState> get states => _states.stream;
+  Stream<EpisodeState> get states => _states.stream;
 
   /// Requests the GM refused.
   Stream<RequestRejected> get rejections => _rejections.stream;
@@ -218,7 +218,7 @@ final class OperationParticipant {
         Envelope.of(
           message,
           engineVersion: EngineVersion.parse(engineVersion),
-          operationId: operationId,
+          episodeId: episodeId,
           from: aliasId,
         ),
       );

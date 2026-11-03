@@ -17,7 +17,7 @@ final class Envelope {
   Envelope({
     required this.protocol,
     required this.engineVersion,
-    required this.operationId,
+    required this.episodeId,
     required this.from,
     required this.type,
     required this.body,
@@ -37,14 +37,14 @@ final class Envelope {
   factory Envelope.of(
     Message message, {
     required EngineVersion engineVersion,
-    required String operationId,
+    required String episodeId,
     required String from,
     int? seq,
     int protocol = protocolMajor,
   }) => Envelope(
     protocol: protocol,
     engineVersion: engineVersion,
-    operationId: operationId,
+    episodeId: episodeId,
     seq: seq,
     from: from,
     type: message.type.wire,
@@ -70,7 +70,7 @@ final class Envelope {
     return Envelope._(
       protocol: protocol,
       engineVersion: EngineVersion.parse(reqString(map, 'e')),
-      operationId: reqString(map, 'op'),
+      episodeId: reqString(map, 'op'),
       seq: seq,
       from: reqString(map, 'from'),
       type: type,
@@ -83,7 +83,7 @@ final class Envelope {
   Envelope._({
     required this.protocol,
     required this.engineVersion,
-    required this.operationId,
+    required this.episodeId,
     required this.from,
     required this.type,
     required this.body,
@@ -96,8 +96,8 @@ final class Envelope {
   /// `e`: the sender's engine version.
   final EngineVersion engineVersion;
 
-  /// `op`: operation id.
-  final String operationId;
+  /// `op`: episode id.
+  final String episodeId;
 
   /// `seq`: the first event's `seq`; present on `events` frames only.
   final int? seq;
@@ -131,7 +131,7 @@ final class Envelope {
   JsonMap toJson() => {
     'p': protocol,
     'e': engineVersion.toString(),
-    'op': operationId,
+    'op': episodeId,
     if (seq != null) 'seq': seq,
     'from': from,
     'type': type,

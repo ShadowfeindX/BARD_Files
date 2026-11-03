@@ -4,7 +4,7 @@ import '../decision.dart';
 import '../events/events.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../visibility.dart';
 
 /// Character creation and changes (rulebook §3, §9).
@@ -18,16 +18,13 @@ final class CharacterSystem {
   final RulesPack pack;
 
   /// Decides a [CharacterCommand].
-  Decision decide(
-    OperationState state,
-    CharacterCommand command,
-    IdSource ids,
-  ) => switch (command) {
-    CreateAgent() => _createAgent(state, command, ids),
-  };
+  Decision decide(EpisodeState state, CharacterCommand command, IdSource ids) =>
+      switch (command) {
+        CreateAgent() => _createAgent(state, command, ids),
+      };
 
   /// Applies a [CharacterEvent].
-  OperationState evolve(OperationState state, CharacterEvent event) =>
+  EpisodeState evolve(EpisodeState state, CharacterEvent event) =>
       switch (event) {
         AgentCreated() => state.copyWith(
           stores: state.stores
@@ -44,15 +41,11 @@ final class CharacterSystem {
         ),
       };
 
-  Decision _createAgent(
-    OperationState state,
-    CreateAgent command,
-    IdSource ids,
-  ) {
+  Decision _createAgent(EpisodeState state, CreateAgent command, IdSource ids) {
     final problem = _checkAgent(command);
     if (problem != null) return Rejected(problem);
     final owner = command.ownerAlias;
-    // An alias is one character in an operation (11 §Terminology), so it
+    // An alias is one character in an episode (11 §Terminology), so it
     // plays at most one agent.
     if (owner != null &&
         state.stores

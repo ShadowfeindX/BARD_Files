@@ -8,28 +8,28 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../models.dart';
 import '../protocol_engine_codec.dart';
-import 'operation_service.dart';
+import 'episode_service.dart';
 
-/// [OperationService] over a real `OperationHost` in "in person, one device"
+/// [EpisodeService] over a real `EpisodeHost` in "in person, one device"
 /// mode (04 §Play modes): the GM's commands and the players' requests all go
 /// through the host's loop, held consequences wait in its review gate, and
 /// every log is the per-perspective view of the stored events.
 ///
-/// Players act through [OperationHost.submit] with their alias as the actor
+/// Players act through [EpisodeHost.submit] with their alias as the actor
 /// because no transport is involved on one device; the transport path
 /// (authorization per player) comes with the networked modes.
-class SessionOperationService implements OperationService {
-  SessionOperationService._(this._host, this._store, this._pack);
+class SessionEpisodeService implements EpisodeService {
+  SessionEpisodeService._(this._host, this._store, this._pack);
 
-  static const _operationId = 'demo';
+  static const _episodeId = 'demo';
 
   /// Fixed demo seed so a run is reproducible; the rolls are still logged.
   static final RngSeed demoSeed = RngSeed(1, 2, 3, 4);
 
-  /// Opens an operation from [packFiles] and starts it. With
-  /// [seedDemoAgents] it also adds two demo agents; a new operation passes
+  /// Opens an episode from [packFiles] and starts it. With
+  /// [seedDemoAgents] it also adds two demo agents; a new episode passes
   /// false and the GM adds agents. Throws [StateError] listing the pack problems if it fails.
-  static Future<SessionOperationService> open(
+  static Future<SessionEpisodeService> open(
     Map<String, String> packFiles, {
     bool seedDemoAgents = true,
   }) async {
@@ -41,8 +41,8 @@ class SessionOperationService implements OperationService {
       );
     }
     final store = InMemoryEventStore();
-    final host = await OperationHost.open(
-      operationId: _operationId,
+    final host = await EpisodeHost.open(
+      episodeId: _episodeId,
       gm: const Principal(agentId: 'gm', isGm: true),
       engine: Engine(pack),
       codec: const ProtocolEngineCodec(),
@@ -50,7 +50,7 @@ class SessionOperationService implements OperationService {
       rngFactory: (draws) => XoshiroRng(demoSeed, drawCount: draws),
       verifier: _NoLinksVerifier(),
     );
-    final service = SessionOperationService._(host, store, pack);
+    final service = SessionEpisodeService._(host, store, pack);
     try {
       await service._seed(seedDemoAgents: seedDemoAgents);
     } catch (_) {
@@ -64,7 +64,7 @@ class SessionOperationService implements OperationService {
     return service;
   }
 
-  final OperationHost _host;
+  final EpisodeHost _host;
   final InMemoryEventStore _store;
   final RulesPack _pack;
 
@@ -88,10 +88,10 @@ class SessionOperationService implements OperationService {
 
   Future<void> _seed({required bool seedDemoAgents}) async {
     final started = await _host.submit(
-      const StartOperation(operationId: _operationId),
+      const StartEpisode(episodeId: _episodeId),
     );
     if (started is Refusal) {
-      throw StateError('Could not start the operation: ${started.message}');
+      throw StateError('Could not start the episode: ${started.message}');
     }
     if (!seedDemoAgents) {
       await _refresh();
@@ -431,12 +431,10 @@ class SessionOperationService implements OperationService {
     ];
     final codec = const ProtocolEngineCodec();
     final events = [
-      await for (final stored in _store.read(_operationId))
+      await for (final stored in _store.read(_episodeId))
         (stored.seq, codec.decodeEvent(stored.event)),
     ];
-    final text = {
-      await for (final t in _store.readText(_operationId)) t.seq: t,
-    };
+    final text = {await for (final t in _store.readText(_episodeId)) t.seq: t};
     List<LogEntry> view(Perspective p, String? alias) => [
       for (final (seq, event) in events)
         ..._entriesFor(event, text[seq]!, p, alias, state),
@@ -532,7 +530,7 @@ class SessionOperationService implements OperationService {
   }
 
   AgentSheet _sheet(
-    OperationState state,
+    EpisodeState state,
     DerivedStats stats,
     EntityId id,
     Identity who,
@@ -553,7 +551,7 @@ class SessionOperationService implements OperationService {
     TextLogLine line,
     Perspective perspective,
     String? alias,
-    OperationState state,
+    EpisodeState state,
   ) {
     return switch (deliveryFor(event.visibility, perspective)) {
       Delivery.hidden => const [],
@@ -571,7 +569,7 @@ class SessionOperationService implements OperationService {
     TextLogLine line,
     Perspective perspective,
     String? alias,
-    OperationState state,
+    EpisodeState state,
   ) {
     if (event is CheckResolved) return RollEntry(_breakdown(event, state));
     final v = line.variants;
@@ -583,7 +581,7 @@ class SessionOperationService implements OperationService {
     return text == null ? null : TextEntry(text);
   }
 
-  DiceBreakdownData _breakdown(CheckResolved event, OperationState state) {
+  DiceBreakdownData _breakdown(CheckResolved event, EpisodeState state) {
     final b = event.breakdown;
     final spec = event.spec;
     final name = state.stores.get(Identity.componentType, spec.entity)?.name;

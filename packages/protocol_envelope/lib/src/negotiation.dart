@@ -8,16 +8,16 @@ import 'refusal_reason.dart';
 /// run in order and the first failure wins:
 ///
 /// 1. [clientProtocol] must equal [hostProtocol].
-/// 2. [clientEngine]'s major must equal [operationEngineMajor].
+/// 2. [clientEngine]'s major must equal [episodeEngineMajor].
 /// 3. [clientEngine] must be at least [requiredEngine], the highest `e` on any
-///    event so far (null for an operation with no events yet).
+///    event so far (null for an episode with no events yet).
 ///
 /// Rule 4 (the pack) is not a refusal: clients fetch the pinned pack.
 Refused? negotiateHello({
   required int clientProtocol,
   required EngineVersion clientEngine,
   required int hostProtocol,
-  required int operationEngineMajor,
+  required int episodeEngineMajor,
   EngineVersion? requiredEngine,
 }) {
   if (clientProtocol != hostProtocol) {
@@ -26,10 +26,10 @@ Refused? negotiateHello({
       hostProtocolMajor: hostProtocol,
     );
   }
-  if (clientEngine.major != operationEngineMajor) {
+  if (clientEngine.major != episodeEngineMajor) {
     return Refused(
       reason: RefusalReason.engineMajorMismatch,
-      operationEngineMajor: operationEngineMajor,
+      episodeEngineMajor: episodeEngineMajor,
     );
   }
   if (requiredEngine != null && clientEngine < requiredEngine) {

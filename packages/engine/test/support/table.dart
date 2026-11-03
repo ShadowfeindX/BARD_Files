@@ -3,22 +3,22 @@ import 'package:engine/engine.dart';
 import 'decisions.dart';
 import 'test_pack.dart';
 
-/// A started operation on [testPack] with one agent, driven command by
+/// A started episode on [testPack] with one agent, driven command by
 /// command: each accepted command's events are folded into [state] and
 /// appended to [log].
 ///
-/// One [ScriptedRng] serves the whole test, as one RNG serves an operation,
+/// One [ScriptedRng] serves the whole test, as one RNG serves an episode,
 /// so its draw count stays in step with the state.
 final class Table {
-  /// Starts an operation and creates Agent Vale ([vale], owned by [valeAlias]):
+  /// Starts an episode and creates Agent Vale ([vale], owned by [valeAlias]):
   /// every attribute 2 except STR 1 and LCK 3; Firearms proficient.
   Table({
     Iterable<int> faces = const [],
-    OperationSettings settings = const OperationSettings(),
+    EpisodeSettings settings = const EpisodeSettings(),
     RulesPack? pack,
   }) : engine = Engine(pack ?? testPack()),
        rng = ScriptedRng(faces) {
-    run(StartOperation(operationId: 'op1', settings: settings));
+    run(StartEpisode(episodeId: 'op1', settings: settings));
     run(
       CreateAgent(
         name: 'Vale',
@@ -38,14 +38,14 @@ final class Table {
   /// The engine under test.
   final Engine engine;
 
-  /// The operation's RNG.
+  /// The episode's RNG.
   final ScriptedRng rng;
 
-  /// The operation's id source.
+  /// The episode's id source.
   final IdSource ids = SequentialIdSource();
 
   /// Current state.
-  OperationState state = const OperationState.initial();
+  EpisodeState state = const EpisodeState.initial();
 
   /// Every event so far.
   final List<Event> log = [];

@@ -18,7 +18,7 @@ abstract interface class IdSource {
 /// Deterministic [IdSource] that returns `<prefix>1`, `<prefix>2`, ...
 ///
 /// Useful in tests and anywhere ids only need to be unique within one
-/// operation. Start from [start] to continue a sequence after a reload.
+/// episode. Start from [start] to continue a sequence after a reload.
 final class SequentialIdSource implements IdSource {
   /// Creates a source whose first id is `<prefix><start>`.
   SequentialIdSource({this.prefix = 'e', int start = 1}) : _next = start;

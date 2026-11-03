@@ -6,7 +6,7 @@ import 'package:ui_kit/ui_kit.dart';
 import 'app/composition.dart';
 import 'app/routes.dart';
 
-/// Entry point. Opens an in-process operation over the shipped pack.
+/// Entry point. Opens an in-process episode over the shipped pack.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(BardApp(composition: await Composition.inProcess(rootBundle)));
@@ -29,26 +29,26 @@ class _BardAppState extends State<BardApp> {
   late GoRouter _router = _build();
 
   GoRouter _build() =>
-      buildRouter(_composition, onNewOperation: _startNewOperation);
+      buildRouter(_composition, onNewEpisode: _startNewEpisode);
 
   /// One active host at a time: the old one is closed, a fresh empty
-  /// operation replaces it, and the router restarts at `/`.
+  /// episode replaces it, and the router restarts at `/`.
   final GlobalKey<ScaffoldMessengerState> _messenger =
       GlobalKey<ScaffoldMessengerState>();
   bool _opening = false;
 
-  Future<void> _startNewOperation() async {
+  Future<void> _startNewEpisode() async {
     if (_opening) return;
     _opening = true;
     final Composition next;
     try {
       next = await Composition.inProcess(rootBundle, seedDemoAgents: false);
     } catch (e) {
-      // Keep the current operation running and say why nothing changed.
+      // Keep the current episode running and say why nothing changed.
       _opening = false;
       if (mounted) {
         _messenger.currentState?.showSnackBar(
-          SnackBar(content: Text('Could not start a new operation: $e')),
+          SnackBar(content: Text('Could not start a new episode: $e')),
         );
       }
       return;
@@ -59,7 +59,7 @@ class _BardAppState extends State<BardApp> {
       _composition = next;
       _router = _build();
     });
-    await old.operation.dispose();
+    await old.episode.dispose();
   }
 
   @override

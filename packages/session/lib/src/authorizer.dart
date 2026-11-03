@@ -19,7 +19,7 @@ abstract final class SessionRejection {
 /// rules: the engine records the actor but never checks it.
 abstract interface class Authorizer {
   /// Null to allow, or why [who] may not issue [command].
-  String? deny(Principal who, Command command, OperationState state);
+  String? deny(Principal who, Command command, EpisodeState state);
 }
 
 /// The default rules: the GM may issue any command; a player may issue only
@@ -36,7 +36,7 @@ final class DefaultAuthorizer implements Authorizer {
   static bool _none(Command _) => false;
 
   @override
-  String? deny(Principal who, Command command, OperationState state) {
+  String? deny(Principal who, Command command, EpisodeState state) {
     if (who.isGm) return null;
     final alias = who.aliasId;
     final actor = command.actor;

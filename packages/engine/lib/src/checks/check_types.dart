@@ -163,7 +163,7 @@ final class CheckSpec {
 /// physical dice) are reserved so logs written today stay valid; the feature
 /// is pending D and is not built.
 enum RollSourceKind {
-  /// The operation's RNG rolled the faces.
+  /// The episode's RNG rolled the faces.
   rng,
 
   /// Someone entered physical dice faces. Reserved, never produced yet.
@@ -172,7 +172,7 @@ enum RollSourceKind {
 
 /// The range of RNG draws a rolling event used: `[start, end)`.
 ///
-/// Folding the event sets the operation's draw count to [end] (01 §RNG), so
+/// Folding the event sets the episode's draw count to [end] (01 §RNG), so
 /// the GM can audit any roll from the seed.
 final class DrawRange {
   /// Creates a range. Throws an [ArgumentError] unless
