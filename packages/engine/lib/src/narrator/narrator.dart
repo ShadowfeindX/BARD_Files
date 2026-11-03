@@ -54,6 +54,9 @@ final class Narration {
       'redacted: $redacted)';
 }
 
+/// What players read for a redacted table roll.
+const tableRedaction = '▮▮▮▮ [REDACTED] ▮▮▮▮';
+
 /// Turns events into [Narration]s for one pack.
 ///
 /// Pure. Every event kind has a case (an exhaustive switch, 04 §Every event
@@ -122,16 +125,27 @@ final class Narrator {
       ConditionCleared() =>
         '${_name(state, event.entity)} is no longer '
             '${_condition(event.condition)}.',
-      TableRolled() => _tableRolled(state, event),
+      TableRolled() => _tableRolled(state, event, forGm: forGm),
     };
   }
 
-  String _tableRolled(EpisodeState state, TableRolled event) {
-    final who = event.entity == null
-        ? 'The Handler rolled'
-        : '${_name(state, event.entity!)} rolled';
+  /// The GM's line is mechanical; players read only the pack's fiction:
+  /// the table's lead-in, then the row (R, 2026-11-03). No dice, no table
+  /// name.
+  String _tableRolled(
+    EpisodeState state,
+    TableRolled event, {
+    required bool forGm,
+  }) {
+    if (!forGm) {
+      final lead = event.lead;
+      return lead == null ? event.text : '$lead ${event.text}';
+    }
     final table = pack.randomTable(event.table)?.name ?? event.table;
-    return '$who on $table: ${event.faces.length}d${event.sides} '
+    final who = event.entity == null
+        ? ''
+        : ' for ${_name(state, event.entity!)}';
+    return 'Random table "$table"$who: ${event.faces.length}d${event.sides} '
         '${event.faces.join(' + ')} = ${event.total}. ${event.text}';
   }
 
@@ -200,9 +214,10 @@ final class Narrator {
 
   /// The line players read when the GM rolls or acts in secret.
   String _redacted(Event event) => switch (event) {
-    CheckRequired() ||
-    CheckResolved() ||
-    TableRolled() => 'The Handler rolled something.',
+    CheckRequired() || CheckResolved() => 'The Handler rolled something.',
+    // A redaction bar, in the case-file look, rather than a sentence (R,
+    // 2026-11-03).
+    TableRolled() => tableRedaction,
     _ => 'Something happened out of sight.',
   };
 

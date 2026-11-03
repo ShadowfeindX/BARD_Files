@@ -574,6 +574,9 @@ void main() {
       final loaded = result.pack!.randomTable('wild')!;
       expect(loaded.dice, Dice(count: 1, sides: 6, explode: false));
       expect(loaded.rowFor(5)!.text, 'High.');
+      expect(loaded.lead, isNull);
+      final led = withTable({...table(), 'lead': 'It stirs.'});
+      expect(led.pack!.randomTable('wild')!.lead, 'It stirs.');
     });
 
     test('a gap, an overlap and a row out of range are errors', () {

@@ -215,6 +215,7 @@ final Map<String, Event> sampleEvents = {
     entity: vale,
     sides: 6,
     faces: const [4],
+    lead: 'The air in the room goes still.',
     text: 'The artifact answers.',
     draws: DrawRange(3, 4),
     actor: const GmActor(),

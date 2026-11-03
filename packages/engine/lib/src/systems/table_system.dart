@@ -84,6 +84,7 @@ final class TableSystem {
         entity: entity,
         sides: dice.sides,
         faces: faces,
+        lead: table.lead,
         text: row.text,
         draws: DrawRange(start, rng.drawCount),
         actor: command.actor,

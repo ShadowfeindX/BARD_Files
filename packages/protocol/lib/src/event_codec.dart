@@ -191,6 +191,7 @@ JsonMap encodeEvent(Event event) {
       :final entity,
       :final sides,
       :final faces,
+      :final lead,
       :final text,
       :final draws,
     ) =>
@@ -201,6 +202,7 @@ JsonMap encodeEvent(Event event) {
           'entity': entity?.value,
           'sides': sides,
           'faces': faces,
+          'lead': lead,
           'text': text,
           'draws': encodeDraws(draws),
         },
@@ -400,6 +402,7 @@ Event decodeEvent(Object? json) {
           entity: entity == null ? null : EntityId(entity),
           sides: sides,
           faces: faces,
+          lead: map.optString('lead'),
           text: map.string('text'),
           draws: draws,
           actor: actor,

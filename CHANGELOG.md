@@ -5,8 +5,8 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ## Unreleased
 
 ### Random tables (R-B2)
-- Pack: new `tables/` folder, one random table per file (`id`, `name`, `dice`, `rows` of `{from, to, text}`). The loader checks that the rows cover every total of the dice exactly once; pending dice load with a warning; row `effects` must stay empty until an effect has engine meaning. The engine and the example pack ship no tables (content is D's).
-- Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review; secret and redacted rolls read "The Handler rolled something." to players.
+- Pack: new `tables/` folder, one random table per file (`id`, `name`, `dice`, optional `lead`, `rows` of `{from, to, text}`). The loader checks that the rows cover every total of the dice exactly once; pending dice load with a warning; row `effects` must stay empty until an effect has engine meaning. The engine and the example pack ship no tables (content is D's).
+- Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review. Narration is in-theme for players: the table's lead-in (D's text) then the row, never dice or table names; the GM's line keeps the mechanics; a redacted roll shows players a redaction bar.
 - Codecs: `rollTable` and `tableRolled` with v1 fixtures; the engine round-trip run includes a table roll.
 
 ### Refactor: Operation renamed to Episode in code

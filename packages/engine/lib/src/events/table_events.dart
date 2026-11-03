@@ -17,6 +17,7 @@ final class TableRolled extends TableEvent implements RollingEvent {
     this.entity,
     required this.sides,
     required List<int> faces,
+    this.lead,
     required this.text,
     required this.draws,
     required this.actor,
@@ -34,6 +35,9 @@ final class TableRolled extends TableEvent implements RollingEvent {
 
   /// Every face rolled, in order.
   final List<int> faces;
+
+  /// The table's lead-in line for players, if the pack has one.
+  final String? lead;
 
   /// The selected row's text.
   final String text;
@@ -57,6 +61,7 @@ final class TableRolled extends TableEvent implements RollingEvent {
       other.entity == entity &&
       other.sides == sides &&
       listEquals(other.faces, faces) &&
+      other.lead == lead &&
       other.text == text &&
       other.draws == draws &&
       other.actor == actor &&
@@ -69,6 +74,7 @@ final class TableRolled extends TableEvent implements RollingEvent {
     entity,
     sides,
     Object.hashAll(faces),
+    lead,
     text,
     draws,
     actor,

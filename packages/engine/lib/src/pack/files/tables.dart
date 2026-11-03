@@ -55,6 +55,7 @@ final class RandomTable {
     required this.id,
     required this.name,
     required this.dice,
+    this.lead,
     required List<RandomTableRow> rows,
     this.deprecated,
     this.deprecatedFields = const ImmutableMap.empty(),
@@ -69,6 +70,10 @@ final class RandomTable {
   /// The dice rolled on the table: a plain dice node without `explode`.
   /// `null` while the value is pending D; such a table cannot be rolled.
   final Dice? dice;
+
+  /// An optional in-theme line shown to players before the row's text
+  /// (pack content, written by D). `null` shows the row's text alone.
+  final String? lead;
 
   /// Rows in order. The loader checks that they cover every total of
   /// [dice] exactly once.
@@ -94,6 +99,7 @@ final class RandomTable {
       other.id == id &&
       other.name == name &&
       other.dice == dice &&
+      other.lead == lead &&
       listEquals(other.rows, rows) &&
       other.deprecated == deprecated &&
       other.deprecatedFields == deprecatedFields;
@@ -104,6 +110,7 @@ final class RandomTable {
     id,
     name,
     dice,
+    lead,
     Object.hashAll(rows),
     deprecated,
     deprecatedFields,
@@ -118,6 +125,7 @@ RandomTable? parseRandomTable(ObjectReader r, int? packMajor) {
   final id = r.string('id');
   final name = r.string('name');
   final expr = r.exprOrPending('dice');
+  final lead = r.has('lead') ? r.string('lead') : null;
   final rows = r.objects('rows', (row) {
     final from = row.integer('from');
     final to = row.integer('to');
@@ -149,6 +157,7 @@ RandomTable? parseRandomTable(ObjectReader r, int? packMajor) {
     id: id,
     name: name,
     dice: dice,
+    lead: lead,
     rows: rows,
     deprecated: deprecated,
     deprecatedFields: ImmutableMap.of(fields),

@@ -40,7 +40,7 @@ core/                           pack id
   items/                        one file per item template
   techniques/
   npcs/
-  tables/                       random tables, one per file: id, name, dice, rows {from, to, text} (R-B2)
+  tables/                       random tables, one per file: id, name, dice, optional lead, rows {from, to, text} (R-B2)
   strings/                      display text, so wording can change without touching rules
 ```
 
