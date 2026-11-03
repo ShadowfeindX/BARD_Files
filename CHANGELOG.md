@@ -4,6 +4,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Project rules
+- `CLAUDE.md` brought up to date: the agent team (2 Opus, 4 Sonnet, 2 Haiku; model set per session and subagent), Haiku review then the Opus gate on gated work, the single PC session, the new locations (`D:\.code\BARD` for code, `F:\My Drive\BARD_Workspace` for the workspace; `C:\GAMES\BARD` retired), branch prefixes `feature/` `refactor/` `bugfix/` `docs/` `probe/`, PR and release rules, v1 platforms, and the decided stack and open decisions now pointing to the architecture docs.
+
 ### Phone messaging
 - Engine: `SendPhoneMessage(from, to, text)` and `PhoneMessageSent` for the in-game phone, in `MessagingSystem`. Parties are the Handler, an alias or a GM-run entity; senders must match the actor; text is 1 to 2,000 UTF-16 units; visibility is the sending and receiving aliases (the session's projection gives the Handler every event). Narrator lines, and a `phoneConversations(log, viewer)` read model for the Handler's and a player's threads.
 - Codecs: `sendPhoneMessage` and `phoneMessageSent` with v1 fixtures; the engine round-trip test now includes a phone exchange.
