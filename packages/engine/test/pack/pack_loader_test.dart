@@ -678,6 +678,24 @@ void main() {
       expect(result.ok, isTrue);
       expect(result.pack!.randomTable('wild')!.dice, isNull);
       expect(result.pack!.pendingPaths, {'tables/wild.json: dice'});
+      expect(result.warnings.single.pendingD, isTrue);
+    });
+
+    test('a deprecated table must point at an existing table', () {
+      Map<String, Object?> deprecated(String target) => {
+        ...table(),
+        'deprecated': {
+          'since': '1.1.0',
+          'removeIn': 2,
+          'note': 'Use the other one.',
+          'replacedBy': target,
+        },
+      };
+      expect(
+        withTable(deprecated('table:missing')),
+        hasError('tables/wild.json', 'deprecated', 'missing table "missing"'),
+      );
+      expect(withTable(deprecated('table:wild')).ok, isTrue);
     });
 
     test('duplicate table ids', () {

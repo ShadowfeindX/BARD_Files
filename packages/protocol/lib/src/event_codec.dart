@@ -388,6 +388,12 @@ Event decodeEvent(Object? json) {
         if (faces.isEmpty) {
           throw const ProtocolFormatException('a table roll needs a face');
         }
+        final draws = decodeDraws(map.object('draws'));
+        if (draws.end - draws.start != faces.length) {
+          throw const ProtocolFormatException(
+            'a table roll uses one draw per face',
+          );
+        }
         final entity = map.optString('entity');
         return TableRolled(
           table: map.string('table'),
@@ -395,7 +401,7 @@ Event decodeEvent(Object? json) {
           sides: sides,
           faces: faces,
           text: map.string('text'),
-          draws: decodeDraws(map.object('draws')),
+          draws: draws,
           actor: actor,
           visibility: visibility(),
         );
