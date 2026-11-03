@@ -5,6 +5,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ## Unreleased
 
 ### Docs: Episode naming
+- Chapter 12 proposes splitting the Firestore `operations` node: a new `episodes/{episodeId}` node for live-game data under its own rules, with the operation record keeping arc and handler data (R, 2026-11-03). The phone box now clears when the operation ends, not at mission end.
 - The live-game unit is now called an **Episode** in the spec and developer guide (tree: Campaign > Operation > Mission > Episode). "Operation" means only the story arc; "session" keeps its host and network meaning. Code identifiers, RTDB paths and the Firestore `operations/{opId}` node are unchanged pending a gated rename row.
 
 ### Docs: round-2 follow-ups
