@@ -1,5 +1,7 @@
 # 08. Testing
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 Every package is testable on its own, with in-memory implementations of everything it depends on. A task is done only when `flutter analyze` and `flutter test` pass (CLAUDE.md §8).
 
 ## Engine
@@ -31,7 +33,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 - Fixture pairs per step (N in, N+1 out), including "needs decision" cases.
 - Newest step only: output loads and folds in the current engine.
-- Archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (P13 widget test: single tap never confirms; the "cannot be recovered" tick and typed operation name are both required).
+- Archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (P13 widget test: single tap never confirms; the "cannot be recovered" tick and typed episode name are both required).
 
 ## Apps
 

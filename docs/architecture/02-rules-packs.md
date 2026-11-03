@@ -1,5 +1,7 @@
 # 02. Rules packs and content
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 ## Vocabulary vs values (Fixed)
 
 | Owned by the engine (vocabulary) | Owned by a pack (values) |
@@ -60,7 +62,7 @@ core/                           pack id
 - `engineApi` is the engine major the pack targets (Fixed). The engine refuses to load a pack with a different major.
 - `version` is the pack's own semver. Pack minor/patch bumps are value changes; a pack major means values changed incompatibly (for example a key was renamed).
 - `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override.
-- `contentHash` is computed by tooling, not written by hand, and is what an operation pins.
+- `contentHash` is computed by tooling, not written by hand, and is what an episode pins.
 
 ### Skills (Fixed, F3 part 2)
 
@@ -139,11 +141,11 @@ The validator is part of the engine package so the apps and a command-line tool 
 
 Backend code (Cloud Functions) does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
-## Operations pin packs
+## Episodes pin packs
 
-- An operation records `packRef = (id, version, contentHash)` in its meta when created.
+- An episode records `packRef = (id, version, contentHash)` in its meta when created.
 - **Pack updates are manual by default (Fixed).** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event, so the log shows exactly when values changed.
-- **Engine updates are automatic by default (Fixed)** within a major. The GM toggles for both live in operation settings and are stored in operation meta.
+- **Engine updates are automatic by default (Fixed)** within a major. The GM toggles for both live in episode settings and are stored in episode meta.
 - Because events carry resolved results, a pack update never changes past outcomes.
 
 ## Content kinds and tiers
@@ -153,9 +155,9 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 | Core | D (official) | cloud-hosted, bundled copy in apps | yes |
 | Library | any GM, submitted for review | cloud-hosted | only once verified |
 | Campaign / private | a GM | the GM's account (and local cache) | no |
-| Operation-scoped | a GM, for one session | pinned to that operation | no |
+| Episode-scoped | a GM, for one episode | pinned to that episode | no |
 
-- The **operation-scoped tier** (Fixed, F3 part 3) sits under Campaign and holds per-session GM content. It uses the same schema and the same validator as any pack, is pinned by the operation (`packRef`), and its use is logged like any other pack change.
+- The **episode-scoped tier** (Fixed, F3 part 3) sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and its use is logged like any other pack change.
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
 - The **public library** is a government-style archive showing only items with `verification: verified` (Fixed).
 - **Who verifies (Fixed, concern 5).** At first only R and D hold the verification claim. It is set by the roles function; more auditors can be added later via the console.
@@ -168,7 +170,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 - The core pack ships inside the apps (offline first) and is also published to the backend so newer versions can be fetched.
 - Pack files live in Cloud Storage and the pack index lives in Firestore (FS1). Pack files are immutable per version; a new version is a new upload.
-- The local cache stores every pack version an operation references, so an offline device can always open its operations.
+- The local cache stores every pack version an episode references, so an offline device can always open its episodes.
 
 ## Documents (Typst, later)
 

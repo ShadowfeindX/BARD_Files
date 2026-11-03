@@ -1,6 +1,6 @@
 # The B.A.R.D. Files
 
-A Flutter application for playing *The B.A.R.D. Files* tabletop RPG remotely. It has two experiences: a **GM experience** (host an operation, run the world, create and monitor NPCs) and a **player experience** (interact with the GM, the game and the world as immersively as a 2D screen allows).
+A Flutter application for playing *The B.A.R.D. Files* tabletop RPG remotely. It has two experiences: a **GM experience** (host an episode, run the world, create and monitor NPCs) and a **player experience** (interact with the GM, the game and the world as immersively as a 2D screen allows).
 
 The game rules live in a pure-Dart engine driven by data packs, so the rules can be tested and reused by both the GM and player apps, and content can be edited without touching Dart.
 
@@ -15,8 +15,8 @@ The game rules live in a pure-Dart engine driven by data packs, so the rules can
 | `apps/functions` | HTTPS-only Dart Cloud Functions. |
 | `packages/engine` | Pure-Dart game engine: rules computation (commands, events, state, dice, rules-pack loader), no I/O. |
 | `packages/protocol_envelope`, `packages/protocol` | Wire envelope and the codecs between engine messages and the wire. |
-| `packages/session` | Actors, operation loop, transport and store interfaces, Rng adapter. |
-| `packages/migrator` | Transforms saved operations between engine major versions. |
+| `packages/session` | Actors, episode loop, transport and store interfaces, Rng adapter. |
+| `packages/migrator` | Transforms saved episodes between engine major versions. |
 | `packages/content_core` | The default rules pack as data (`assets/`). |
 | `packages/backend` | Flutter and Firebase adapters behind the session and app interfaces. |
 | `packages/ui_kit` | Shared widgets, theme and perspective panels. |

@@ -446,7 +446,7 @@ Source for all: library `architecture/supplemental-x0-pending.md`; 11 §Terminol
 - A GM may have more than one handler character, persona or alias, for different operations. A player may have more than one alias in an operation or a mission, and an alias may appear in several missions.
 
 This **supersedes** R's 2026-10-20 terms ("operation = the whole campaign") in 11 §Terminology and the glossary. The options below (A to C) were written for the old terms and are **not** the decision any more; the open design question (which of these units owns an event log, an RTDB tree and a sembast file) is restated for R in R-X0. D's follow-up questions are FD-X1 to FD-X8.
-**Apply now (docs only):** README glossary and 11 §Terminology use D's four terms; the spec-wide rename of chapters 01 to 08 and 12 waits on R-X0 (until then those chapters' "operation" means the unit of live play, which in D's terms is a session). Per level, archive and summaries are listed under R-X0.
+**Apply now (docs only):** README glossary and 11 §Terminology use D's four terms; the spec rename to Episode was done 2026-11-03 (code, RTDB paths and the Firestore node wait on a gated row) (until then those chapters' "operation" means the unit of live play, which in D's terms is a session). Per level, archive and summaries are listed under R-X0.
 
 **Decides:** R and D. **Today:** the spec gives each operation (read as one session) its own event log, RTDB tree, sembast file, archive and migration. R's terms make an operation the whole campaign.
 

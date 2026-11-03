@@ -1,3 +1,5 @@
+> **Ruled 2026-11-03:** option A, with the lowest level named **Episode** (not Session, which already names the host and network layer). The text below uses "session" as written before that ruling.
+
 # R-A2 explained: which level owns the live game record?
 
 Short version: the question is only about **naming and where the data lives**. Nothing about how the game plays changes.
@@ -42,7 +44,7 @@ Whatever level owns the log is the unit that has:
 | What the log covers | one sitting | all sittings of a mission | all missions of an arc |
 | Fits D's "archive log and snapshot at every session end, keep until mission ends, allow rollback" | **Yes, exactly** | No: rollback to a session would mean cutting a long log in the middle | No |
 | Parallel missions | Fine, each is its own log | Fine | Awkward: two missions write to one log |
-| Rename work | Rename `Operation` to `Session` in code and spec | Rename to `Mission` | None, but the code's "operation" then disagrees with D's word |
+| Rename work | Rename `Operation` to `Episode` (was written as Session before the ruling) in code and spec | Rename to `Mission` | None, but the code's "operation" then disagrees with D's word |
 | Character carry-over | Final snapshot of a session carries forward | Snapshot at mission end | Snapshot at operation end |
 
 Why A fits: D said that when a session ends, its log is archived and a **snapshot** is kept ready to start the next session, and that Handlers can roll back to an earlier session. That is how our engine already behaves per live game: log plus a head snapshot. So the session is the natural unit, and the higher levels (mission, operation, campaign) are just labels and shared records above it.

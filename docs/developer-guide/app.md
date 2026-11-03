@@ -1,5 +1,7 @@
 # The bard app
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 `apps/bard` is the GM and player app. This page covers the D demo slice: one device, all panels on screen.
 
 ## Layout

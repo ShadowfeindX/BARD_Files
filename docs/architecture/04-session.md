@@ -1,6 +1,8 @@
 # 04. Session (`packages/session`)
 
-The session package is the runtime layer: it owns live operations, talks to transports and stores, enforces who may send what, and feeds the engine. It is pure Dart. Platform-specific pieces (sockets, Firebase, databases) are injected through interfaces.
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
+The session package is the runtime layer: it owns live episodes, talks to transports and stores, enforces who may send what, and feeds the engine. It is pure Dart. Platform-specific pieces (sockets, Firebase, databases) are injected through interfaces.
 
 ## Coarse actors (Fixed)
 
@@ -15,11 +17,11 @@ Actors are **not** isolates (P7, ruled by R 2026-10-20): they are single-threade
 | `ConnectionActor` | both ends, one per link | One transport link: framing, ping, backoff, hands decoded messages to its owner |
 | `StoreActor` | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
 | `RelayActor` | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
-| `SessionDirectory` | each device | Which operations exist locally, opening/closing them, routing messages to the right actor |
+| `SessionDirectory` | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
 Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `OperationHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
-## The operation loop (GM canonical, Fixed)
+## The episode loop (GM canonical, Fixed)
 
 ```
 request(cmd) ──► OperationHost
@@ -33,7 +35,7 @@ request(cmd) ──► OperationHost
                    4. rolls: go straight on to steps 5-8 (never gated)
                       consequences: held as a GM-only pending batch (GM review gate)
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
-                         auto-confirm skips the wait when the operation's setting says so
+                         auto-confirm skips the wait when the episode's setting says so
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
                       StoreActor.append(events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
@@ -47,10 +49,10 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - Storing comes before broadcast: an event is never broadcast before it is stored on the GM device.
 - **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `OperationHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
-- **Auto-confirm** is a per-operation GM setting. With it on, a pending batch is confirmed without waiting for the GM.
+- **Auto-confirm** is a per-episode GM setting. With it on, a pending batch is confirmed without waiting for the GM.
 - **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
 - **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
-- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-operation interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (W1, below), so autosave concerns non-web hosts only.
+- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (W1, below), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
 - **Authorization** lives here, not in the engine: "only the GM may `RequireCheck`", "a player may only `RequestAction` for an alias they control", "anonymous accounts cannot host". The engine stays about rules; the session is about people.
@@ -108,7 +110,7 @@ abstract interface class Clock { DateTime now(); }
 
 Every interface has an in-memory implementation in `session` itself, used by tests and by single-device play.
 
-**Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per operation, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long operation is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
+**Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
 
 ### Event entries (Proposed)
 
@@ -137,18 +139,18 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | In person, phones | LAN (or in-process + LAN) | none | GM device hosts; companion phones join on the local network. |
 | LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
 | P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
-| Network-hosted | relay | yes | Realtime Database relays live play; finished operations are archived to Firestore (FS1, FS3) ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
-| Offline | any local | none | Signed-in accounts use the local cache; network-hosted operations resume relaying when online. |
+| Network-hosted | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore (FS1, FS3) ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
+| Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online. |
 
 **Web build (W1, Fixed for now; ruled by R 2026-10-20):** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and R ruled that the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. D confirmed it on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)). Native builds can host every mode.
 
-**Physical dice (concern 7).** A per-operation GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). D approved the feature on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)); it is built after the demo, and which level owns the setting follows the campaign/operation/mission/session ruling (FD-X1).
+**Physical dice (concern 7).** A per-episode GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). D approved the feature on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)); it is built after the demo, and which level owns the setting follows the campaign/operation/mission/episode ruling (FD-X1).
 
 ## Reconnection and GM continuity
 
 - A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot.
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
-- If the GM's device is lost mid-operation, the GM opens the operation on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that.
+- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that.
 
 ## Offline and sync semantics
 

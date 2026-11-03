@@ -1,6 +1,8 @@
 # 12. Firestore collections (P10c, Firestore part)
 
-Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
+Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the Firestore `operations/{opId}` collection and its subcollections are left unrenamed here. That node mixes live-game data (members, archived missions) with handler-level data (invites, public listings), so whether it becomes `episodes/{episodeId}` or stays an operation (arc) record waits on R's ruling on which level owns it; the RTDB live tree keeps the path `operations/$op` (the rules file is unchanged; renaming it is a gated row) in [06](06-accounts-backend.md#realtime-database-model-live-play). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
 
 This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chose Firestore for data at rest and a hand-written REST client on desktop). It names the collections, the document shapes, the security rules and the composite indexes. Account fields come from [11](11-supplemental-features.md). Archive layout follows [05](05-migrator.md). Anything that depends on the unresolved event-log unit (X0) is held and listed at the end.
 
@@ -514,5 +516,5 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 4. **`tierLevels/{tier}` lookup document** for what each tier may read, instead of level claims: one `get`, and R and D change it without re-issuing claims.
 5. **Unauthenticated `get` on `profilesPublic/{badge}`**, redacted fields only; `list` stays signed-in.
 6. **Provisional array caps** (R sets the numbers): `memberUids` 20, `tags` 10, `keywords` 30, `packPins` 5.
-7. **Transfer-move function** for the move and clean-up only: transactional, checks the source operation's RTDB `meta` with admin REST (no live session), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
+7. **Transfer-move function** for the move and clean-up only: transactional, checks the source episode's RTDB `meta` with admin REST (no live host), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
 8. **`signInCodes` TTL** as clean-up only. The function checks expiry in a transaction.

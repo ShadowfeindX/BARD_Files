@@ -1,5 +1,7 @@
 # 01. Engine (`packages/engine`)
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 The engine is the game. It is pure Dart, imports only the Dart SDK, performs no I/O and never reads a clock or a random source it was not handed. Given the same inputs it always produces the same outputs.
 
 ## Responsibilities
@@ -8,7 +10,7 @@ The engine is the game. It is pure Dart, imports only the Dart SDK, performs no 
 - Turn **commands** into **events** (`decide`), and **events** into **state** (`evolve`).
 - Roll dice through an injected, seeded RNG and record every die in the resulting event.
 - Expose **read models**: pure functions that answer UI questions ("what is this agent's Evasion?") from state.
-- Provide the **event narrator** (Fixed, P12): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the operation's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Narration runs after the GM confirms a consequence batch (P12, amended by F2), never on held events.
+- Provide the **event narrator** (Fixed, P12): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the episode's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Narration runs after the GM confirms a consequence batch (P12, amended by F2), never on held events.
 
 Not its job: networking, persistence, accounts, ordering of messages, who is allowed to send what (that is `session`), or presentation.
 
@@ -23,7 +25,7 @@ replay : (State0, List<Event>)           → State    // fold of evolve
 
 These are the same signatures as the [public API](#public-api-surface-proposed) below. `IdSource` supplies new entity IDs during `decide` only.
 
-- `decide` is the only function that may consume randomness. It runs **only on the GM's engine** during an operation (and on any device in solo/offline prep).
+- `decide` is the only function that may consume randomness. It runs **only on the GM's engine** during an episode (and on any device in solo/offline prep).
 - `evolve` is total and deterministic. Every client runs it. Because events carry resolved results (dice faces, totals, outcomes), replaying a log never re-rolls and history never changes.
 - A rejected command produces no events. The session layer turns the rejection into a reply to whoever sent it.
 
@@ -31,7 +33,7 @@ These are the same signatures as the [public API](#public-api-surface-proposed) 
 
 ### Entities
 
-An entity is an `EntityId` and nothing else. IDs are opaque strings generated inside `decide` (from the operation's ID source, injected like the RNG) and recorded in the creating event, so every client agrees on them.
+An entity is an `EntityId` and nothing else. IDs are opaque strings generated inside `decide` (from the episode's ID source, injected like the RNG) and recorded in the creating event, so every client agrees on them.
 
 Entities cover agents (player characters), NPCs, adversaries, items, vehicles, artifacts, locations and scenes. What an entity *is* depends only on which components it has.
 
@@ -66,7 +68,7 @@ Rules for components:
 
 ```
 OperationState
-  ├─ meta: operation id, engine version, pack ref (id, version, content hash), settings
+  ├─ meta: episode id, engine version, pack ref (id, version, content hash), settings
   ├─ stores: Map<ComponentType, Map<EntityId, Component>>   // ECS stores
   ├─ encounter: initiative order, round, whose turn (when in combat)
   ├─ pending: open action requests and checks awaiting the GM
@@ -107,12 +109,12 @@ GM:      ResolveCheck(checkId)                                      → CheckRes
 GM:      ApplyConsequence(...)                                      → (held for GM review) → DamageApplied | SanityLost | ConditionApplied ...
 ```
 
-- The GM may skip the request step (GM-initiated checks), and may set "auto-resolve" so `RequireCheck` immediately rolls. That is a GM setting stored in operation meta, not a different rule.
+- The GM may skip the request step (GM-initiated checks), and may set "auto-resolve" so `RequireCheck` immediately rolls. That is a GM setting stored in episode meta, not a different rule.
 - `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, advantage pool and the kept result, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it.
 - Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
-- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `OperationHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-operation auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
-- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-operation GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
+- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `OperationHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
+- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-episode GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
@@ -180,7 +182,7 @@ With the proficiency question ruled, the worked examples in §2 are unblocked as
 
 Ruled by R 2026-10-20 (P5).
 
-- The GM engine receives an `Rng` interface and stays SDK-only. Production uses the pub package `xrandom` (0.7.2, revercode.com), class **`Xoshiro128pp`**, seeded per operation. It is wrapped by an adapter in `session` that implements the engine's `Rng`; the engine itself never imports `xrandom`. Tests use a scripted RNG that returns fixed faces.
+- The GM engine receives an `Rng` interface and stays SDK-only. Production uses the pub package `xrandom` (0.7.2, revercode.com), class **`Xoshiro128pp`**, seeded per episode. It is wrapped by an adapter in `session` that implements the engine's `Rng`; the engine itself never imports `xrandom`. Tests use a scripted RNG that returns fixed faces.
 - Why not `dart:math` `Random`: its docs offer an optional seed but promise nothing about the sequence across platforms or SDK versions [V-15]. `xrandom` marks `Xoshiro128pp`, `Xorshift32` and `Xorshift128` as working on JS and tests its generators against C reference output in VM and Node.js modes, which addresses the web's 53-bit integer limits and 32-bit bitwise truncation [V-14][V-28].
 - Use the class `Xoshiro128pp` by name. The aliases `Xrandom`, `Drandom` and `Qrandom` are not used.
 - The version is pinned exactly (F5 standing rule: re-verify on pub.dev before it enters a pubspec). **Known-seed test vectors** run on native and on web [V-28], and fail the build if the sequence ever changes.
@@ -244,7 +246,7 @@ R asked for a way to signal that something still works now but will change later
 |---|---|
 | Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` |
 | Pack authors (D, GMs) | The pack validator reports each deprecated key or entry as a **warning**, never an error, with the note and removal major |
-| GMs running operations | The pack-update summary and the operation's settings screen list deprecations that affect the pinned pack |
+| GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack |
 | Players | Nothing; deprecation never changes play |
 
 Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs-fixed).
@@ -252,7 +254,7 @@ Packs use the same record for their own entries: see [02-rules-packs.md](02-rule
 ## Public API surface (Proposed)
 
 ```dart
-/// Engine entry point for one operation.
+/// Engine entry point for one episode.
 final class Engine {
   Decision decide(OperationState state, Command command, Rng rng, IdSource ids);
   OperationState evolve(OperationState state, Event event);

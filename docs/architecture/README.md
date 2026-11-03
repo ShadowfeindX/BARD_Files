@@ -12,8 +12,8 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | [01-engine.md](01-engine.md) | The pure-Dart game engine: entities, components, systems, commands, events, dice and checks |
 | [02-rules-packs.md](02-rules-packs.md) | Rules packs and content: what the engine owns versus what packs own, versioning, the public library |
 | [03-protocol.md](03-protocol.md) | Wire format shared by every client and server: envelopes, messages, versioning, visibility |
-| [04-session.md](04-session.md) | The runtime layer: actors, the GM-canonical operation loop, play modes, reconnection, in-game phone |
-| [05-migrator.md](05-migrator.md) | Moving an operation from engine major N to N+1 |
+| [04-session.md](04-session.md) | The runtime layer: actors, the GM-canonical episode loop, play modes, reconnection, in-game phone |
+| [05-migrator.md](05-migrator.md) | Moving an episode from engine major N to N+1 |
 | [06-accounts-backend.md](06-accounts-backend.md) | Agents, aliases, anonymous accounts, badges, and the Firebase backend (`firebase_dart`, Realtime Database, Dart Cloud Functions) |
 | [07-apps.md](07-apps.md) | Main app, companion app and Cloud Functions: UI layering, perspectives, platforms |
 | [08-testing.md](08-testing.md) | How each package is tested in isolation |
@@ -43,10 +43,10 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 |---|---|
 | Agent | A player's account. Owns one or more aliases. |
 | Alias | A character identity belonging to an agent, locked to one campaign at a time. May appear in several missions. |
-| Campaign | A series of operations managed by a GM; operations may run concurrently or simultaneously (D, 2026-10-22). |
-| Operation | A long-horizon goal or story arc, a collection of missions (1 to 10 on average), managed by a Handler; missions run concurrently but not simultaneously (D, 2026-10-22). |
-| Mission | A scenario or objective the agents try to complete, played across a series of sessions (1 to 3 on average). |
-| Session | One unit of play between players (1 to 3 hours on average). Each of the four levels is archived. |
+| Campaign | A series of operations managed by a GM. Top of the four levels: Campaign > Operation > Mission > Episode (R and D, 2026-11-03). |
+| Operation | D's story arc only: a long-horizon goal, a collection of missions (1 to 10 on average), managed by a Handler; operations run one after another and missions may run in parallel (D, 2026-10-29; R and D, 2026-11-03). It is not the unit of live play; that is the Episode. |
+| Mission | A scenario or objective the agents try to complete, played across a series of episodes (1 to 3 on average). |
+| Episode | One sitting of play (1 to 3 hours on average), the lowest level. It owns one event log, one live RTDB tree, one sembast file and one host (R and D, 2026-11-03). Each of the four levels is archived. It is called an Episode, not a session, to avoid confusion with the network *session* (the `session` package, the session host, sign-in sessions). |
 | Handler / GM | The rulebook calls the GM the Handler. D (2026-10-22) uses both: the GM runs a campaign; the Handler is the GM's persona managing one operation (FD-X4). Until that is settled this spec writes GM. |
 | Command | A request to change the game ("attack this target", "require a check"). May be rejected. |
 | Event | A fact that happened ("check resolved: 11, success"). Never changes once written. |
@@ -56,4 +56,4 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 | Values | The concrete numbers, names and tables. Owned by rules packs. |
 | Perspective | What a given viewer (GM, a player, the table) is allowed to see. |
 
-*Naming note.* Chapters 01 to 08 and 12 still say "operation" for the unit of live play (one event log, one RTDB tree, one sembast file), which in D's terms is a **session**. Which level owns the log, and the spec-wide rename, are R's to rule ([10-pending-d.md](10-pending-d.md#r-only-items), R-X0).
+*Naming note.* R and D ruled the tree Campaign > Operation > Mission > Episode on 2026-11-03. Chapters 01 to 08 and the developer guide now say "episode" for the unit of live play. The code still says `Operation` (`OperationState`, `OperationHost`, `operation_system.dart`) for what the spec calls an episode until the rename PR. The word "session" is kept only for the network, host and connection layer: the `session` package, the session host, `SessionRejection`, sign-in sessions and [04-session.md](04-session.md).
