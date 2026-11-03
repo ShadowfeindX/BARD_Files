@@ -90,7 +90,6 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   companion/                  phone Flutter app (player-first)
   functions/                  HTTPS-only Dart Cloud Functions (P14: badge login, roles, archiveOperation, push, pack publishing helper, payment/receipt placeholders)
 /docs/                        developer guide, this spec
-/reference/                   read-only copies of reference material (see CLAUDE.md §6)
 ```
 
 R named `engine`, `protocol`, `session` and `migrator`. `content_core`, `backend` and `ui_kit` were approved as additional packages (P1) and `protocol_envelope` was added by ruling F4 (option A), so the engine carries no wire-format concerns and the functions app can speak the protocol without the engine. The pack contents of `content_core` follow the shape in [02-rules-packs.md](02-rules-packs.md); that shape is Provisional, pending D.

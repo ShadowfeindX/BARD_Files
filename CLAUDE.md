@@ -32,7 +32,7 @@ Eight agents at most. Victor assigns each task to one agent and sets its model, 
 | Sonnet | 4 | Feature and refactor work, one area each: desktop UI; packs and content; backend; the Windows legs of a task, run on R's PC. |
 | Haiku | 2 | Reviews of other agents' work, running `flutter analyze` and tests, verifying claims, keeping docs in sync with code. |
 
-- No more than these eight run at once. The PC session counts toward the eight.
+- No more than these eight run at once.
 - Each task is sized for one agent. If a task grows past its agent's scope, the agent stops and reports. It does not escalate itself to a bigger job.
 - **Review:** every change is reviewed by a Haiku agent before it reaches R: the diff against the brief, the spec and the review guide, plus `flutter analyze` and tests where there is code. The author applies or answers every finding.
 - **Opus gate:** gated work then gets a final review from the gate Opus. Gated work is any row the implementation plan marks as gated, and any change under `firebase/`. The gate sends patches; the owning agent applies them.
@@ -71,7 +71,7 @@ An escalation report states: what was attempted, the exact error or conflict, wh
 - `E:\My Drive\BARD`: context and references for project design
 - `D:\.code\_bard`, `D:\.code\bard-web`: older projects
 
-Reference files may be **copied** into the repository and edited there. Originals are never modified, moved or deleted. Copies go under a clear path, `reference/`, with the source path noted in that folder's README.
+Reference files may be **copied** into the workspace (`F:\My Drive\BARD_Workspace`) and edited there, never into the repository. Originals are never modified, moved or deleted. Copies go under a clear path, `reference/`, with the source path noted in that folder's README.
 
 **Secrets and test data:** credentials are never stored, copied or committed; R supplies them when a task needs them. The test Firebase project's ID never appears in committed files.
 
