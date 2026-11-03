@@ -1,6 +1,5 @@
 # 04. Session (`packages/session`)
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 The session package is the runtime layer: it owns live episodes, talks to transports and stores, enforces who may send what, and feeds the engine. It is pure Dart. Platform-specific pieces (sockets, Firebase, databases) are injected through interfaces.
 
@@ -12,19 +11,19 @@ Actors are **not** isolates (P7, ruled by R 2026-10-20): they are single-threade
 
 | Actor | Lives on | Owns |
 |---|---|---|
-| `OperationHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
-| `OperationParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
+| `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
+| `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
 | `ConnectionActor` | both ends, one per link | One transport link: framing, ping, backoff, hands decoded messages to its owner |
 | `StoreActor` | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
 | `RelayActor` | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `OperationHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical, Fixed)
 
 ```
-request(cmd) ──► OperationHost
+request(cmd) ──► EpisodeHost
                    1. authorize: is this sender allowed to issue this command? (session rule, not engine)
                    2. dedupe by request id
                    3. engine.decide(state, cmd, rng, ids)
@@ -47,7 +46,7 @@ request(cmd) ──► OperationHost
 In short: authorize → dedupe → decide → [rolls broadcast; consequences to GM review] → seq + narrate + store → filter → broadcast → relay.
 
 - Storing comes before broadcast: an event is never broadcast before it is stored on the GM device.
-- **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `OperationHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
+- **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `EpisodeHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
 - **Auto-confirm** is a per-episode GM setting. With it on, a pending batch is confirmed without waiting for the GM.
 - **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
@@ -64,7 +63,7 @@ The engine defines the `Rng` interface and stays SDK-only. The session package h
 Participants:
 
 ```
-`events` ──► OperationParticipant
+`events` ──► EpisodeParticipant
                1. check seq continuity (gap → `resync`)
                2. StoreActor.append (local cache, for offline viewing)
                3. state = fold(evolve, events)
@@ -88,13 +87,13 @@ abstract interface class Link {
 }
 
 abstract interface class EventStore {       // sembast 3.9.0 behind this interface (09-3, Fixed)
-  Future<void> append(OperationId op, List<StoredEvent> events,
+  Future<void> append(EpisodeId ep, List<StoredEvent> events,
       List<TextLogLine> text, Snapshot head);                         // one transaction, then a commit marker
-  Stream<StoredEvent> read(OperationId op, {int fromSeq = 1});
-  Future<void> putSnapshot(OperationId op, Snapshot snapshot);
-  Future<Snapshot?> latestSnapshot(OperationId op);
-  Future<Snapshot?> headSnapshot(OperationId op);                     // state at last seq
-  Stream<TextLogLine> readText(OperationId op, {int fromSeq = 1});
+  Stream<StoredEvent> read(EpisodeId ep, {int fromSeq = 1});
+  Future<void> putSnapshot(EpisodeId ep, Snapshot snapshot);
+  Future<Snapshot?> latestSnapshot(EpisodeId ep);
+  Future<Snapshot?> headSnapshot(EpisodeId ep);                     // state at last seq
+  Stream<TextLogLine> readText(EpisodeId ep, {int fromSeq = 1});
 }
 
 /// One narrated log line (P12, Fixed). Text is rendered per perspective at play

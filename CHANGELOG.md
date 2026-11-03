@@ -4,6 +4,15 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Refactor: Operation renamed to Episode in code
+- Engine, session, protocol, envelope, migrator, `ui_kit` and `apps/bard`: the live-game unit is `Episode` (`EpisodeState`, `EpisodeSystem`, `StartEpisode`, `EpisodeStarted`, `EpisodeSettings`, `EpisodeHost`, `EpisodeParticipant`, `EpisodeService`, `SessionEpisodeService`, `episodeId`), with files and tests renamed to match. No behaviour change.
+- The v1 wire names stay as they are (`startOperation`, `operationStarted`, the `operationId` field, the envelope's `op` key), because stored logs are frozen per engine major; they change only with a major bump through the migrator.
+- The app's `New operation` button and dialog are now `New episode`.
+- RTDB: the live tree is `/episodes/$ep` and presence `/presence/$ep` in `firebase/database.rules.json` and its emulator suite (200 of 200, V-56).
+- The post-archive clean-up no longer deletes the phone box, which clears at operation end (R, 2026-11-03); the clean-up checks now expect `phone` beside the locked stub.
+- Docs: identifiers, function names (`archiveEpisode`, `EpisodeMigrated`) and RTDB paths updated in the spec and developer guide; the "Code still says Operation" notes removed.
+- Chapter 12: the Firestore draft is rewritten for the split: `campaigns/{campaignId}` (roster, invites, join requests, transfers, pack pins, base settings), `operations/{opId}` (story arc) with `missions`, `episodes/{episodeId}` with `members`, archives and `archiveIndex` keyed by episode, listings keyed by campaign; rules, indexes and test plan follow. Where the campaign document lives is question 9 for R.
+
 ### Docs: Episode naming
 - Chapter 12 proposes splitting the Firestore `operations` node: a new `episodes/{episodeId}` node for live-game data under its own rules, with the operation record keeping arc and handler data (R, 2026-11-03). The phone box now clears when the operation ends, not at mission end.
 - The live-game unit is now called an **Episode** in the spec and developer guide (tree: Campaign > Operation > Mission > Episode). "Operation" means only the story arc; "session" keeps its host and network meaning. Code identifiers, RTDB paths and the Firestore `operations/{opId}` node are unchanged pending a gated rename row.

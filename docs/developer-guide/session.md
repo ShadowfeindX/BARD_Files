@@ -1,15 +1,14 @@
 # Session
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
-`packages/session` is the runtime: the GM's `OperationHost`, a player's `OperationParticipant`, and the interfaces they stand on (04-session.md). It imports the wire types through `protocol`, which re-exports `protocol_envelope`.
+`packages/session` is the runtime: the GM's `EpisodeHost`, a player's `EpisodeParticipant`, and the interfaces they stand on (04-session.md). It imports the wire types through `protocol`, which re-exports `protocol_envelope`.
 
 ## Pieces
 
 | File | Holds |
 |---|---|
-| `operation_host.dart` | `OperationHost`: authorize, dedupe, decide, hold consequences for review, stamp `seq`, store, filter, broadcast. `submit` (GM), `confirmPending`, `openView`, `listen` |
-| `operation_participant.dart` | `OperationParticipant`: non-canonical engine, requests with retry, resync on gaps |
+| `episode_host.dart` | `EpisodeHost`: authorize, dedupe, decide, hold consequences for review, stamp `seq`, store, filter, broadcast. `submit` (GM), `confirmPending`, `openView`, `listen` |
+| `episode_participant.dart` | `EpisodeParticipant`: non-canonical engine, requests with retry, resync on gaps |
 | `entries.dart` | Wire entries and `PerspectiveFeed` (applies entries in order, tolerates duplicates, reports gaps) |
 | `perspective.dart` | `Perspective` and `deliveryFor` (visibility to full/redacted/hidden) |
 | `identity.dart`, `authorizer.dart` | `Principal`, `IdentityVerifier`, `Admission`, `Authorizer`, `SessionRejection` codes |

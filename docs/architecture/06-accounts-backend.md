@@ -1,6 +1,5 @@
 # 06. Accounts and backend
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 ## Backend role (Fixed)
 
@@ -100,7 +99,7 @@ Rules:
 - **One alias per anonymous account** is enforced in three places:
   1. **Backend.** The anonymous one-alias rule **moves to Firestore** (P10c): Proposed mechanism: an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. The document path is `aliases/{uid}/items/anon` with the rule in [12-firestore-collections.md](12-firestore-collections.md#aliases-characters) (Proposed; rule behaviour unproven until the Emulator Suite tests).
   2. **App.** The account repository hides "create alias" for anonymous agents once that alias exists and offers the upgrade instead.
-  3. **Session (local and LAN play without the backend).** A guest agent identity carries `kind: anonymous`; `OperationHost` refuses a `hello` that presents a second alias for the same anonymous agent id.
+  3. **Session (local and LAN play without the backend).** A guest agent identity carries `kind: anonymous`; `EpisodeHost` refuses a `hello` that presents a second alias for the same anonymous agent id.
 
 ## Roles
 
@@ -143,19 +142,19 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ## Realtime Database model (live play)
 
-**P10c (Fixed).** The three open items were ruled by R 2026-10-20, and the rest of the draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"). Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed design R approved (review sheet: project library `architecture/rtdb-draft-review.md`, P1-P24). The rules file is in the repository at `firebase/database.rules.json`, started from probe 8.6's prototype with the three rulings applied and the prototype's `phoneDraft` path removed (R 2026-10-21, P23). Its emulator checks are in `firebase/rtdb_rules_test/` (P10b, [08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the three rulings, the post-archive clean-up [V-50], R's rulings of 2026-10-21 on presence, `meta` validation and anonymous members [V-51] and the review follow-ups R approved the same day [V-52] (see [Rules rulings, 2026-10-21](#rules-rulings-r-2026-10-21)). Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed).
+**P10c (Fixed).** The three open items were ruled by R 2026-10-20, and the rest of the draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"). Drafted from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. R ruled on the three items the probe left open (see [R's rulings](#p10c-rulings-r-2026-10-20) below); the rest of the draft is the probe-backed design R approved (review sheet: project library `architecture/rtdb-draft-review.md`, P1-P24). The rules file is in the repository at `firebase/database.rules.json`, started from probe 8.6's prototype with the three rulings applied and the prototype's `phoneDraft` path removed (R 2026-10-21, P23). Its emulator checks are in `firebase/rtdb_rules_test/` (P10b, [08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the three rulings, the post-archive clean-up [V-50], R's rulings of 2026-10-21 on presence, `meta` validation and anonymous members [V-51] and the review follow-ups R approved the same day [V-52] (see [Rules rulings, 2026-10-21](#rules-rulings-r-2026-10-21)). The live tree was renamed from `/operations/$op` to `/episodes/$ep` (and `/presence/$op` to `/presence/$ep`) with the Operation-to-Episode rename on 2026-11-03; the suite still passes 200 of 200 with the new paths [V-56]. Under FS1, RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed).
 
 ```
-/operations/$op/meta                     gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq
-/operations/$op/members/$uid             { aliasId, joinedAt }; written by the GM client only
-/operations/$op/requests/$uid/$push      { id, kind, from == $uid, ... }; the member writes own uid only, create-only
-/operations/$op/events/$audience/$push   { seq, body }; GM only; create-only; .indexOn seq
-/operations/$op/textlog/$audience/$push  { seq, text }; GM only; create-only; .indexOn seq
-/operations/$op/head                     head snapshot; GM only (read and write)
-/operations/$op/phone/$uid/$push         phone box per player: player and GM messages; the player writes own box (from == $uid), the GM writes any box; { from, text } with text at most 2,000 UTF-16 units (field names are the implementation's choice); cleared when the operation ends (R, 2026-11-03; replaces P17's mission end)
-/operations/$op/signaling/$uid/...      WebRTC offer/answer/candidates (P2P mode only); written by that uid or the GM; frozen by locked (rulings 2, 3 [V-50])
-/presence/$op/$uid                       own presence; members write own uid until the episode is archived; members and GM read
-/inbox/$uid/$push                        in-app notifications (P14); owner reads and deletes; only functions write
+/episodes/$ep/meta                      gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq
+/episodes/$ep/members/$uid              { aliasId, joinedAt }; written by the GM client only
+/episodes/$ep/requests/$uid/$push       { id, kind, from == $uid, ... }; the member writes own uid only, create-only
+/episodes/$ep/events/$audience/$push    { seq, body }; GM only; create-only; .indexOn seq
+/episodes/$ep/textlog/$audience/$push   { seq, text }; GM only; create-only; .indexOn seq
+/episodes/$ep/head                      head snapshot; GM only (read and write)
+/episodes/$ep/phone/$uid/$push          phone box per player: player and GM messages; the player writes own box (from == $uid), the GM writes any box; { from, text } with text at most 2,000 UTF-16 units (field names are the implementation's choice); cleared when the operation ends (R, 2026-11-03; replaces P17's mission end)
+/episodes/$ep/signaling/$uid/...        WebRTC offer/answer/candidates (P2P mode only); written by that uid or the GM; frozen by locked (rulings 2, 3 [V-50])
+/presence/$ep/$uid                      own presence; members write own uid until the episode is archived; members and GM read
+/inbox/$uid/$push                       in-app notifications (P14); owner reads and deletes; only functions write
 ```
 
 `$audience` is `gm`, `public` or `alias:<aliasId>`, checked by a `.validate` pattern [V-38].
@@ -171,7 +170,7 @@ Who can do what (shown in the emulator [V-38]; the `meta` and `signaling` change
 | `head` | reads and writes until locked | — | — |
 | `phone` | reads every box, delivers into any box | reads own box, appends to it (create-only: no client edits or deletes a message); anonymous members read only their own box [V-51]; messages need string `from` and `text` of at most 2,000 UTF-16 units (field names are the implementation's choice) [V-52] | — |
 | `signaling` | reads (as probed); writes any uid's branch until locked | reads (as probed); writes own uid's branch until locked; anonymous members cannot read or write [V-51][V-52] | — |
-| `presence/$op` | reads (writes own uid only if also a member) | reads; writes own uid until `meta/status` is `archived` [V-51] | — |
+| `presence/$ep` | reads (writes own uid only if also a member) | reads; writes own uid until `meta/status` is `archived` [V-51] | — |
 | `inbox/$uid` | — | owner reads and deletes | functions write (admin REST) |
 
 After `meta/locked = true` the GM cannot append, write head, add members or unlock, and members cannot write requests or phone [V-38]; signaling is frozen too (ruling 3 [V-50]); presence stays writable while the lock holds (the post-archive clean-up below then deletes it and closes it), and the inbox is written only by functions, so the lock does not affect it; reads continue. Anonymous accounts can be members and write requests, and cannot create episodes, write GM-only paths, send phone messages or write signaling (no voice or video) [V-51].
@@ -198,7 +197,7 @@ The probe found two weaknesses and one open question [V-38]. R's answer, verbati
 
 R's answer to the three gaps the rules checks left open, verbatim: "I'll take your recommendations for 1 & 2. Anonymous players should not be able to join voice and video or send messages as age verification happens on account creation." Recorded in `firebase/database.rules.json` and shown by its emulator checks [V-51].
 
-1. **Presence closes once archived.** The archive step sets `meta/status` to `archived` and the post-archive clean-up deletes `presence/$op`; presence writes are refused while `meta/status` is `archived`. The marker value `archived` is the rules file's choice (status values are otherwise not fixed yet).
+1. **Presence closes once archived.** The archive step sets `meta/status` to `archived` and the post-archive clean-up deletes `presence/$ep`; presence writes are refused while `meta/status` is `archived`. The marker value `archived` is the rules file's choice (status values are otherwise not fixed yet).
 2. **`meta` validation.** `meta` must carry `gm` and `status`; `status` is a string and cannot be removed; `locked` must be a boolean.
 3. **Anonymous members do not message or signal.** An anonymous (clearance 0) member cannot read or write signaling, so cannot join voice or video, and cannot send phone messages; they can still read their own box, write requests and write presence. Age verification happens at account creation, so only full accounts message.
 
@@ -226,7 +225,7 @@ Notes on the live tree:
 - **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them. This replaces the earlier Firestore per-audience documents (P12).
 - **Head snapshot (P12).** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-episode interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
 - **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38].
-- **Archiving.** The order is lock, archive, clean-up (R 2026-10-21). The GM client first sets `meta/locked`, which rules check [V-38], so nothing more can be written to the events, textlog, head, requests, phone or signaling branches once the log is frozen (presence stays writable under the lock, ruling 3); then the `archiveOperation` function (below) copies the frozen log to Firestore; then the clean-up below runs. The lock cannot be undone, so a failed archive write is retried against the locked data; until a retry succeeds the locked episode stays in RTDB with its status unchanged, so nothing is lost; the archive step sets `archived` and the clean-up runs only after the archive write is confirmed. Archived logs are chunked into a Firestore subcollection (FS5). Migrated episodes get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). **Clean-up after archive (Fixed, R 2026-10-21, estimate flag 2 option a):** once the archive write is confirmed, a function deletes the live branches (`events`, `textlog`, `requests`, `head`, `phone`, `signaling`, `presence`) with admin REST and keeps `meta` and `members` (R 2026-10-21: "Yes, keep members") as the locked stub (`meta` is never deleted, ruling 1). The phone box is not cleared at episode archive: R ruled (2026-11-03) that it clears when the operation ends, so the clear-up step for `phone` moves to the operation-end step (a Proposed row; until it is built the box stays with the locked stub). Admin REST bypasses rules, so the clean-up needs no rule; the checks show `meta` and `members` remain, `meta` stays locked and members can still read it [V-50]. The archive step sets `meta/status` to `archived` with admin REST, after the lock and before the clean-up deletes anything, and the rules then refuse presence writes, so a member's client cannot recreate presence after the clean-up (R 2026-10-21 [V-51]). Only admin REST can set that value: the rules refuse `archived` from any client, the GM included, before or after the lock (R 2026-10-21 [V-53]). An episode that is never archived needs a manual clean-up script, because deployed Dart functions have no scheduled triggers [V-23].
+- **Archiving.** The order is lock, archive, clean-up (R 2026-10-21). The GM client first sets `meta/locked`, which rules check [V-38], so nothing more can be written to the events, textlog, head, requests, phone or signaling branches once the log is frozen (presence stays writable under the lock, ruling 3); then the `archiveEpisode` function (below) copies the frozen log to Firestore; then the clean-up below runs. The lock cannot be undone, so a failed archive write is retried against the locked data; until a retry succeeds the locked episode stays in RTDB with its status unchanged, so nothing is lost; the archive step sets `archived` and the clean-up runs only after the archive write is confirmed. Archived logs are chunked into a Firestore subcollection (FS5). Migrated episodes get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). **Clean-up after archive (Fixed, R 2026-10-21, estimate flag 2 option a):** once the archive write is confirmed, a function deletes the live branches (`events`, `textlog`, `requests`, `head`, `signaling`, `presence`) with admin REST and keeps `meta` and `members` (R 2026-10-21: "Yes, keep members") as the locked stub (`meta` is never deleted, ruling 1). The phone box is not cleared at episode archive: R ruled (2026-11-03) that it clears when the operation ends, so the clear-up step for `phone` moves to the operation-end step (a Proposed row; until it is built the box stays with the locked stub). Admin REST bypasses rules, so the clean-up needs no rule; the checks show `meta`, `members` and `phone` remain, `meta` stays locked, members can still read it [V-50] and a player can still read their phone box [V-56]. The archive step sets `meta/status` to `archived` with admin REST, after the lock and before the clean-up deletes anything, and the rules then refuse presence writes, so a member's client cannot recreate presence after the clean-up (R 2026-10-21 [V-51]). Only admin REST can set that value: the rules refuse `archived` from any client, the GM included, before or after the lock (R 2026-10-21 [V-53]). An episode that is never archived needs a manual clean-up script, because deployed Dart functions have no scheduled triggers [V-23].
 - **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches. Traffic and cost at an assumed table size are approximated in the project library (`architecture/rtdb-traffic-cost-estimate.md`, P24): about 2,200 writes per 4-hour session (an approximation from an assumed profile, not a measurement), about 0.15 writes per second.
 
 ## Library (Fixed: concern 5, ruled by R 2026-10-20)
@@ -245,7 +244,7 @@ The pack index (id, version, content hash, Storage path) is in Firestore (FS1); 
 
 ## Relay
 
-In network-hosted mode the backend relays and persists (Fixed). With this stack the live relay **is RTDB**: the GM writes event batches under `/operations/$op/events`, participants listen; players write requests under their own uid, the GM listens. A listener on a second client instance received writes in the probe, with reads and writes around 50 ms [V-21]. No custom relay server. Once an episode is archived, its log is read from Firestore.
+In network-hosted mode the backend relays and persists (Fixed). With this stack the live relay **is RTDB**: the GM writes event batches under `/episodes/$ep/events`, participants listen; players write requests under their own uid, the GM listens. A listener on a second client instance received writes in the probe, with reads and writes around 50 ms [V-21]. No custom relay server. Once an episode is archived, its log is read from Firestore.
 
 ## Cloud Functions (Dart, HTTPS-only, Fixed: P14)
 
@@ -259,7 +258,7 @@ Ruled by R 2026-10-20 (P14). Dart Cloud Functions are experimental and may chang
 | Store receipts | **Placeholder** until concern 6: validate app-store receipts [U] |
 | Pack publishing helper | Assist publishing a pack version (index + Storage) |
 | Push | Mobile/web push via `firebase_admin_sdk` Messaging [V-24] |
-| `archiveOperation` | Called by the GM client with the frozen event log, text log and final head; validates the shape and writes the archive to Firestore (chunked, FS5) via `firebase_admin_sdk` (FS3). The GM client sets `meta/locked` before calling it; the clean-up follows a confirmed write |
+| `archiveEpisode` | Called by the GM client with the frozen event log, text log and final head; validates the shape and writes the archive to Firestore (chunked, FS5) via `firebase_admin_sdk` (FS3). The GM client sets `meta/locked` before calling it; the clean-up follows a confirmed write |
 
 ### Calling functions from desktop (Fixed: B6)
 

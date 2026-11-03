@@ -1,6 +1,5 @@
 # 01. Engine (`packages/engine`)
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 The engine is the game. It is pure Dart, imports only the Dart SDK, performs no I/O and never reads a clock or a random source it was not handed. Given the same inputs it always produces the same outputs.
 
@@ -67,7 +66,7 @@ Rules for components:
 ### State
 
 ```
-OperationState
+EpisodeState
   ├─ meta: episode id, engine version, pack ref (id, version, content hash), settings
   ├─ stores: Map<ComponentType, Map<EntityId, Component>>   // ECS stores
   ├─ encounter: initiative order, round, whose turn (when in combat)
@@ -113,7 +112,7 @@ GM:      ApplyConsequence(...)                                      → (held fo
 - `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, advantage pool and the kept result, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it.
 - Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
-- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `OperationHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
+- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
 - **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-episode GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
@@ -256,8 +255,8 @@ Packs use the same record for their own entries: see [02-rules-packs.md](02-rule
 ```dart
 /// Engine entry point for one episode.
 final class Engine {
-  Decision decide(OperationState state, Command command, Rng rng, IdSource ids);
-  OperationState evolve(OperationState state, Event event);
+  Decision decide(EpisodeState state, Command command, Rng rng, IdSource ids);
+  EpisodeState evolve(EpisodeState state, Event event);
 }
 
 sealed class Decision {}

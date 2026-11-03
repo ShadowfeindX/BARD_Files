@@ -1,6 +1,5 @@
 # 07. Applications
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 ## The three apps
 

@@ -1,6 +1,5 @@
 # 00. Overview
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 ## Goals
 
@@ -51,7 +50,7 @@ Every external choice stays behind an interface so it does not leak into the eng
  Player     │  UI (views + view models)                                        │
  device(s)  │        │ commands                ▲ state / read models           │
  ┌───────┐  │        ▼                         │                               │
- │  UI   │  │  session: OperationHost actor ── engine (decide / evolve) ── RNG  │
+ │  UI   │  │  session: EpisodeHost actor ── engine (decide / evolve) ── RNG  │
  │   │   │  │        │ events (ordered, seq)   │                               │
  │session│◄─┼────────┤                         └── event store (local)         │
  │engine │  │        ▼                                                         │
@@ -90,7 +89,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
   companion/                  phone Flutter app (player-first)
-  functions/                  HTTPS-only Dart Cloud Functions (P14: badge login, roles, archiveOperation, push, pack publishing helper, payment/receipt placeholders)
+  functions/                  HTTPS-only Dart Cloud Functions (P14: badge login, roles, archiveEpisode, push, pack publishing helper, payment/receipt placeholders)
 /docs/                        developer guide, this spec
 /reference/                   read-only copies of reference material (see CLAUDE.md §6)
 ```
@@ -119,7 +118,7 @@ migrator (tests only)     ──► engine              (current major only; see
 
 \* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are **approved by R** (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the stack R adopted. The other third-party packages above are approved by R at the versions in the Fixed decisions table and in the verification register ([V-28] to [V-36]); each version is re-verified on pub.dev just before it enters a pubspec (F5), and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
 
-`apps/functions` mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveOperation`, FS3), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed (concern 6, deferred). Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group (FS3). It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
+`apps/functions` mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveEpisode`, FS3), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed (concern 6, deferred). Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group (FS3). It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
 Why these rules:
 

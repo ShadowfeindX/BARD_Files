@@ -1,6 +1,5 @@
 # 03. Protocol (`packages/protocol`)
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
 
 Two packages define what crosses a process or device boundary (F4, option A, ruled by R 2026-10-20: no wire-format concerns in the engine):
 
@@ -113,7 +112,7 @@ Decoding is compatible within a major (Fixed): a client reads everything older m
 
 ## Snapshots
 
-A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
+A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 
