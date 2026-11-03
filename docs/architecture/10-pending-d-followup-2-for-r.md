@@ -77,7 +77,7 @@ Assumption: add one generic pack kind, `randomTable` (id, die, rows of text plus
 - [x] Noted
 
 **[R-C4] Exact book headings.** The D documents cite the book by section name. Only "Casting & Rituals", "Casting Flow" and "Occult Action Check" are confirmed; the rest are by topic. A PC session should extract the real headings from the rulebook copy so the D documents can be corrected before they go out.
-- [x] Agree (queue a PC extraction)
+- [x] Agree (queue a PC extraction) — Done 2026-11-03: D's sheets now cite the real headings; the book has a Section 4 part "Incapacitation & Critical Injury" and a "Damage Reduction (DR)" part in Section 7, and says nothing about currency.
 - [ ] Skip, D can cope
 
 **Note:** claims about the current code and pack keys in this sheet are from the spec chapters and the kit, not re-verified against the code today.
