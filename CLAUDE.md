@@ -1,6 +1,6 @@
 # B.A.R.D. Files Interactive Platform: Project Rules
 
-This file governs every Claude session working on this project: the coordinator (Victor), every agent and the remote PC session. It lives at the repo root so Claude Code loads it automatically. When this file conflicts with anything else (a skill, a package README, a reference document, a habit), this file wins. Changes to it are drafted on a `docs/` branch and merged only when R approves them.
+This file governs every Claude session working on this project: the coordinator (Victor), every agent and the remote PC session. It lives at the repo root so Claude Code loads it automatically. When this file conflicts with anything else (a skill, a package README, a reference document, a habit), this file wins. Only R approves changes to this file; they are drafted on a `docs/` branch and merged on R's approval.
 
 ## 1. Project
 
@@ -14,7 +14,7 @@ This file governs every Claude session working on this project: the coordinator 
 | Role | Who | Authority |
 |---|---|---|
 | Technical director | R ("Director") | Final say on everything technical. Sole approver of implementation and feature work. Sole source of actionable technical changes. |
-| Creative director | D | Co-author of the rulebook. Final call on game content. Asks questions about state and direction. Feature ideas go through R. |
+| Creative director | D | Co-author of the rulebook. Asks questions about state and direction. Feature ideas go through R. |
 | Coordinator | Victor | Stays available to R. Plans, assigns, reviews and reports. Does not write project code. |
 | Agents | Team in section 3 | Execute assigned tasks only. Report to Victor. |
 | PC session | One remote session on R's PC | Runs the work that needs R's machine (section 3). Takes requests only from Victor or R. |
@@ -32,7 +32,7 @@ Eight agents at most. Victor assigns each task to one agent and sets its model, 
 | Sonnet | 4 | Feature and refactor work, one area each: desktop UI; packs and content; backend; the Windows legs of a task, run on R's PC. |
 | Haiku | 2 | Reviews of other agents' work, running `flutter analyze` and tests, verifying claims, keeping docs in sync with code. |
 
-- No more than these eight run at once.
+- No more than these eight run at once. The PC session counts toward the eight.
 - Each task is sized for one agent. If a task grows past its agent's scope, the agent stops and reports. It does not escalate itself to a bigger job.
 - **Review:** every change is reviewed by a Haiku agent before it reaches R: the diff against the brief, the spec and the review guide, plus `flutter analyze` and tests where there is code. The author applies or answers every finding.
 - **Opus gate:** gated work then gets a final review from the gate Opus. Gated work is any row the implementation plan marks as gated, and any change under `firebase/`. The gate sends patches; the owning agent applies them.
@@ -98,16 +98,16 @@ No other external tool, MCP, service or package source is used unless R names it
   - `probe/`: throwaway verification code. Never merged.
 - **Commits:** small and focused. Message format: `type(scope): summary` (feat, fix, refactor, test, docs, chore).
 - **Pull requests:** R requests every PR, and it is opened from R's account through the PC session. The body is the change itself as a changelog (sections: major items, Changes, Bug Fixes, Known/Open Issues), with a short "why" only for a large change. No attribution of any kind: no tool footers, session links or co-author lines.
-- **Merging:** only R (or Victor with R's explicit permission) merges to `main`. Agents open PRs and stop there.
+- **Merging:** only R (or Victor with R's explicit permission) merges to `main`. Agents hand their branch over for a PR and stop there.
 - **Releases:** a release combines the PR descriptions since the previous release into one description and is tagged with its version number.
 - **Never:** force-push to `main`, force-push a branch already handed to R without Victor's OK, rewrite shared history, commit secrets, or commit generated build output.
 
 ## 8. Engineering standards
 
 - **Architecture:** layered (UI → logic → data), following the Flutter architecture skill. Game rules live in a pure-Dart domain layer with no Flutter imports, so they are testable and reusable by both GM and player apps.
-- **Decided stack:** state management, routing, persistence and the backend are fixed by R and listed in `docs/architecture/00-overview.md` (Fixed decisions). Agents do not change them; a proposed change goes to R.
+- **Decided stack:** state management, routing, persistence, networking/sync and the backend are fixed by R and listed in `docs/architecture/00-overview.md` (Fixed decisions). Agents do not change them; a proposed change goes to R.
 - **Style:** `dart format` clean. `flutter analyze` with zero warnings, using the project's `analysis_options.yaml`. Effective Dart naming and documentation (`///` on public APIs).
-- **Tests:** domain logic has unit tests. Widgets with behavior have widget tests. A task is not done until `bash tool/check_all.sh` passes (format, analyze, dependency rules, pins and tests).
+- **Tests:** domain logic has unit tests. Widgets with behavior have widget tests. A task is not done until `bash tool/check_all.sh` passes (format, pack check, analyze, dependency rules, pins and tests).
 - **Platforms (v1):** Windows and Linux desktop. The web build is player-only. The companion app is Android. No macOS or iOS in v1.
 
 ## 9. Game content
