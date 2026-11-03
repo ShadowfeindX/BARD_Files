@@ -63,7 +63,7 @@ An escalation report states: what was attempted, the exact error or conflict, wh
 
 **Locations on R's machine:**
 - `D:\.code\BARD`: the code repository. All project code is created and changed here.
-- `F:\My Drive\BARD_Workspace`: the project workspace. The library, designs, moodboards, backups, and files for R and D to edit or review go here.
+- `F:\My Drive\BARD_Workspace`: the project workspace. The library, designs, moodboards, backups, and files for R and D to edit or review go here. Restore instructions are in its `backup-restore\` folder, never in the repository.
 - `C:\GAMES\BARD` is retired. Nothing new goes there.
 
 **Reference folders (read-only):**
