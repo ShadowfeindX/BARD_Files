@@ -1,6 +1,6 @@
 # 08. Testing
 
-Every package is testable on its own, with in-memory implementations of everything it depends on. A task is done only when `flutter analyze` and `flutter test` pass (CLAUDE.md §8).
+Every package is testable on its own, with in-memory implementations of everything it depends on. A task is done only when `bash tool/check_all.sh` passes (CLAUDE.md §8), which runs `flutter analyze` and the tests among its checks.
 
 ## Engine
 
