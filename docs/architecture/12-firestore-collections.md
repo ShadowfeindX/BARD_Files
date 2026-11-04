@@ -1,6 +1,8 @@
 # 12. Firestore collections (P10c, Firestore part)
 
-Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
+Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the Firestore `operations/{opId}` collection and its subcollections are left unrenamed here. That node mixes live-game data (members, archived missions) with handler-level data (invites, public listings), so R ruled on 2026-11-03 to split it, with a new `episodes/{episodeId}` node for the live-game data (see "Split of the `operations` node"); the RTDB live tree keeps the path `operations/$op` (the rules file is unchanged; renaming it is a gated row) in [06](06-accounts-backend.md#realtime-database-model-live-play). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
 
 This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chose Firestore for data at rest and a hand-written REST client on desktop). It names the collections, the document shapes, the security rules and the composite indexes. Account fields come from [11](11-supplemental-features.md). Archive layout follows [05](05-migrator.md). Anything that depends on the unresolved event-log unit (X0) is held and listed at the end.
 
@@ -124,6 +126,18 @@ Public content is moderator-approved first, so an edit goes to `profilesPending/
 **The document key is not the alias id.** The id used in `members/{uid}.aliasId` and in every audience (`alias:<aliasId>`, RTDB and archives) is the `aliasId` **field**, a globally unique random value, so two anonymous players (both stored under the key `anon`) never share an audience. The GM host refuses to admit two members with the same `aliasId`. `private` leaves the alias out of the public alias list (11).
 
 The alias sheet and play state (inventory, skills, contacts) are engine components, not fields of this document; they live in the GM's store during play and in the archive afterwards ([05](05-migrator.md)). Carrying a character's state between missions waits on Q24 and X0.
+
+## Split of the `operations` node (R, 2026-11-03)
+
+R ruled that a **new Firestore node** holds the live-game data, kept behind its own rules, instead of mixing it with handler-level data. Proposed layout (the rules draft below is **not yet rewritten** for it; that is a gated row):
+
+| Node | Holds | Read by | Written by |
+|---|---|---|---|
+| `episodes/{episodeId}` | live-game record: `operationId`, `missionId`, `gmUid`, `memberUids`, `engineMajor`, `status`, `createdAt`, `updatedAt`; subcollection `members/{uid}` (the searchable copy of RTDB `members`) | members of that episode, GM | GM (create and edit while a handler); archive function sets `archived` |
+| `archives/{episodeId}/chunks/{n}` and `archiveIndex/{episodeId}` | the archived log and its index (keyed by episode, as the spec's live unit) | members of the episode, per audience | function only |
+| `operations/{opId}` (arc and handler level) | `name`, `gmUid`, `visibility`, `virtual`, `packPins`, and the subcollections `invites`, `joinRequests`, `transfers`, `missions` (summaries), plus listings | GM, and members for what they need | GM, functions |
+
+Notes: pack pins and join links sit at the campaign (R-A1, R-A6); where the campaign document lives is a follow-on question for the rename row. Existing paths in the rest of this chapter still say `operations/{opId}`; read them as the operation record above, and read archive and member paths as the episode node, until the rules draft is rewritten. RTDB path names stay as the verified rules file spells them.
 
 ## Operations
 
@@ -515,5 +529,5 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 4. **`tierLevels/{tier}` lookup document** for what each tier may read, instead of level claims: one `get`, and R and D change it without re-issuing claims.
 5. **Unauthenticated `get` on `profilesPublic/{badge}`**, redacted fields only; `list` stays signed-in.
 6. **Provisional array caps** (R sets the numbers): `memberUids` 20, `tags` 10, `keywords` 30, `packPins` 5.
-7. **Transfer-move function** for the move and clean-up only: transactional, checks the source operation's RTDB `meta` with admin REST (no live session), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
+7. **Transfer-move function** for the move and clean-up only: transactional, checks the source episode's RTDB `meta` with admin REST (no live host), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
 8. **`signInCodes` TTL** as clean-up only. The function checks expiry in a transaction.

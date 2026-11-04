@@ -1,5 +1,7 @@
 # 02. Rules packs and content
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 ## Vocabulary vs values (Fixed)
 
 | Owned by the engine (vocabulary) | Owned by a pack (values) |
@@ -18,7 +20,7 @@ If a new rule needs a new *kind* of thing, that is an engine change. If it needs
 
 **Format (Fixed, P3).** A pack is a folder of JSON files plus a manifest, not YAML. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too. Ruled by R 2026-10-20 (P3).
 
-**Exact pack shape and details: Provisional, pending D.** The file list below is the current draft and may change after review with D. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d). The example pack for D lives in the project library, not in this repository.
+**Pack shape: confirmed by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).** The file list below stays; files and fields added by D's other rulings (creation profiles, combat defaults, assistance) are additive. The example pack for D lives in the project library, not in this repository.
 
 ```
 core/                           pack id
@@ -34,7 +36,7 @@ core/                           pack id
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  occult.json                   magic categories, sanity costs (§8; provisional, pending D)
+  occult.json                   magic categories, sanity costs (§8; "cast magic" ruled by D 2026-10-22, details open)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
   items/                        one file per item template
@@ -60,11 +62,11 @@ core/                           pack id
 - `engineApi` is the engine major the pack targets (Fixed). The engine refuses to load a pack with a different major.
 - `version` is the pack's own semver. Pack minor/patch bumps are value changes; a pack major means values changed incompatibly (for example a key was renamed).
 - `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override.
-- `contentHash` is computed by tooling, not written by hand, and is what an operation pins.
+- `contentHash` is computed by tooling, not written by hand, and is what an episode pins.
 
 ### Skills (Fixed, F3 part 2)
 
-A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). Whether "cast magic" becomes one roll kind, and the trimming of `OccultSystem`, is part of the occult system review: Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). D ruled on 2026-10-22 that "cast magic" is one roll kind with a Handler-set DC ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
 
 ### Named variables in pack formulas (Fixed)
 
@@ -79,7 +81,7 @@ It is a named number supplied by the engine at evaluation time. Approved placeme
 | Placement | Expression |
 |---|---|
 | Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
-| Assistance bonus, in `difficulty.json` | 1d6 + `var(helperSkillBonus)` |
+| Assistance bonus, in `difficulty.json` | the helper's attribute score (D, 2026-10-22; replaces 1d6 + `var(helperSkillBonus)`; key name Proposed) |
 
 The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.
 
@@ -139,11 +141,11 @@ The validator is part of the engine package so the apps and a command-line tool 
 
 Backend code (Cloud Functions) does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
-## Operations pin packs
+## Episodes pin packs
 
-- An operation records `packRef = (id, version, contentHash)` in its meta when created.
+- An episode records `packRef = (id, version, contentHash)` in its meta when created.
 - **Pack updates are manual by default (Fixed).** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event, so the log shows exactly when values changed.
-- **Engine updates are automatic by default (Fixed)** within a major. The GM toggles for both live in operation settings and are stored in operation meta.
+- **Engine updates are automatic by default (Fixed)** within a major. The GM toggles for both live in episode settings and are stored in episode meta.
 - Because events carry resolved results, a pack update never changes past outcomes.
 
 ## Content kinds and tiers
@@ -153,9 +155,9 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 | Core | D (official) | cloud-hosted, bundled copy in apps | yes |
 | Library | any GM, submitted for review | cloud-hosted | only once verified |
 | Campaign / private | a GM | the GM's account (and local cache) | no |
-| Operation-scoped | a GM, for one session | pinned to that operation | no |
+| Episode-scoped | a GM, for one episode | pinned to that episode | no |
 
-- The **operation-scoped tier** (Fixed, F3 part 3) sits under Campaign and holds per-session GM content. It uses the same schema and the same validator as any pack, is pinned by the operation (`packRef`), and its use is logged like any other pack change.
+- The **episode-scoped tier** (Fixed, F3 part 3) sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and its use is logged like any other pack change.
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
 - The **public library** is a government-style archive showing only items with `verification: verified` (Fixed).
 - **Who verifies (Fixed, concern 5).** At first only R and D hold the verification claim. It is set by the roles function; more auditors can be added later via the console.
@@ -168,7 +170,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 - The core pack ships inside the apps (offline first) and is also published to the backend so newer versions can be fetched.
 - Pack files live in Cloud Storage and the pack index lives in Firestore (FS1). Pack files are immutable per version; a new version is a new upload.
-- The local cache stores every pack version an operation references, so an offline device can always open its operations.
+- The local cache stores every pack version an episode references, so an offline device can always open its episodes.
 
 ## Documents (Typst, later)
 

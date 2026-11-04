@@ -1,14 +1,16 @@
 # 07. Applications
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 ## The three apps
 
 | App | Platforms (Fixed scope) | Who | Role |
 |---|---|---|---|
 | `apps/bard` | v1: Windows and Linux desktop, plus the player-only web build; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is player-only (W1, see below) |
-| `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins operations the main app hosts |
+| `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins episodes the main app hosts |
 | `apps/functions` | Firebase, HTTPS-only Dart Cloud Functions (experimental) | none directly | Badge login, role claims, payment webhook, store receipt validation, push, pack publishing helper (P14). Depends only on `protocol_envelope` (F4), never on the engine. No relay: Realtime Database is the relay |
 
-Both Flutter apps use the same `session`, `engine` and `protocol` packages, so a companion phone and a tablet are equal participants in an operation. The companion app is a different **UI**, not a different client.
+Both Flutter apps use the same `session`, `engine` and `protocol` packages, so a companion phone and a tablet are equal participants in an episode. The companion app is a different **UI**, not a different client.
 
 ## Layering in each Flutter app
 
@@ -44,12 +46,12 @@ Initial feature areas (Proposed grouping, content to be set by R):
 
 | Area | GM | Player |
 |---|---|---|
-| Operation console | requests queue, require/resolve/override checks, initiative tracker, NPC control | action requests, check results, turn status |
+| Episode console | requests queue, require/resolve/override checks, initiative tracker, NPC control | action requests, check results, turn status |
 | Dossier | all entities | own agent sheet (attributes, skills, vitals, conditions, inventory) |
 | World | scenes, NPCs, reveal/hide | revealed handouts and scenes |
 | Phone | all phone threads, reply as NPC | own phone |
 | Library | campaign content, import from library | read-only |
-| Filing | operation log, export, archive viewer for pre-migration text (P12) | own visible log, archive viewer limited to own perspective (P12) |
+| Filing | episode log, export, archive viewer for pre-migration text (P12) | own visible log, archive viewer limited to own perspective (P12) |
 
 ## Shared UI kit (`packages/ui_kit`, P1)
 
@@ -369,7 +371,7 @@ R ruled a separate package for the theme model (T8). The package name `theme_cor
 
 ### Web build role (W1, Fixed for now; ruled by R 2026-10-20)
 
-The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. Revisiting W1 is Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. D confirmed player-only on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
 
 ## The app shell never affects outcomes (Fixed)
 

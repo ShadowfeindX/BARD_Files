@@ -1,5 +1,7 @@
 # Engine core
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 The engine (`packages/engine`) is the game: pure Dart, Dart SDK only, no I/O, no clock and no randomness it was not handed. Design: [01-engine.md](../architecture/01-engine.md). Everything public is exported from `package:engine/engine.dart`.
 
 ## The loop
@@ -16,7 +18,7 @@ switch (decision) {
 - `decide` is the only function that draws from the `Rng` or the `IdSource`. A rejection produces no events and draws nothing.
 - `evolve` (and `replay`, a fold of it) never fails and never rolls. Every client runs it.
 - Commands before `StartOperation` are rejected with `RejectionCode.notStarted`.
-- An engine bound to a different pack than the operation pinned refuses every command (`RejectionCode.packMismatch`).
+- An engine bound to a different pack than the episode pinned refuses every command (`RejectionCode.packMismatch`).
 
 ## Where things live
 
@@ -112,7 +114,7 @@ Packs write data-only trees (P4); there is no scripting:
 ## Randomness
 
 - Tests use `ScriptedRng([faces...])`: it fails loudly when the script runs out or a face does not fit the die.
-- Production uses `XoshiroRng` in `packages/session` (`xrandom` 0.7.2 `Xoshiro128pp`, pinned). One draw is one 32-bit output; dice use rejection sampling. Reopening an operation passes the stored draw count, and the generator skips to it.
+- Production uses `XoshiroRng` in `packages/session` (`xrandom` 0.7.2 `Xoshiro128pp`, pinned). One draw is one 32-bit output; dice use rejection sampling. Reopening an episode passes the stored draw count, and the generator skips to it.
 - The known-seed vectors in `packages/session/test/xoshiro_rng_test.dart` come from the reference C implementation. The program is kept in the project's shared library folder (`probes/xoshiro128pp-vectors/`), not in this repository, since the stack is Dart only. CI runs the vectors and the engine tests on the VM and on Node.js (`dart test -p node`). Locally, `dart test -p chrome` also passes (as root, Chromium needs a wrapper that adds `--no-sandbox`).
 
 ## Invariants later work must keep
@@ -125,7 +127,7 @@ From the gate review of the engine core (2026-10-21):
 ## Proposed in this code (for R to accept or change)
 
 - The public API shape (01 §Public API surface is Proposed): `Engine`, `Decision` (`Accepted` / `Rejected`), `Rejection` and `RejectionCode`.
-- Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the operation lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly` / `Redacted` (03 lists the four; the class names are Proposed); an agent's `AgentCreated` is seen by the GM and its owner.
+- Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the episode lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly` / `Redacted` (03 lists the four; the class names are Proposed); an agent's `AgentCreated` is seen by the GM and its owner.
 - `EntityKind` values (from 01's entity list) on `Identity`; display and filtering only.
 - The breakdown types (`Term` and its subclasses) that rolling events will carry.
 - Setting defaults: auto-resolve and auto-confirm off.
@@ -141,5 +143,5 @@ From the gate review of the engine core (2026-10-21):
 - Stat-gated broadcast: event and value-type names, the `compare` JSON form and its six operators, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. No length limit on the text (none is ruled). The two-event shape is ruled (R, 2026-10-21), not Proposed.
 - The narrator's English wording and line shapes. 01 says narration uses the pack's `strings/`, which has no narration templates yet; moving the wording there is open.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
-- An alias plays at most one agent in an operation (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.
+- An alias plays at most one agent in an episode (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.
 - Not checked yet because the rule is not ruled (G19, parked for D): whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.

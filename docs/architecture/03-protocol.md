@@ -1,5 +1,7 @@
 # 03. Protocol (`packages/protocol`)
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 Two packages define what crosses a process or device boundary (F4, option A, ruled by R 2026-10-20: no wire-format concerns in the engine):
 
 - **`protocol_envelope`** (SDK-only): the envelope, the message types and version negotiation. It does not depend on `engine`, so `apps/functions` can depend on it alone.
@@ -27,7 +29,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 |---|---|
 | `p` | protocol major |
 | `e` | sender's engine version |
-| `op` | operation id |
+| `op` | episode id |
 | `seq` | GM-assigned sequence (events only) |
 | `from` | logical sender: an alias id or `gm` |
 | `type` | message type (table below) |
@@ -41,7 +43,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | Type | Direction | Purpose |
 |---|---|---|
 | `hello` | client → GM | Who I am (agent id, alias id, auth proof if any), engine version, protocol major, last seq I have. |
-| `welcome` | GM → client | Accepted. Snapshot (filtered for this perspective) and/or events from the client's last seq. Operation settings visible to the client. |
+| `welcome` | GM → client | Accepted. Snapshot (filtered for this perspective) and/or events from the client's last seq. Episode settings visible to the client. |
 | `refused` | GM → client | Version mismatch, not invited, alias locked elsewhere, banned. Machine-readable reason. |
 | `request` | client → GM | A command for the GM engine to decide. Carries a client-generated request id for idempotency. |
 | `rejected` | GM → client | The GM engine (or GM) rejected a request. References the request id. |
@@ -53,7 +55,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 
 There is no message by which a client sends an *event*. Only the GM produces events (Fixed authority model).
 
-A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is not built. Pending D: see [09-open-decisions.md](09-open-decisions.md#pending-d).
+A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and not built yet.
 
 ### Message bodies (Proposed)
 
@@ -68,7 +70,7 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 | `rejected` | `requestId`, `code`, `message?` |
 | `events` | `events` (non-empty): one entry per event, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`. Entry shapes are in [04-session.md](04-session.md#event-entries-proposed) |
 | `resync` | `lastSeq` |
-| `textlog` | `archive` (archived operation id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
+| `textlog` | `archive` (archived episode id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
 | `presence` | `status`: `online`, `away` or `typing` |
 | `ping` / `pong` | `nonce?` |
 
@@ -78,7 +80,7 @@ The envelope header decodes without the body, and `type` stays a string, so a ho
 
 ## Ordering and delivery
 
-- The GM's session assigns `seq` strictly increasing per operation, starting at 1. It is the order of truth.
+- The GM's session assigns `seq` strictly increasing per episode, starting at 1. It is the order of truth.
 - Clients apply events only in `seq` order. A gap triggers `resync`.
 - Requests are at-least-once from the client; the GM deduplicates by request id, so a retried request never rolls twice.
 - Transports may reorder or duplicate frames; the protocol tolerates both.
@@ -89,7 +91,7 @@ Each event carries a `visibility`:
 
 | Visibility | Delivered to |
 |---|---|
-| `public` | everyone in the operation |
+| `public` | everyone in the episode |
 | `gm` | GM only (hidden rolls, NPC secrets, seed draws) |
 | `aliases[...]` | the listed aliases and the GM (private handouts, a phone message) |
 | `redacted` | everyone, but with a redacted body ("the GM rolled something") |
@@ -103,15 +105,15 @@ The filtering is about immersion and fairness between honest clients, not securi
 On `hello`:
 
 1. **Protocol major** must match the GM's, else `refused(protocolMismatch)`.
-2. **Engine major** must match the operation's, else `refused(engineMajorMismatch)`. Cross-major moves happen only through the migrator.
-3. **Engine minor/patch**: the client must be at least the version the operation's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
-4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the operation.
+2. **Engine major** must match the episode's, else `refused(engineMajorMismatch)`. Cross-major moves happen only through the migrator.
+3. **Engine minor/patch**: the client must be at least the version the episode's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
+4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the episode.
 
 Decoding is compatible within a major (Fixed): a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
 
 ## Snapshots
 
-A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived operation keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
+A snapshot is `OperationState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 

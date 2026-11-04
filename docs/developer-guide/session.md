@@ -1,5 +1,7 @@
 # Session
 
+> Code still says `Operation` for what the spec calls an episode until the rename PR.
+
 `packages/session` is the runtime: the GM's `OperationHost`, a player's `OperationParticipant`, and the interfaces they stand on (04-session.md). It imports the wire types through `protocol`, which re-exports `protocol_envelope`.
 
 ## Pieces
@@ -23,12 +25,12 @@
 - **Entity ids never repeat after a reopen.** The id source restarts at the larger of one past the highest `e<N>` in the replayed state and the counter stored with the head snapshot.
 - **RNG draws are never reused.** After every `decide`, a changed draw count is saved with `saveRngDrawCount`; every append carries it too. A reopen resumes at the larger of that and the state's own count.
 - **A retried request never decides twice.** The host remembers `(agent, request id)` per answered request, including across a reopen (the stored event records its origin). Refused requests are not stored, so a retry after a reopen is decided again, to the same refusal.
-- **GM identity is checked.** A verified identity flagged `isGm` is admitted only if it is the operation's GM; everything else must have an alias.
+- **GM identity is checked.** A verified identity flagged `isGm` is admitted only if it is the episode's GM; everything else must have an alias.
 
 ## Plugging in
 
 - **Engine codec.** `EngineCodec` (in `protocol`) turns commands, events and state into JSON. Until row 6 supplies it, tests use `test/support/test_codec.dart`.
-- **Consequence gate.** The host holds every event that is a `Consequence` (the engine's marker) until `confirmPending` or the operation's auto-confirm setting; rolls are never consequences, so they are never held. A review `edit` must return the same consequence type for the same entity, actor and visibility, or `confirmPending` throws and the batch stays pending.
+- **Consequence gate.** The host holds every event that is a `Consequence` (the engine's marker) until `confirmPending` or the episode's auto-confirm setting; rolls are never consequences, so they are never held. A review `edit` must return the same consequence type for the same entity, actor and visibility, or `confirmPending` throws and the batch stays pending.
 - **What players receive.** `projectFor` shapes the copy of an event a player or the table gets: `overriddenFrom` is dropped and a multi-alias event is narrowed to the viewer's alias. The store and the GM keep the whole event. Add a case when a new event can address several aliases or carries GM-only detail.
 - **Text log.** Each commit stores the engine `Narrator`'s lines as `gm`, `public`, `redacted` and `alias:<id>` variants.
 - **Authorization.** `DefaultAuthorizer(playerMay: ...)` lists the commands players may send.

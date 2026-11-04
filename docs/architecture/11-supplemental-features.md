@@ -1,22 +1,24 @@
 # 11. Supplemental features
 
-Status: **ruled by R (2026-10-20)**, from D's approved feature list "B.A.R.D. Supplemental Materials". This chapter records the decided parts. Items that depend on the operation/mission model (X0) wait for R's meeting with D and are not designed here. They are listed at the end. Nothing here is implemented yet.
+Status: **ruled by R (2026-10-20)**, from D's approved feature list "B.A.R.D. Supplemental Materials". This chapter records the decided parts. Items that depend on the operation/mission/episode model (X0) wait for R's meeting with D and are not designed here. They are listed at the end. Nothing here is implemented yet.
 
 Where this chapter changes an earlier ruling, it says so under [Amendments to earlier chapters](#amendments-to-earlier-chapters). Those chapters are updated in a later change. Design details R has not ruled on individually are marked **Proposed**. Question ids (Q6, Q24 and so on) trace to the working record `architecture/supplemental-features-reconciliation.md` in the project library.
 
 ## Terminology (ruled, rename pending)
 
-R ruled the game's terms on 2026-10-20:
+D ruled the game's levels on 2026-10-22, replacing R's 2026-10-20 terms (which made "operation" the whole campaign). R and D renamed the lowest level from Session to **Episode** on 2026-11-03 so it is not confused with the network session (the `session` package, the session host, sign-in sessions):
 
 | Term | Meaning |
 |---|---|
 | Agent | The player's account profile, in-world and fictional. |
-| Alias | A character played inside an operation. An agent owns aliases. |
-| Operation | The whole campaign, spanning many game sessions, months or years. |
-| Mission | A segment of play inside an operation. One operation has many missions. Character and player data is preserved between missions. |
-| Handler | The GM. A paid account tier (see [Clearance tiers](#clearance-tiers)). "Tier" in this chapter always means an account tier, not a content tier as in [02](02-rules-packs.md#content-kinds-and-tiers). |
+| Alias | A character played in missions. An agent owns aliases; a player may have several aliases in an operation, a mission or an episode, and an alias may appear in several missions. |
+| Episode | One sitting of play (1 to 3 hours on average), the lowest level. It owns one event log, one live RTDB tree, one sembast file and one host. Called an Episode, not a session, because "session" already means the network and host layer (D's earlier term was Session; renamed 2026-11-03). |
+| Mission | A scenario or objective the agents try to complete, accomplished across a series of episodes (1 to 3 on average). Character and player data is preserved between missions. |
+| Operation | D's story arc only: a long-horizon goal or other collection of missions (1 to 10 on average), managed by a Handler. Operations run one after another; missions may run in parallel (D, 2026-10-29). Not the unit of live play. |
+| Campaign | A series of operations managed by a GM. |
+| Handler | The GM role in an operation. A paid account tier (see [Clearance tiers](#clearance-tiers)). A GM may have a different handler character, persona or alias per operation. "Tier" in this chapter always means an account tier, not a content tier as in [02](02-rules-packs.md#content-kinds-and-tiers). |
 
-The rest of this spec still uses "campaign" for the long-running game and "operation" for one session (glossary in [README.md](README.md)). The spec-wide rename, and which unit owns an event log, wait on X0. This chapter uses R's terms.
+Every level is archived. Open design questions about these levels (settings level, rosters, endings, what is published) are FD-X1 to FD-X8 in [10-pending-d-followup.md](10-pending-d-followup.md). Chapters 01 to 08 and the developer guide now say "episode" for the unit of live play (R and D, 2026-11-03). Code identifiers (`OperationState`, `OperationHost`) still say `Operation` until the rename PR. Chapter 12's Firestore paths (`operations/{opId}`) are unchanged for now (see the note there). The mission rows below (library, debrief, last 3 missions) read as written: they are about missions.
 
 ## Agents, aliases and profiles
 
@@ -46,7 +48,7 @@ D's tiers, as given by R:
 
 | Tier | Clearance | Access |
 |---|---|---|
-| Anonymous user | 0 | No data access |
+| Anonymous user | 0 | Free (level-1) entries, the same as a free user's browsing (D, 2026-10-22); no profile, voice, video or messaging |
 | Free user | 1 | Clearance 1 data; clearance 2 summaries |
 | $2.99 user | 2 | Clearance 1 and 2 data; clearance 3 and 4 summaries |
 | $5.99 user | 3 | Clearance 1-4 data |
@@ -60,7 +62,7 @@ D's tiers, as given by R:
 - **Gated sections are separate documents** (follows from [V-48]). Each gated section has a data document and a summary document, readable only by tiers granted that level.
 - **Summaries.** Every mission gets a summary; only some missions are redacted.
 - **Hosting and GM tools** (hosting, the panic button, GM tools on the companion app, redaction) check for the handler tier.
-- **Lapsed handler tier.** The handler's operations stay readable and can be archived, but no sessions run and no new operations start until the tier is active again.
+- **Lapsed handler tier.** The handler's operations stay readable and can be archived, but no episodes run and no new operations start until the tier is active again.
 - **Handler redaction** is enforced by the app, per operation, with an expiry, like perspective filtering ([03](03-protocol.md#visibility-and-perspectives): immersion between honest clients, not security).
 - **Developers' testing content.** Developers see internal information, including packs and rulesets still in testing (R). Proposed: pack index entries and library items carry a status (`testing` or `released`), and rules let only clearance 5 read `testing` entries; clearance 5 stays separate from the admin claim.
 - **Bundling and caching.** Level-1 (free) content ships inside the apps. An anonymous user digging it out of an install is accepted. All other gated data is fetched for entitled users and cached on the device for offline use. Copying non-secret cached content is accepted, so clearance gates fetching, not cached data. This changes [02](02-rules-packs.md#distribution) only for gated lore above level 1, which is not bundled. Rules data the engine needs to run play is not gated.
@@ -75,7 +77,7 @@ There are two separate codes (R, 2026-10-20). This replaces P9's single printed 
 | Purpose | Opens the agent's public profile | Signs the player into a desktop, web or mobile session |
 | Visible to | Everyone; printed on physical objects | Only the player, on their signed-in phone |
 | Payload | An https link to the public profile, keyed by **badge number only** (never the agent id, which is the Firebase Auth uid) | A short-lived, single-use credential |
-| Symbology | PDF417 (for the look, R) | PDF417 (proposed, from D's list; D to confirm) |
+| Symbology | PDF417 (for the look, R) | Any scannable code, QR allowed (D, 2026-10-22) |
 | Scanned with | The companion app | The other device, or the reverse flow below |
 
 ### Badge numbers
@@ -96,7 +98,7 @@ Scanning a public badge with the companion app opens the profile in the app. The
 
 ### LAN join QR
 
-The LAN QR carries only join information (host address, operation id, one-time join code), never credentials. Identity comes in `hello` ([03](03-protocol.md#messages)).
+The LAN QR carries only join information (host address, episode id, one-time join code), never credentials. Identity comes in `hello` ([03](03-protocol.md#messages)).
 
 ## Invite links
 
@@ -128,7 +130,7 @@ The invite link is `bard://join/<op>?invite=<token>`. A Firestore invite documen
 
 The in-app browseable manual uses the same gating as the PDF manual: it is available to the handler tier, or to anyone who buys it. That purchase is a payment product (concern 6). The manual content is D's.
 
-## Fake occult websites (provisional, Q12 with D)
+## Fake occult websites (provisional, Q12 with D; post-v1: not in v1, D 2026-10-22)
 
 - A site is a document of typed blocks (heading, text, image, link to another fake page, form-like widgets), rendered by `ui_kit`. Raw HTML or JavaScript is never allowed.
 - Provisionally (R, D to confirm): sites are written by handlers, scoped to an operation, and shared beyond it only later through the library with moderation.
@@ -158,7 +160,7 @@ The tool for handlers to make in-setting materials combines the Typst work ([02]
 
 ## Live updates outside the live-play tree
 
-The desktop Firestore client is REST-only (FS2), and Firestore has no live listening over REST [V-47]. Proposed: live updates outside an operation's RTDB tree (join requests, transfer approvals, moderation results) arrive as an RTDB `/inbox/$uid` ping (P14), followed by a Firestore read.
+The desktop Firestore client is REST-only (FS2), and Firestore has no live listening over REST [V-47]. Proposed: live updates outside an episode's RTDB tree (join requests, transfer approvals, moderation results) arrive as an RTDB `/inbox/$uid` ping (P14), followed by a Firestore read.
 
 ## New dependencies (not approved)
 
@@ -188,17 +190,17 @@ These are applied to the named chapters in a later change:
 | 01 Engine | A new command for the stat-gated broadcast, plus comparison nodes in condition expressions. Proposed `ContactRevealed` and `SiteRevealed` events. |
 | P14 | Adds functions: sign-in code minting, badge-number generation, the panic-button proxy. |
 
-## Currency (provisional, D to confirm)
+## Currency (provisional; D: later)
 
 Provisionally (R): D defines the currency name, prices, starting funds and income in pack data, and the engine gets a generic `Funds` vocabulary (a component plus transfer commands and events), so balance arithmetic stays in the engine. D confirms at the meeting (Q6). How money moves between missions waits on X0.
 
 ## Waiting on X0 (R's meeting with D)
 
-Under R's terms an operation is the whole campaign, but the spec still gives each operation (one session) its own event log. Which unit owns the log decides the items below, so they wait for R's meeting with D:
+Under the ruled tree (Campaign > Operation > Mission > Episode, 2026-11-03) the spec gives each episode (the code's "operation") its own event log. Which unit owns the log decides the items below, so they wait for R's ruling (R-X0) (options and the edits under each: [10-pending-d.md](10-pending-d.md#operations-and-missions-x0)):
 
-- **Q24:** whether the event log belongs to the operation, stored in mission segments, or to each mission.
+- **Q24 (restated as R-X0):** which of campaign, operation, mission and episode owns the event log.
 - **Q5:** requests made between sittings (purchases, contact releases), and whether purchases may auto-confirm.
-- **Q7:** where messages between sessions live.
-- **Q9 (content):** what a published mission contains and how it is identified.
+- **Q7 (ruled by R, 2026-10-27):** the phone contact list belongs to the campaign; phone box messages belong to the operation.
+- **Q9 (ruled by R, 2026-10-27):** a published mission is the debrief forms only; text logs are never made public.
 - Bank, storefront and wallet between missions; "last 3 completed missions"; how the contact book persists.
-- **Q33:** what anonymous (clearance 0) accounts can do.
+- **Q33 (ruled by D, 2026-10-22):** anonymous (clearance 0) accounts may browse free entries; still no voice, video or messaging (R).
