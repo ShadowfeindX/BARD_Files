@@ -68,7 +68,7 @@ Rules for components:
 EpisodeState
   ├─ meta: episode id, engine version, pack ref (id, version, content hash), settings
   ├─ stores: Map<ComponentType, Map<EntityId, Component>>   // ECS stores
-  ├─ encounter: initiative order, round, whose turn (when in combat)
+  ├─ encounter: initiative order, round, whose turn (when in combat)   // planned, not built (10 §5)
   ├─ pending: open action requests and checks awaiting the GM
   └─ rng: seed reference + draw counter (GM engine only uses it)
 ```
@@ -79,11 +79,14 @@ Stores are persistent immutable maps so `evolve` stays cheap. The choice of immu
 
 A system is a pure function grouped by concern. Each system handles a subset of commands in `decide` and a subset of events in `evolve`. Systems never call each other's internals; they share only state and the pack.
 
+Built today: CharacterSystem, CheckSystem, ConditionSystem, EpisodeSystem, MessagingSystem, TableSystem, VitalsSystem. Planned: the rest ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
+
 | System | Handles |
 |---|---|
-| `CharacterSystem` | creation steps (§3), attribute/skill allocation rules, advancement purchases (§9) |
-| `CheckSystem` | action requests, check requirements, resolution, opposed checks, assistance, overrides (§2, §5) |
-| `VitalsSystem` | damage, DR, healing, sanity loss and recovery (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (see [Rulebook values](#rulebook-values-the-engine-uses), item 11); no critical-injury triggers |
+| `EpisodeSystem` | the episode's lifecycle: starting it and its settings |
+| `CharacterSystem` | creation steps (§3), attribute/skill allocation rules; advancement purchases (§9) are planned |
+| `CheckSystem` | action requests, check requirements, resolution, opposed checks (§2, §5); assistance and overrides are planned |
+| `VitalsSystem` | Health and Sanity changes as built; damage dice, DR, healing, death and sanity bands are planned (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (see [Rulebook values](#rulebook-values-the-engine-uses), item 11); no critical-injury triggers |
 | `ConditionSystem` | applying, ticking and clearing conditions, afflictions, disorders (§4) |
 | `CombatSystem` | initiative, rounds, turn order, action economy (one major, one minor, one reaction by default), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
@@ -113,7 +116,7 @@ GM:      ApplyConsequence(...)                                      → (held fo
 - Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll.
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
 - **GM review gate.** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait; it is separate from the request auto-confirm setting in [04](04-session.md#settings-resolution). **Death at 0 Health goes through the gate:** it is part of the confirmed damage batch, so the Handler can edit the damage before the character dies; the Handler's own `KillCharacter` is not gated. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed.
-- **Reserved field `source` on `CheckResolved`.** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved so logs written today stay valid. The feature (players entering physical dice faces, behind a GM setting that is off by default) is built after the demo. Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `ResolveCheck` takes optional `faces`, validated against the dice the check would roll and refused unless `EpisodeSettings.allowPhysicalDice` (default `false`) is on; entered faces are recorded with `source: entered` and who entered them, and, like app rolls, are never re-rolled or changed. The setting follows the settings levels ([04](04-session.md#settings-resolution)).
+- **Reserved field `source` on `CheckResolved`.** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved so logs written today stay valid. The feature (players entering physical dice faces, behind a GM setting that is off by default) is not built; workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule). Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `ResolveCheck` takes optional `faces`, validated against the dice the check would roll and refused unless `EpisodeSettings.allowPhysicalDice` (default `false`) is on; entered faces are recorded with `source: entered` and who entered them, and, like app rolls, are never re-rolled or changed. The setting follows the settings levels ([04](04-session.md#settings-resolution)).
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
@@ -148,7 +151,7 @@ A **condition** (used by the stat-gated broadcast, [11](11-supplemental-features
 | Placement | Expression | `var` supplied by the engine |
 |---|---|---|
 | Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
-| Assistance bonus (`difficulty.json`) | as built: `1d6 + var(helperSkillBonus)`. Planned: the helper's attribute score, key `helperAttribute` (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)); see [Planned code changes](#planned-code-changes) | as built: the helper's skill bonus. Planned: the helper's score in the check's attribute |
+| Assistance bonus (`difficulty.json`) | as built: `1d6 + var(helperSkillBonus)`. (open: [FD-A2](10-waiting-on-d.md#fd-a2)) Planned: the helper's attribute score, key `helperAttribute` (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)); see [Planned code changes](#planned-code-changes) | as built: the helper's skill bonus. Planned: the helper's score in the check's attribute |
 
 Any new `var` key or placement needs R's approval first.
 
@@ -156,7 +159,7 @@ Any new `var` key or placement needs R's approval first.
 
 The engine can represent each variant; the **values** come from the rulebook. Agents do not choose (CLAUDE.md §9).
 
-1. **Proficiency bonus.** The bonus is additional dice: Proficient +1d4, Expert +1d6. The rulebook's flat +3/+5 wording in §3 and §5 is not used.
+1. **Proficiency bonus.** The bonus is additional dice: Proficient +1d4, Expert +1d6.
 2. **Derived stats.** Health = END × LCK. Sanity = WIS × LCK.
 3. **Top category.** The category above S is Cat-Ω. Its values (DC, damage, vehicle and threat-class values) are decided by the Handler, not fixed by the book.
 4. **Disorder table.** §4 reads as a clean table of rolls 1 to 6.
@@ -260,7 +263,7 @@ Deprecation signals that something still works now but will change later. A new 
 | `note` | yes | Human-readable reason and what to do instead. |
 | `replacedBy` | no | Reference to the successor, when one exists. Entries use `kind:id` (`skill:example_new_skill`); fields use `owner.field` (`example_component.newField` for engine schema, `skills.newField` for a pack file key). |
 
-**In engine code:** deprecated Dart members carry the built-in `@Deprecated('message')` annotation, which makes the analyzer report every use [V-20]. The message repeats the record (`since`, replacement, removal major). The schema docs in `packages/engine/schema/` carry the same record so non-Dart readers see it.
+**In engine code:** deprecated Dart members carry the built-in `@Deprecated('message')` annotation, which makes the analyzer report every use [V-20]. The message repeats the record (`since`, replacement, removal major). The schema docs in `packages/engine/schema/` carry the same record so non-Dart readers see it (planned: the directory does not exist yet; [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
 
 **Old and new side by side.** While both exist within a major:
 
@@ -274,7 +277,7 @@ Deprecation signals that something still works now but will change later. A new 
 
 | Audience | How they find out |
 |---|---|
-| Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` |
+| Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` (planned CI check; [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)) |
 | Pack authors (D, GMs) | The pack validator reports each deprecated key or entry as a **warning**, never an error, with the note and removal major |
 | GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack |
 | Players | Nothing; deprecation never changes play |

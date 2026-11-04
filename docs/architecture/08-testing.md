@@ -30,32 +30,32 @@ Every package is testable on its own, with in-memory implementations of everythi
 ## Migrator
 
 - Planned (`packages/migrator` holds a placeholder test today): fixture pairs per step (N in, N+1 out), including "needs decision" cases.
-- Newest step only: output loads and folds in the current engine.
+- Planned: newest step only: output loads and folds in the current engine.
 - Planned: archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (widget test: single tap never confirms; the "cannot be recovered" tick and typed episode name are both required).
 
 ## Apps
 
-- View-model unit tests with fake repositories.
-- Widget tests for views with behavior (dice breakdown, check panel, phone thread).
-- Integration tests for main flows (host, join, request → check → result) using the in-memory transport.
+- Planned: view-model unit tests with fake repositories.
+- Widget tests for views with behavior (dice breakdown, phone thread).
+- Integration tests for the main flow (request → check → result) using the in-memory transport.
 
 ## Backend
 
-- Security-rules tests and `backend` adapter tests against the Firebase Local Emulator Suite [V-19]. Realtime Database rules are tested in the Emulator Suite. The Firestore rules are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)) and are to be tested in the Emulator Suite; the tests are still to be written (open: [S-7](09-open-decisions.md#s-7-firestore-collections)). The RTDB rules suite is `firebase/rtdb_rules_test/` with the rules in `firebase/database.rules.json` (run with `bash firebase/run_rtdb_rules_test.sh`; see `firebase/README.md`). The suite is based on probe 8.6's emulator checks (116 of 116 pass [V-38]) and covers: the GM cannot delete `meta`; a member cannot overwrite another uid's signaling; no `phoneDraft` path is accepted; no delete of `meta` or `meta/gm`; signaling by uid, refused after lock; presence writable after lock; phone messages create-only; and the post-archive clean-up [V-50]. Also covered: presence refused once archived, `meta` validation, and no signaling or phone messages for anonymous members [V-51]; no signaling reads for anonymous members, phone message shape and 2,000-character cap, `locked` never removed, and non-member text log reads [V-52]; clients (the GM included) refused when they set `meta/status` to `archived`, the text log `alias:null` read, and the phone text cap counting UTF-16 code units [V-53]. 200 of 200 pass.
+- Security-rules tests and, planned, `backend` adapter tests against the Firebase Local Emulator Suite [V-19]. Realtime Database rules are tested in the Emulator Suite. The Firestore rules are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)) and are to be tested in the Emulator Suite; the tests are still to be written. The RTDB rules suite is `firebase/rtdb_rules_test/` with the rules in `firebase/database.rules.json` (run with `bash firebase/run_rtdb_rules_test.sh`; see `firebase/README.md`). The suite is based on probe 8.6's emulator checks (116 of 116 pass [V-38]) and covers: the GM cannot delete `meta`; a member cannot overwrite another uid's signaling; no `phoneDraft` path is accepted; no delete of `meta` or `meta/gm`; signaling by uid, refused after lock; presence writable after lock; phone messages create-only; and the post-archive clean-up [V-50]. Also covered: presence refused once archived, `meta` validation, and no signaling or phone messages for anonymous members [V-51]; no signaling reads for anonymous members, phone message shape and 2,000-character cap, `locked` never removed, and non-member text log reads [V-52]; clients (the GM included) refused when they set `meta/status` to `archived`, the text log `alias:null` read, and the phone text cap counting UTF-16 code units [V-53]. 200 of 200 as last run.
 - **Outbox restart test (planned).** A request queued offline survives an app restart and is replayed once on reconnect. The SDK's own queue does not survive a restart [V-40], so this test is what proves offline requests are kept.
 - **Auth tests** (planned; `backend` holds a placeholder test today; against the emulator where it supports them): anonymous upgrade keeps the uid and forces a token refresh [V-39] (open: [06-O2](09-open-decisions.md#06-o2-anonymous-to-full-account-upgrade)); `EMAIL_EXISTS` and `WEAK_PASSWORD` map to user messages; a lost or wrong secure-store key ends in a clean signed-out state, not an error loop [V-44]; the keyring timeout guard fires instead of hanging [V-34].
 - Planned: `apps/functions` tests with the shared `protocol_envelope` fixtures.
 
 ## Continuous integration
 
-The workflow is `.github/workflows/ci.yml`: one job, `check`, on a Linux runner, for every pull request and every push to `main`. `bash tool/check_all.sh` runs the same checks locally in the same order ([developer guide](../developer-guide/setup.md#the-checks)). The steps are:
+The workflow is `.github/workflows/ci.yml`: one job, `check`, on a Linux runner, for every pull request and every push to `main`. `bash tool/check_all.sh` runs steps 2 to 8 locally, in the same order ([developer guide](../developer-guide/setup.md#the-checks)); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only. The steps are:
 
 1. Install Flutter from Google storage at the version in `.flutter-version`, then resolve the workspace (`flutter pub get`).
 2. Build the rules pack from the annotated source (`bash tool/build_pack.sh`); the generated pack is kept out of git.
 3. `dart format` check, failing on unformatted files (style rule in CLAUDE.md §8).
 4. `flutter analyze` for the whole workspace.
-5. Dependency-rule check (`tool/bin/check_dependency_rules.dart`): fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)). Includes a **transitive check**: the resolved dependency graph of `apps/functions` must never contain `engine` (it depends only on `protocol_envelope`).
-6. Exact-pin check (`tool/bin/check_pins.dart`): every external dependency is an exact version, which covers the pinned packages (`xrandom`, `sembast`, `hive`).
+5. Dependency-rule check (`tool/bin/check_dependency_rules.dart`): fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)). Includes a **transitive check**: the resolved dependency graph of `apps/functions` must never contain `engine` or `protocol` (it depends only on `protocol_envelope`).
+6. Exact-pin check (`tool/bin/check_pins.dart`): every external dependency is an exact version, which covers every hosted dependency (today `xrandom`, `signals_flutter` and the test tooling; `sembast` and `hive` once they enter a pubspec).
 7. Pack-current check (`bash tool/build_pack.sh --check`): the generated pack is present, current and has no extra files.
 8. Tests for every package that has a `test/` folder (`bash tool/test_all.sh`). Pack validation of the example pack runs here, through the engine's pack loader tests.
 9. Web run of the tests: `dart test -p node` in `packages/engine` and `packages/session`.

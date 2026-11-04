@@ -121,14 +121,19 @@ From `D-notes-before-next-meeting.md`, Part 1. The pack value stays `null` until
 
 ## 5. Workstream rows still to schedule
 
-Ruled, not built; R sequences them (R9). Each is Proposed work, not a decision.
+Not built; R sequences them (R9). Each is Proposed work, not a decision.
 
 - Handler persona entity (R-A4): campaign-owned character-shaped entity, roster shows the persona.
 - Campaign-level members and rules (R-A6): RTDB `members` move to the campaign; the rules change goes through the Opus gate.
 - Operation-end phone box clear (R-C2): a function clears the box after the archive.
 - Snapshot pruning (R-A3): after a mission is complete or submitted, remove all session data except the latest snapshot.
-- Apply the settled rulings to the example pack and engine (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; the explode flags in `damage.json`, `proficiency.json` and `advancement.json` (today `null`); `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Insight on WIS; Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
+- Apply the settled rulings to the example pack and engine (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; `meleeFloor` in `damage.json`; the explode flags in `damage.json` and `threats.json`, `proficiency.json` and `advancement.json` (today `null`); removal of the `chosenAttribute`/`fallback` and `sanityCheckOptions` placeholders in `occult.json`; the `luckAdvantage` placeholder; `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Insight on WIS; Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
 - Rename the `occult.json` block `ritualDefaults.focusItem` to `artifact`, with a new `focusItem` left `null` (see [01](01-engine.md#planned-code-changes)).
+- Migrator package: steps, schemas, archives, fixtures and the `EpisodeMigrated` genesis event (the package is a stub today).
+- Backend adapters and the sembast `EventStore` (only `InMemoryEventStore` exists today), `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
+- Theme build: `theme_core` and the `ui_kit` theme (a placeholder `BardTheme` exists today).
+- Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
+- Physical dice feature (see [01](01-engine.md)).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
 The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).

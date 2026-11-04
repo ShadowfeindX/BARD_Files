@@ -10,6 +10,8 @@ The migrator works on frozen JSON-level schemas, and each step is a pure `(json,
 
 A pub workspace resolves one version of each package for the whole repository, and Dart does not allow two versions of the same package in one resolution [V-1]. The migrator cannot import engine N and engine N+1 side by side. It works on **serialized JSON** instead:
 
+Planned; the package is a stub today ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)):
+
 ```
 packages/migrator/
   lib/src/schemas/v1/   frozen description of engine major 1's serialized shapes (plain Dart, JSON-level)
@@ -54,6 +56,8 @@ seq=1044  2026-10-16T20:14:40Z  vis=gm      <GM-only note>.
 
 **After migration.** The N+1 episode starts a new log whose first event is the genesis event:
 
+Planned; not built, workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule):
+
 ```
 EpisodeMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, episodeId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
 ```
@@ -76,7 +80,7 @@ followed by the migrated snapshot as its initial state. The migrator transforms 
    - anything the report lists as dropped is gone from the new episode;
    - **this cannot be undone or recovered.**
 
-   The GM must take a deliberate action to proceed: tick "I understand this information cannot be recovered" and type the episode's name. A single tap never confirms it; a widget test covers this.
+   The GM must take a deliberate action to proceed: tick "I understand this information cannot be recovered" and type the episode's name. A single tap never confirms it; a widget test covers this (planned; the package is a stub today, [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
 6. On confirmation the episode is locked, then the archive is written to Firestore, then the live data is cleaned up. The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived episode (frozen event log, text log and final head snapshot) is then written by the `archiveEpisode` HTTPS function, chunked into a subcollection to stay under Firestore's 1 MiB per-document limit; a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new episode is then created. The original N data is kept until the GM deletes it.
 
 Players do nothing. When they next join, they receive the new episode under N+1 and see a notice in the log that history before the migration is archived text (proposed; open: [O-05-1](09-open-decisions.md#o-05-1-notice-after-migration)).
@@ -87,4 +91,4 @@ N → N+2 runs N → N+1 then N+1 → N+2. Each step is tested on its own. A ste
 
 ## Testing
 
-Fixture pairs per step: realistic N snapshots and packs in, expected N+1 out. Archive tests: the frozen log is byte-identical after migration, the text log is carried over unchanged, the genesis event references both, a missing or stale head snapshot is refused with nothing written, and a two-hop migration (N → N+1 → N+2) keeps every archive in the genesis `archives` list. For the newest step only, an integration test checks that the output loads and folds in the current engine (which is N+1). That test is the one allowed `dev_dependencies` exception: `migrator` may depend on `engine` for tests only, never under `dependencies` (see [00-overview.md](00-overview.md#dependency-rules)). Library code in `migrator` stays Dart-SDK-only. See [08-testing.md](08-testing.md#migrator).
+Planned; the package is a stub today ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)). Fixture pairs per step: realistic N snapshots and packs in, expected N+1 out. Archive tests: the frozen log is byte-identical after migration, the text log is carried over unchanged, the genesis event references both, a missing or stale head snapshot is refused with nothing written, and a two-hop migration (N → N+1 → N+2) keeps every archive in the genesis `archives` list. For the newest step only, an integration test checks that the output loads and folds in the current engine (which is N+1). That test is the one allowed `dev_dependencies` exception: `migrator` may depend on `engine` for tests only, never under `dependencies` (see [00-overview.md](00-overview.md#dependency-rules)). Library code in `migrator` stays Dart-SDK-only. See [08-testing.md](08-testing.md#migrator).

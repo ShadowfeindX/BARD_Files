@@ -82,14 +82,14 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   protocol/                   pure Dart. Engine command/event codecs; depends on protocol_envelope.
   session/                    pure Dart. Actors, episode loop, transport + store interfaces, Rng adapter (xrandom).
   migrator/                   pure Dart. Major N → N+1 transforms on serialized data.
-  content_core/               D's default rules pack as data under assets/.
-  backend/                    Flutter + Firebase adapters behind session/app interfaces.
+  content_core/               D's default rules pack as data under assets/. Pack today: a provisional copy of the example-core sample; D's pack is pending.
+  backend/                    Flutter + Firebase adapters behind session/app interfaces (planned; scaffold only today, 10 §5).
   theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11; not built).
   ui_kit/                     Shared widgets, theme widgets and controller, perspective panels.
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
   companion/                  phone Flutter app (player-first)
-  functions/                  HTTPS-only Dart Cloud Functions (badge login, roles, archiveEpisode, push, pack publishing helper, payment/receipt placeholders)
+  functions/                  HTTPS-only Dart Cloud Functions (planned; scaffold only today, 10 §5): badge login, roles, archiveEpisode, push, pack publishing helper, payment/receipt placeholders
 /docs/                        developer guide, this spec
 ```
 
@@ -116,9 +116,9 @@ dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
 
-\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are planned for `apps/functions`; today it depends only on `protocol_envelope`. `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the planned backend stack. The other third-party packages above are used or planned at the versions in the Platform and stack table and in the verification register ([V-28] to [V-36]); `firebase_dart`, `hive`, `flutter_secure_storage` and `sembast` are planned for `packages/backend` and are not in any pubspec yet; each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
+\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are planned for `apps/functions`; today it depends only on `protocol_envelope`. `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the planned backend stack. The other third-party packages above are used or planned at the versions in the Platform and stack table and in the verification register ([V-28] to [V-36]); `firebase_dart`, `hive`, `flutter_secure_storage` and `sembast` are planned for `packages/backend` and are not in any pubspec yet; each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; held by `backend` (the `EventStore`; see the table above).
 
-`apps/functions` mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveEpisode`), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed. Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group. It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
+`apps/functions` (planned; scaffold only today, 10 §5) mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveEpisode`), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed. Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group. It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
 Why these rules:
 

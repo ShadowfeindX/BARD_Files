@@ -77,7 +77,7 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 
 - **Undecided:** the command and field names of `SendPhoneMessage(from, to, text)`. The behaviour (party rules, 1 to 2,000 UTF-16 units) is design.
 - **Options:** names and fields as proposed in the chapter.
-- **Owner:** R (an engine row, see the Proposed rows in [01](01-engine.md#planned-code-changes)). **Described in:** [04](04-session.md#in-game-phone).
+- **Owner:** R (built; names open, see 01 Planned code changes, 'Built; names open'). **Described in:** [04](04-session.md#in-game-phone).
 
 ### S-3 Perspective-panel feature areas
 
@@ -114,6 +114,12 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Undecided:** which shell capabilities the Handler may gate. The library synthesis (section 12.7) proposes that theme, texture, motion and text-size settings are never gateable and that a lock card uses no flashing or motion beyond the standard window transition; the rest of capability gating is undecided (see DEC-34 and GAP-33 below).
 - **Options:** one proposal, as written in the synthesis; appearance settings are not gateable.
 - **Owner:** R. **Described in:** [07](07-apps.md#layering).
+
+### S-10 Duplicate and gap detection between the host and the backend copy
+
+- **Undecided:** the rule that detects whether the backend log holds events the GM device lacks, or the reverse, before the device resumes.
+- **Options:** compare the last `seq` and the hash of the last event on each side (the proposal in the chapter); other rules are not yet considered.
+- **Owner:** R. **Described in:** [04](04-session.md#offline-and-sync-semantics).
 
 ### API-1 Engine and pack API shapes
 

@@ -18,11 +18,11 @@ If a new rule needs a new *kind* of thing, that is an engine change. If it needs
 
 **Format.** A pack is a folder of JSON files plus a manifest. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too.
 
-**Pack shape.** The file list below is the layout; files and fields added for creation profiles, combat defaults and assistance are additive. The example pack for D lives in the project library, not in this repository.
+**Pack shape.** The file list below is the layout; files and fields added for creation profiles, combat defaults and assistance are additive. The authoring source for the example pack is `packages/content_core/assets/example-core/`; the project library holds a copy for D.
 
 ```
 core/                           pack id
-  manifest.json                 id, name, version, engineApi, publisher, requires[], contentHash
+  manifest.json                 id, name, version, engineApi, publisher, tier, requires[], verification, contentHash
   attributes.json
   proficiency.json
   difficulty.json
@@ -61,7 +61,7 @@ core/                           pack id
 
 - `engineApi` is the engine major the pack targets. The engine refuses to load a pack with a different major.
 - `version` is the pack's own semver. Pack minor/patch bumps are value changes; a pack major means values changed incompatibly (for example a key was renamed).
-- `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override.
+- `requires` lets a GM pack extend another pack (for example a campaign pack on top of `core`). Resolution is by id + version range; conflicts are a load error, never a silent override. Pack today: the loader refuses a non-empty `requires` (not supported yet).
 - `contentHash` is computed by tooling, not written by hand, and is what an episode pins.
 
 ### Skills
@@ -72,11 +72,11 @@ A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There
 
 What the game rules mean for each pack file. Field names and shapes marked Proposed are not final (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). A value D has not given stays `null` in the pack and the feature stays off (CLAUDE.md §9). The engine side of each item is in [01](01-engine.md#rulebook-values-the-engine-uses).
 
-The table gives the target values. The example pack and the engine still hold placeholders or older values for several of them (listed per row as "pack today"); applying the target values is the first workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule).
+The table gives the target values. The example pack and the engine still hold placeholders or older values for several of them (listed per row as "pack today"); applying the target values is the "Apply the settled rulings…" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule).
 
 | File | Content | Shape |
 |---|---|---|
-| `skills.json` | Mind Shielding is on WIL; Insight's attribute is not yet set (`null`). Planned pack changes: Insight on WIS; Eldritch Lore (INT), Vehicle Modification (INT), Advanced Alchemy, Explosive Disposal and Explosives added as separate entries beside their paired skills; categories come from the book's skill list, never reconstructed | data only |
+| `skills.json` | Mind Shielding is on WIL; Insight's attribute is not yet set (`null`). Planned pack changes: Insight on WIS; Eldritch Lore (INT), Vehicle Modification (INT), Advanced Alchemy, Explosive Disposal and Explosives added as separate entries (Advanced Alchemy, Explosive Disposal and Explosives are not yet in the pack; the "Apply the settled rulings…" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule) adds them); categories come from the book's skill list, never reconstructed | data only |
 | `occult.json` | The cast attribute is WIL, or the named skill's attribute; `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail; `ritualDefaults` is Handler guidance only; the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is `null` until its reduction is given (open: [FE-M5](10-waiting-on-d.md#fe-m5)). As built, the block `ritualDefaults.focusItem` holds the book's rule (+1d6, +2 Sanity per category above D); planned: that block is renamed `artifact` and a new `focusItem` stays `null` (open: [FE-M5](10-waiting-on-d.md#fe-m5) to [FE-M9](10-waiting-on-d.md#fe-m9)). Pack today: `chosenAttribute` and `sanityCheckOptions` are placeholders; there are no `sanityCheckOn`, `sanityPayers` or `artifact` keys | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute (which score a helper adds: [FD-A2](10-waiting-on-d.md#fd-a2)); `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only. Pack today: the fumble `basis` is a placeholder (gap G1) with no `rounding`, and the engine produces no fumble outcome; `assistance.cap` is a placeholder, `assistance.bonus` is `1d6 + var(helperSkillBonus)` and the `luckAdvantage` block is still present with a placeholder | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6. The reworked tables are open ([FD-S3](10-waiting-on-d.md#fd-s3)). Pack today: none of `pick`, `resistDc`, `halfRounding` or `fumbleExtra` exists, the `fumble` entry is a placeholder, and `disorders.json` has `rollDie: null` with a Willpower DC 10 disorder check | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
@@ -89,7 +89,7 @@ The table gives the target values. The example pack and the engine still hold pl
 
 Rounding: wherever a pack states a fraction, it states the rounding direction beside it, and the direction favours the player.
 
-Still `null`: armor and damage reduction, enemy defense and attack, advancement purchase limits, currency. They are marked Later: armor and damage reduction ([G8](10-waiting-on-d.md#g8)), enemy defense and attack ([G11](10-waiting-on-d.md#g11)), advancement purchase limits ([G14](10-waiting-on-d.md#g14)), currency ([Q6](10-waiting-on-d.md#q6)).
+Still `null`: armor and damage reduction, enemy defense and attack, advancement purchase limits, currency. Not yet given: armor and damage reduction ([G8](10-waiting-on-d.md#g8)), enemy defense and attack ([G11](10-waiting-on-d.md#g11)), advancement purchase limits ([G14](10-waiting-on-d.md#g14)), currency ([Q6](10-waiting-on-d.md#q6)).
 
 ### Named variables in pack formulas
 
@@ -155,7 +155,7 @@ Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecat
 ## Loading and validation
 
 1. Read manifest, check `engineApi`.
-2. Resolve `requires`.
+2. Resolve `requires` (pack today: a non-empty `requires` is refused; not supported yet).
 3. Parse every file into engine value types. Unknown keys are errors, not warnings, so typos in D's edits surface immediately.
 4. Cross-validate references (a skill that names an attribute that does not exist, an item referencing an unknown damage category).
 5. Produce an immutable `RulesPack` and its `contentHash`.

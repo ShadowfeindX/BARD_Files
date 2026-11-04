@@ -50,7 +50,7 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - **Auto-confirm** is a per-episode GM setting, separate from the setting for requests between sittings ([below](#settings-resolution)). It is an `EpisodeSettings` field, default off, set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
 - **Death goes through the gate.** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-values-the-engine-uses), [planned code changes](01-engine.md#planned-code-changes)).
 - **Text log and head snapshot.** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs)). Periodic full snapshots for fast joins are unchanged.
-- **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
+- **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch (planned: the `sembast` 3.9.0 store, 10 §5; today only `InMemoryEventStore` exists), then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
 - **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes; open: [S-5](09-open-decisions.md#s-5-head-snapshot-mirror-interval)), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (see [Play modes](#play-modes)), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
@@ -104,14 +104,16 @@ abstract interface class Link {
   Future<void> close();
 }
 
-abstract interface class EventStore {       // sembast 3.9.0 behind this interface
-  Future<void> append(EpisodeId ep, List<StoredEvent> events,
-      List<TextLogLine> text, Snapshot head);                         // one transaction, then a commit marker
-  Stream<StoredEvent> read(EpisodeId ep, {int fromSeq = 1});
-  Future<void> putSnapshot(EpisodeId ep, Snapshot snapshot);
-  Future<Snapshot?> latestSnapshot(EpisodeId ep);
-  Future<Snapshot?> headSnapshot(EpisodeId ep);                     // state at last seq
-  Stream<TextLogLine> readText(EpisodeId ep, {int fromSeq = 1});
+// As built in packages/session/lib/src/event_store.dart. Planned: a sembast 3.9.0
+// store behind this interface (10 §5); today only InMemoryEventStore exists.
+abstract interface class EventStore {
+  Future<void> append(String episodeId, List<StoredEvent> events,
+      List<TextLogLine> text, HeadSnapshot head);                     // planned sembast store: one transaction, then a commit marker
+  Stream<StoredEvent> read(String episodeId, {int fromSeq = 1});
+  Stream<TextLogLine> readText(String episodeId, {int fromSeq = 1});
+  Future<HeadSnapshot?> headSnapshot(String episodeId);               // state at last seq
+  Future<void> saveRngDrawCount(String episodeId, int drawCount);     // draws made without stored events
+  Future<int> rngDrawCount(String episodeId);
 }
 
 /// One narrated log line. Text is rendered per perspective at play
@@ -119,7 +121,7 @@ abstract interface class EventStore {       // sembast 3.9.0 behind this interfa
 final class TextLogLine {
   final int seq;
   final DateTime time;
-  final Map<Audience, String> variants;  // gm, public, redacted, alias:<id>
+  final Map<String, String> variants;  // keys: gm, public, redacted, alias:<id>
 }
 
 abstract interface class Clock { DateTime now(); }
@@ -127,7 +129,7 @@ abstract interface class Clock { DateTime now(); }
 
 Every interface has an in-memory implementation in `session` itself, used by tests and by single-device play.
 
-**Persistence.** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec.
+**Persistence.** Planned (10 §5; today only `InMemoryEventStore` exists): `EventStore` is implemented in `backend` with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec.
 
 ### Event entries
 
@@ -176,7 +178,7 @@ Because the GM's log is the single ordered truth, there are no concurrent writer
 1. Participants catching up to the GM's `seq`.
 2. The GM device uploading its log to the backend when it regains connectivity (network-hosted mode).
 
-The backend copy is a mirror, never a second authority. If the backend holds events the GM device does not (for example the GM resumed on a second device and then the first came back online), the first device must adopt the backend log before continuing; it never merges. The exact detection rule (compare last seq + hash of last event) is specified at implementation time.
+The backend copy is a mirror, never a second authority. If the backend holds events the GM device does not (for example the GM resumed on a second device and then the first came back online), the first device must adopt the backend log before continuing; it never merges. The exact detection rule (proposed: compare last seq + hash of last event) is open: [S-10](09-open-decisions.md#s-10-duplicate-and-gap-detection-between-the-host-and-the-backend-copy).
 
 ## Requests between sittings
 

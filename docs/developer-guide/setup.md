@@ -46,14 +46,14 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 
 ## The checks
 
-`bash tool/check_all.sh` runs what CI runs, in this order:
+`bash tool/check_all.sh` runs steps 2 to 8 of the CI workflow locally, in the same order (the build-pack step, then the rows below); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only ([08-testing.md](../architecture/08-testing.md#continuous-integration)):
 
 | Step | Command | Fails when |
 |---|---|---|
 | Format | `dart format --output=none --set-exit-if-changed .` | a file is not formatted |
 | Analyze | `flutter analyze` | any warning or info (one `analysis_options.yaml` at the root) |
 | Dependency rules | `dart run tool/bin/check_dependency_rules.dart` | a pubspec lists a package its layer may not, a pubspec is not in the workspace, or `apps/functions` reaches `engine` or `protocol` transitively |
-| Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (F5) |
+| Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (standing rule F5 in [decision-record.md](../architecture/decision-record.md)) |
 | Rules pack | `bash tool/build_pack.sh` then `bash tool/build_pack.sh --check` | the generated pack (`packages/content_core/assets/generated/`, git-ignored) is missing, stale or has extra files |
 | Tests | `bash tool/test_all.sh` | any package test fails |
 
@@ -64,7 +64,7 @@ The CI workflow is `.github/workflows/ci.yml`, described in [08-testing.md](../a
 ## Adding or changing a dependency
 
 1. Propose the package to R with its purpose and alternatives (CLAUDE.md §6). Nothing is added before approval.
-2. Re-verify the version, SDK range and platforms on pub.dev (F5).
+2. Re-verify the version, SDK range and platforms on pub.dev (standing rule F5 in [decision-record.md](../architecture/decision-record.md)).
 3. Pin the exact version, with no `^`, in the pubspec of the one package that needs it.
 4. If the package is new to a layer, add it to `layerRules` in `tool/lib/dependency_rules.dart` **and** to the table in [00-overview.md](../architecture/00-overview.md#dependency-rules); the two must agree.
 5. Run `bash tool/check_all.sh`.

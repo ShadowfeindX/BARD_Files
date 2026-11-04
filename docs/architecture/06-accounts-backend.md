@@ -2,7 +2,7 @@
 
 ## Backend role
 
-Accounts, session persistence and relay, rules pack distribution, information dissemination (news, D's announcements), payments. The backend **never runs game rules**: no backend code imports the engine (see dependency rules in [00-overview.md](00-overview.md#dependency-rules)).
+Accounts, session persistence and relay, rules pack distribution, information dissemination (news, creative-director announcements), payments. The backend **never runs game rules**: no backend code imports the engine (see dependency rules in [00-overview.md](00-overview.md#dependency-rules)).
 
 ## Stack
 
@@ -10,7 +10,7 @@ The stack follows the backend-split investigation (project library: `architectur
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Client SDK | `firebase_dart` 1.6.2 (Auth, Realtime Database, Storage) as the adapter wherever it runs. Auth and RTDB probed [V-21]; Storage **not yet probed** | FlutterFire where `firebase_dart` cannot run (web), including `cloud_firestore` for Firestore on web |
+| Client SDK | `firebase_dart` 1.6.2 (Auth, Realtime Database, Storage) as the adapter wherever it runs. Not built ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)): `packages/backend` has no `firebase_dart` dependency today. Auth and RTDB probed [V-21]; Storage **not yet probed** | FlutterFire where `firebase_dart` cannot run (web), including `cloud_firestore` for Firestore on web |
 | Live game data | **Firebase Realtime Database (RTDB)**: relay, active episode events, requests, members, phone, signaling, presence, head while active, inbox | Live play only |
 | Data at rest | **Cloud Firestore**, Standard edition: archived episodes, library, pack index, searchable account data | Desktop access through a hand-written REST client |
 | Files | Cloud Storage for Firebase (rules pack files) | Uploads by D through the console. Client Storage access through `firebase_dart` is unproven ([still unproven](09-open-decisions.md#still-unproven)) |
@@ -18,7 +18,7 @@ The stack follows the backend-split investigation (project library: `architectur
 | Hosting | Firebase Hosting (web build) | — |
 | Cloud Run | No separate service planned | Dart functions themselves deploy to Cloud Run [V-33] |
 
-Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42] and the Firestore claims/index follow-up [V-43] (Linux only). Android was not probed.
+Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42] and the Firestore claims/index follow-up [V-43] (Linux only), and natural expiry [V-45] (Linux only). Android was not probed.
 
 ### Backend port and adapters
 
@@ -30,7 +30,7 @@ Platform targets in v1: **Windows and Linux desktop**, plus the web player build
 | `FlutterFireAdapter` | where `firebase_dart` cannot run (web) | FlutterFire plugins, including `cloud_firestore` |
 | `LanAdapter` | LAN/in-person play with no backend | session transports |
 
-Swapping adapters never touches session or engine. FlutterFire `cloud_firestore` 7.0.0 failed to link on Windows in the probe [V-22], which is why desktop does not use it.
+Not built ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)): `packages/backend` holds only a stub today, so none of these adapters or the Firestore REST client exist yet. Swapping adapters never touches session or engine. FlutterFire `cloud_firestore` 7.0.0 failed to link on Windows in the probe [V-22], which is why desktop does not use it.
 
 ### Firestore
 
@@ -81,7 +81,7 @@ Campaign
   └─ operations[]
 ```
 
-- **Handler personas.** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed, open: [FE-L3](10-waiting-on-d.md#fe-l3)). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
+- **Handler personas.** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed, open: [FE-L3](10-waiting-on-d.md#fe-l3)). Not built: see the Handler persona entity (R-A4) row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
 
 Profiles, aliases and campaigns are searchable account data and live in Firestore. Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
@@ -134,6 +134,8 @@ A signed-in account works offline from a local cache. The app keeps its own loca
 So the session's **outbox is required**: requests made offline are stored in the local store (sembast) and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). The app never relies on the SDK's offline queue to carry a write past the end of the process.
 
 ### Auth token storage
+
+Not built ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)): `hive` 2.2.3 (pinned), `flutter_secure_storage` and the box encryption below are not in any pubspec yet; this section is the target design.
 
 By default `firebase_dart` 1.6.2 stores the refresh token and email in plaintext in the Hive box `firebase_auth`, and `FirebaseDart.setup` has no storage option [V-34]. The design:
 
@@ -217,7 +219,7 @@ Notes on the live tree:
 - **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them.
 - **Head snapshot.** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-episode interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
 - **Joins.** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38]. Players are invited and managed at the campaign; the Handler picks which characters join which missions.
-- **Retention.** Once a mission is marked complete or submitted, all of its session data other than the latest snapshot is removed ([12](12-firestore-collections.md#archives); open: [FE-L4](10-waiting-on-d.md#fe-l4)). Until then each episode's archive and snapshot are kept so the Handler can roll back.
+- **Retention.** Once a mission is marked complete or submitted, all of its session data other than the latest snapshot is removed ([12](12-firestore-collections.md#archives); open: [FE-L4](10-waiting-on-d.md#fe-l4)). Until then each episode's archive and snapshot are kept so the Handler can roll back. Not built: see the Snapshot pruning (R-A3) row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule).
 - **Archiving.** The order is lock, archive, clean-up. The GM client first sets `meta/locked`, which rules check [V-38], so nothing more can be written to the events, textlog, head, requests, phone or signaling branches once the log is frozen (presence stays writable under the lock); then the `archiveEpisode` function (below) copies the frozen log to Firestore; then the clean-up below runs. The lock cannot be undone, so a failed archive write is retried against the locked data; until a retry succeeds the locked episode stays in RTDB with its status unchanged, so nothing is lost; the archive step sets `archived` and the clean-up runs only after the archive write is confirmed. Archived logs are chunked into a Firestore subcollection. Migrated episodes get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs)). **Clean-up after archive:** once the archive write is confirmed, a function deletes the live branches (`events`, `textlog`, `requests`, `head`, `signaling`, `presence`) with admin REST and keeps `meta` and `members` as the locked stub (`meta` is never deleted). The phone box is cleared at operation end; not built yet (workstream row: [10](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)). Until then the box stays with the locked stub. Admin REST bypasses rules, so the clean-up needs no rule; the checks show `meta`, `members` and `phone` remain, `meta` stays locked, members can still read it [V-50]; `phone` remaining and a player still reading their box are shown by [V-56]. The archive step sets `meta/status` to `archived` with admin REST, after the lock and before the clean-up deletes anything, and the rules then refuse presence writes, so a member's client cannot recreate presence after the clean-up [V-51]. Only admin REST can set that value: the rules refuse `archived` from any client, the GM included, before or after the lock [V-53]. An episode that is never archived needs a manual clean-up script, because deployed Dart functions have no scheduled triggers [V-23].
 - **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches. Traffic and cost at an assumed table size are approximated in the project library (`architecture/rtdb-traffic-cost-estimate.md`): about 2,200 writes per 4-hour session (an approximation from an assumed profile, not a measurement), about 0.15 writes per second.
 
