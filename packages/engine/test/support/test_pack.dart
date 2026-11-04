@@ -100,6 +100,17 @@ RulesPack testPack({
       description: '',
     ),
   ],
+  randomTables: [
+    RandomTable(
+      id: 'test-table',
+      name: 'Test Table',
+      dice: Dice(count: 1, sides: 6),
+      rows: const [
+        RandomTableRow(from: 1, to: 3, text: 'Low.'),
+        RandomTableRow(from: 4, to: 6, text: 'High.'),
+      ],
+    ),
+  ],
 );
 
 /// The example pack's attribute keys, in pack order.

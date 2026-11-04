@@ -543,4 +543,172 @@ void main() {
     final result = load(files);
     expect(result.errors.length, greaterThanOrEqualTo(2));
   });
+
+  group('random tables (R-B2)', () {
+    Map<String, Object?> table({
+      Object? dice = const {
+        'type': 'dice',
+        'count': 1,
+        'sides': 6,
+        'explode': false,
+      },
+      List<Object?>? rows,
+    }) => {
+      'id': 'wild',
+      'name': 'Wild',
+      'dice': dice,
+      'rows':
+          rows ??
+          [
+            {'from': 1, 'to': 3, 'text': 'Low.'},
+            {'from': 4, 'to': 6, 'text': 'High.'},
+          ],
+    };
+
+    PackLoadResult withTable(Map<String, Object?> json) =>
+        load(minimalPack()..['tables/wild.json'] = json);
+
+    test('a table that covers every total loads', () {
+      final result = withTable(table());
+      expect(result.issues, isEmpty);
+      final loaded = result.pack!.randomTable('wild')!;
+      expect(loaded.dice, Dice(count: 1, sides: 6, explode: false));
+      expect(loaded.rowFor(5)!.text, 'High.');
+      expect(loaded.lead, isNull);
+      final led = withTable({...table(), 'lead': 'It stirs.'});
+      expect(led.pack!.randomTable('wild')!.lead, 'It stirs.');
+      for (final bad in <Object?>['', null]) {
+        expect(withTable({...table(), 'lead': bad}).ok, isFalse);
+      }
+    });
+
+    test('a gap, an overlap and a row out of range are errors', () {
+      final result = withTable(
+        table(
+          rows: [
+            {'from': 1, 'to': 2, 'text': 'A'},
+            {'from': 2, 'to': 4, 'text': 'B'},
+            {'from': 6, 'to': 7, 'text': 'C'},
+          ],
+        ),
+      );
+      expect(result, hasError('tables/wild.json', 'rows', 'No row covers 5'));
+      expect(
+        result,
+        hasError('tables/wild.json', 'rows', 'More than one row covers 2'),
+      );
+      expect(result, hasError('tables/wild.json', 'rows', 'outside 1-6'));
+    });
+
+    test('two dice cover their sum range', () {
+      final result = withTable(
+        table(
+          dice: const {
+            'type': 'dice',
+            'count': 2,
+            'sides': 6,
+            'explode': false,
+          },
+          rows: [
+            {'from': 2, 'to': 7, 'text': 'A'},
+            {'from': 8, 'to': 12, 'text': 'B'},
+          ],
+        ),
+      );
+      expect(result.issues, isEmpty);
+    });
+
+    test('from above to is an error', () {
+      expect(
+        withTable(
+          table(
+            rows: [
+              {'from': 4, 'to': 1, 'text': 'A'},
+            ],
+          ),
+        ),
+        hasError('tables/wild.json', 'rows[0].to', 'lower than "from"'),
+      );
+    });
+
+    test('dice must be a plain dice node without explode', () {
+      expect(
+        withTable(table(dice: const {'type': 'const', 'value': 3})),
+        hasError('tables/wild.json', 'dice', 'plain dice node'),
+      );
+      expect(
+        withTable(
+          table(
+            dice: const {
+              'type': 'dice',
+              'count': 1,
+              'sides': 6,
+              'explode': true,
+            },
+          ),
+        ),
+        hasError('tables/wild.json', 'dice', 'plain dice node'),
+      );
+    });
+
+    test('effects must stay empty until they have engine meaning', () {
+      expect(
+        withTable(
+          table(
+            rows: [
+              {
+                'from': 1,
+                'to': 6,
+                'text': 'A',
+                'effects': ['stun'],
+              },
+            ],
+          ),
+        ),
+        hasError('tables/wild.json', 'rows[0].effects', 'empty list'),
+      );
+      expect(
+        withTable(
+          table(
+            rows: [
+              {'from': 1, 'to': 6, 'text': 'A', 'effects': <Object?>[]},
+            ],
+          ),
+        ).issues,
+        isEmpty,
+      );
+    });
+
+    test('pending dice are a warning; the table loads but is not checked', () {
+      final result = withTable(table(dice: null, rows: []));
+      expect(result.ok, isTrue);
+      expect(result.pack!.randomTable('wild')!.dice, isNull);
+      expect(result.pack!.pendingPaths, {'tables/wild.json: dice'});
+      expect(result.warnings.single.pendingD, isTrue);
+    });
+
+    test('a deprecated table must point at an existing table', () {
+      Map<String, Object?> deprecated(String target) => {
+        ...table(),
+        'deprecated': {
+          'since': '1.1.0',
+          'removeIn': 2,
+          'note': 'Use the other one.',
+          'replacedBy': target,
+        },
+      };
+      expect(
+        withTable(deprecated('table:missing')),
+        hasError('tables/wild.json', 'deprecated', 'missing table "missing"'),
+      );
+      expect(withTable(deprecated('table:wild')).ok, isTrue);
+    });
+
+    test('duplicate table ids', () {
+      final files = minimalPack()
+        ..['tables/a.json'] = table()
+        ..['tables/b.json'] = table();
+      expect(load(files), hasError('tables/', 'id', 'Duplicate key "wild"'));
+    });
+  });
 }

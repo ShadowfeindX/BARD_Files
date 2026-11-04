@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "type": "tableRolled",
+  "actor": {
+    "kind": "gm"
+  },
+  "visibility": {
+    "kind": "gmOnly"
+  },
+  "table": "catastrophic-failure",
+  "entity": "e1",
+  "sides": 6,
+  "faces": [
+    4
+  ],
+  "lead": "The air in the room goes still.",
+  "text": "The artifact answers.",
+  "draws": {
+    "start": 3,
+    "end": 4
+  }
+}

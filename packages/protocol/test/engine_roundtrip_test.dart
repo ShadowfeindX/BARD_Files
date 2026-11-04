@@ -14,8 +14,9 @@ void main() {
   const quinnAlias = AliasId('al_quinn');
 
   final engine = Engine(testPack());
-  // Exploding d6 (6 then 3), proficiency d4, then more faces for later rolls.
-  final rng = ScriptedRng([6, 3, 4, 2, 1, 5, 6, 6, 1, 3]);
+  // Exploding d6 (6 then 3), proficiency d4, then more faces for later
+  // rolls; the last face (4) is the table roll's.
+  final rng = ScriptedRng([6, 3, 4, 2, 1, 5, 6, 6, 1, 3, 4]);
   final ids = SequentialIdSource();
   var state = const EpisodeState.initial();
   final commands = <Command>[];
@@ -107,6 +108,7 @@ void main() {
         actor: GmActor(),
       ),
     );
+    run(RollTable(table: 'test-table', entity: vale));
     run(
       RequireCheck(
         entity: vale,
@@ -135,6 +137,7 @@ void main() {
       'broadcastEvaluated',
       'broadcastDelivered',
       'phoneMessageSent',
+      'tableRolled',
     });
     expect(
       log.whereType<CheckResolved>().single.breakdown.primary,

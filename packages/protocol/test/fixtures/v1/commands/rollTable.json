@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "rollTable",
+  "actor": {
+    "kind": "gm"
+  },
+  "table": "catastrophic-failure",
+  "entity": "e1",
+  "visibility": {
+    "kind": "gmOnly"
+  }
+}

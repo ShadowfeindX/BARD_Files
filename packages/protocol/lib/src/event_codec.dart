@@ -23,6 +23,7 @@ const _eventTypes = {
   'broadcastEvaluated',
   'broadcastDelivered',
   'phoneMessageSent',
+  'tableRolled',
 };
 
 /// Encodes an engine [Event] as JSON for an `events` message or a log line.
@@ -185,6 +186,27 @@ JsonMap encodeEvent(Event event) {
       {'from': encodeParty(from), 'to': encodeParty(to), 'text': text},
     ),
     BroadcastDelivered(:final text) => ('broadcastDelivered', {'text': text}),
+    TableRolled(
+      :final table,
+      :final entity,
+      :final sides,
+      :final faces,
+      :final lead,
+      :final text,
+      :final draws,
+    ) =>
+      (
+        'tableRolled',
+        {
+          'table': table,
+          'entity': entity?.value,
+          'sides': sides,
+          'faces': faces,
+          'lead': lead,
+          'text': text,
+          'draws': encodeDraws(draws),
+        },
+      ),
   };
   return {
     'v': shapeVersion,
@@ -351,6 +373,40 @@ Event decodeEvent(Object? json) {
           text: map.string('text'),
           actor: actor,
           visibility: decodeAliasesOnly(visibilityJson),
+        );
+      case 'tableRolled':
+        final sides = map.integer('sides');
+        if (sides < 1) {
+          throw const ProtocolFormatException('sides must be >= 1');
+        }
+        final faces = [
+          for (final face in map.list('faces'))
+            face is int && face >= 1 && face <= sides
+                ? face
+                : throw const ProtocolFormatException(
+                    'die faces must be integers from 1 to sides',
+                  ),
+        ];
+        if (faces.isEmpty) {
+          throw const ProtocolFormatException('a table roll needs a face');
+        }
+        final draws = decodeDraws(map.object('draws'));
+        if (draws.end - draws.start != faces.length) {
+          throw const ProtocolFormatException(
+            'a table roll uses one draw per face',
+          );
+        }
+        final entity = map.optString('entity');
+        return TableRolled(
+          table: map.string('table'),
+          entity: entity == null ? null : EntityId(entity),
+          sides: sides,
+          faces: faces,
+          lead: map.optString('lead'),
+          text: map.string('text'),
+          draws: draws,
+          actor: actor,
+          visibility: visibility(),
         );
       case final other:
         throw UnknownTypeException(other, 'event');

@@ -21,6 +21,7 @@ part 'character_events.dart';
 part 'check_events.dart';
 part 'condition_events.dart';
 part 'messaging_events.dart';
+part 'table_events.dart';
 part 'episode_events.dart';
 part 'vitals_events.dart';
 

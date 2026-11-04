@@ -10,6 +10,7 @@ import '../files/damage.dart';
 import '../files/derived.dart';
 import '../files/difficulty.dart';
 import '../files/disorders.dart';
+import '../files/tables.dart';
 import '../files/items.dart';
 import '../files/manifest.dart';
 import '../files/npcs.dart';
@@ -82,7 +83,7 @@ const packFiles = {
 };
 
 /// Folders of a pack that hold one entry per `.json` file.
-const packFolders = {'items', 'techniques', 'npcs', 'strings'};
+const packFolders = {'items', 'techniques', 'npcs', 'tables', 'strings'};
 
 /// Loads and validates a pack (02 §Loading and validation).
 ///
@@ -235,6 +236,7 @@ final class _Parts {
     final items = folder('items', (r) => parseItem(r, major));
     final techniques = folder('techniques', (r) => parseTechnique(r, major));
     final npcs = folder('npcs', (r) => parseNpc(r, major));
+    final tables = folder('tables', (r) => parseRandomTable(r, major));
     final strings = folder('strings', parseStrings);
     final occult = decoded['occult.json'];
     if (decoded.containsKey('occult.json')) {
@@ -283,6 +285,7 @@ final class _Parts {
       items: items,
       techniques: techniques,
       npcs: npcs,
+      randomTables: tables,
       strings: {for (final s in strings) s.language: s},
       occultPending: occult,
       pendingPaths: {
@@ -372,12 +375,14 @@ final class _CrossCheck {
     _unique('items/', 'id', pack.items.map((i) => i.id));
     _unique('techniques/', 'id', pack.techniques.map((t) => t.id));
     _unique('npcs/', 'id', pack.npcs.map((n) => n.id));
+    _unique('tables/', 'id', pack.randomTables.map((t) => t.id));
     _attributes();
     _proficiency();
     _skills();
     _formulas();
     _checkRules();
     _disorders();
+    _randomTables();
     _damageRefs();
     _npcs();
     _replacements();
@@ -518,6 +523,35 @@ final class _CrossCheck {
     _unique('disorders.json', 'table', table.rows.map((r) => '${r.roll}'));
   }
 
+  /// Each table's rows cover every total of its dice exactly once, so every
+  /// roll lands on one row. A table whose dice are pending is not checked.
+  void _randomTables() {
+    for (final table in pack.randomTables) {
+      final dice = table.dice;
+      if (dice == null) continue;
+      final file = 'tables/${table.id}.json';
+      final low = dice.count;
+      final high = dice.count * dice.sides;
+      for (var total = low; total <= high; total++) {
+        final hits = table.rows.where((r) => r.covers(total)).length;
+        if (hits == 0) {
+          log.error(file, 'rows', 'No row covers $total.');
+        } else if (hits > 1) {
+          log.error(file, 'rows', 'More than one row covers $total.');
+        }
+      }
+      for (final row in table.rows) {
+        if (row.from < low || row.to > high) {
+          log.error(
+            file,
+            'rows',
+            'Row ${row.from}-${row.to} is outside $low-$high.',
+          );
+        }
+      }
+    }
+  }
+
   void _damageRefs() {
     for (final band in pack.rangeBands) {
       for (final key in band.notWithDamageCategories) {
@@ -569,6 +603,7 @@ final class _CrossCheck {
       'item': {for (final i in pack.items) i.id},
       'technique': {for (final t in pack.techniques) t.id},
       'npc': {for (final n in pack.npcs) n.id},
+      'table': {for (final t in pack.randomTables) t.id},
     };
     void check(String file, String path, String? replacedBy) {
       final colon = replacedBy?.indexOf(':') ?? -1;
@@ -612,6 +647,9 @@ final class _CrossCheck {
     }
     for (final n in pack.npcs) {
       check('npcs/${n.id}.json', 'deprecated', n.deprecated?.replacedBy);
+    }
+    for (final t in pack.randomTables) {
+      check('tables/${t.id}.json', 'deprecated', t.deprecated?.replacedBy);
     }
   }
 

@@ -12,6 +12,7 @@ import 'systems/check_system.dart';
 import 'systems/condition_system.dart';
 import 'systems/messaging_system.dart';
 import 'systems/episode_system.dart';
+import 'systems/table_system.dart';
 import 'systems/vitals_system.dart';
 
 /// Engine entry point for episodes on one rules pack (01 §Core loop).
@@ -26,7 +27,8 @@ final class Engine {
       _character = CharacterSystem(pack),
       _check = CheckSystem(pack),
       _condition = ConditionSystem(pack),
-      _messaging = MessagingSystem(pack);
+      _messaging = MessagingSystem(pack),
+      _table = TableSystem(pack);
 
   /// The pack this engine runs.
   final RulesPack pack;
@@ -38,6 +40,7 @@ final class Engine {
   final VitalsSystem _vitals = const VitalsSystem();
 
   final MessagingSystem _messaging;
+  final TableSystem _table;
 
   /// Turns [command] into events, or a rejection, given [state].
   ///
@@ -75,6 +78,7 @@ final class Engine {
         VitalsCommand() => _vitals.decide(state, command),
         ConditionCommand() => _condition.decide(state, command),
         MessagingCommand() => _messaging.decide(state, command),
+        TableCommand() => _table.decide(state, command, rng),
       };
     } on EvaluationException catch (e) {
       decision = Rejected(Rejection(RejectionCode.evaluationFailed, e.message));
@@ -102,6 +106,7 @@ final class Engine {
       VitalsEvent() => _vitals.evolve(state, event),
       ConditionEvent() => _condition.evolve(state, event),
       MessagingEvent() => _messaging.evolve(state, event),
+      TableEvent() => _table.evolve(state, event),
     };
     return switch (event) {
       // The highest end so far: a held consequence batch confirmed after

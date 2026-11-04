@@ -412,6 +412,41 @@ void main() {
       );
     });
 
+    test('a table roll without an entity round-trips', () {
+      final command = const RollTable(table: 't');
+      expect(decodeCommand(onTheWire(encodeCommand(command))), command);
+      final event = TableRolled(
+        table: 't',
+        sides: 6,
+        faces: const [2],
+        text: 'Low.',
+        draws: DrawRange(0, 1),
+        actor: const GmActor(),
+        visibility: const Public(),
+      );
+      expect(decodeEvent(onTheWire(encodeEvent(event))), event);
+    });
+
+    test('a table roll with impossible faces is refused', () {
+      for (final edit in <void Function(Map<String, Object?>)>[
+        (j) => j['faces'] = [7],
+        (j) => j['faces'] = [0],
+        (j) => j['faces'] = <Object?>[],
+        (j) => j['faces'] = ['4'],
+        (j) => j['sides'] = 0,
+        (j) => j['draws'] = {'start': 3, 'end': 5},
+      ]) {
+        final json =
+            onTheWire(encodeEvent(sampleEvents['tableRolled']!))!
+                as Map<String, Object?>;
+        edit(json);
+        expect(
+          () => decodeEvent(json),
+          throwsA(isA<ProtocolFormatException>()),
+        );
+      }
+    });
+
     test('terms the engine would refuse are refused', () {
       Map<String, Object?> withPrimary(Object? term) {
         final json =

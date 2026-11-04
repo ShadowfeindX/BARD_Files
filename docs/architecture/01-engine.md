@@ -90,6 +90,7 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 | `OccultSystem` | Settled by D (2026-10-22): one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (M2, M3). Details still open: focus-item rule (FD-M2). |
 | `InventorySystem` | items, equipment, transfer |
 | `MessagingSystem` | in-game phone messages (see [04-session.md](04-session.md#in-game-phone)) |
+| `TableSystem` | rolls on the pack's random tables (`RollTable` → `TableRolled`, R-B2): the seeded RNG rolls the table's dice, the total picks one row, and the event carries the faces, total, the table's lead-in and the row text. A roll, never held for review (F2). Players read only the fiction (lead-in, then row); the GM's line has the dice; a redacted roll shows players a redaction bar (R, 2026-11-03). Table content is D's; the engine ships no rows |
 | `GmSystem` | GM-only edits: spawn NPC, set value, reveal/hide, award XP, free-form narrative events |
 
 `decide` dispatches a command to exactly one system with an exhaustive `switch` over the sealed `Command` family [V-16]. `evolve` does the same over `Event`.

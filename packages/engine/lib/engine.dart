@@ -21,6 +21,7 @@ export 'src/pack/files/disorders.dart' hide parseDisorders;
 export 'src/pack/files/items.dart' hide parseItem;
 export 'src/pack/files/manifest.dart' hide parseManifest;
 export 'src/pack/files/npcs.dart' hide parseNpc;
+export 'src/pack/files/tables.dart' hide parseRandomTable;
 export 'src/pack/files/proficiency.dart' hide parseProficiency, ProficiencyFile;
 export 'src/pack/files/ranges.dart' hide parseRanges;
 export 'src/pack/files/sanity_events.dart' hide parseSanityEvents;
