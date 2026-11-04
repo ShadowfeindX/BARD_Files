@@ -128,6 +128,6 @@ Ruled, not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Campaign-level members and rules (R-A6): RTDB `members` move to the campaign; the rules change goes through the Opus gate.
 - Operation-end phone box clear (R-C2): a function clears the box after the archive.
 - Snapshot pruning (R-A3): after a mission is complete or submitted, remove all session data except the latest snapshot.
-- Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#rulings-that-need-code-proposed-rows).
+- Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
 The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).

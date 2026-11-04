@@ -1,6 +1,6 @@
 # 09. Open decisions
 
-This chapter lists what is still open: items waiting on D, items waiting on R, items held for a probe, deferred concerns, known issues and unproven claims. Decided items are not listed here; each chapter states its rulings as design and cites the ruling's id (P10c, F2, R-A1 and so on) as a plain tag. The record of rulings (id, date, rationale) is [decision-record.md](decision-record.md).
+This chapter lists what is still open: items waiting on D, items waiting on R, open spec proposals, items held for a probe, deferred concerns, known issues and unproven claims. Decided items are not listed here; each chapter states its rulings as design only; ids, dates and reasons are in the record. The record of rulings (id, date, rationale) is [decision-record.md](decision-record.md).
 
 D's open game-content and design questions, with their options and defaults, are in [10-waiting-on-d.md](10-waiting-on-d.md); R's open items from the same meetings are there too.
 
@@ -26,6 +26,88 @@ Proposed in [07](07-apps.md#themes-and-player-appearance-settings), not ruled. T
 | T6 document tokens and document mode | New document token names and values; document mode. | New `paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact` from §6.1 ladder steps; a Document mode toggle on every document view (per view plus a remembered preference) showing a fixed, non-themeable standard paper set, also used for print and export. | R |
 | T10 document renderer | The pipeline that renders documents (typst or another solution; no new dependency or tool without R's approval, CLAUDE.md §6); the print default. Related ideas: the synthesis "Forms and filing" section (print and export), cited by name. | Not chosen. Print and export use the standard paper set; DEC-29's black on white is the alternative print default. | R |
 | T11 T7 follow-ups | The `windowEdge` values; the `theme_core` name. | `windowEdge` Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9` in all four variants (at least 3:1 against `desk`, `window` and `windowRaised`, computed from the design library's §6.1 values); package name `theme_core`. | R |
+
+## Open spec items
+
+Proposals written into the chapters as structured designs, not yet ruled. Each has a stable id; the chapter that describes the proposal links here. Nothing built depends on them. Owner is the one who rules.
+
+### O-03-1 Protocol message bodies
+
+- **Undecided:** the field names of the message bodies (`hello`, `welcome`, `refused`, `request`, `rejected`, `events`, `resync`, `textlog`, `presence`, `ping`/`pong`), the refusal reason `anonymousAliasLimit`, and the engine version format (SemVer `major.minor.patch` with optional pre-release; no build metadata or leading zeros).
+- **Options:** one proposal, as written in the chapter. These are the only wire details the spec left open.
+- **Owner:** R. **Described in:** [03](03-protocol.md#message-bodies).
+
+### O-05-1 Notice after migration
+
+- **Undecided:** the notice players see in the log after a migration, saying that history before it is archived text.
+- **Options:** one proposal: players do nothing and see the notice in the log.
+- **Owner:** R. **Described in:** [05](05-migrator.md#gm-workflow).
+
+### O-08-1 Continuous integration job list
+
+- **Undecided:** the CI job list: format, analyze, tests, dependency-rule check (including the transitive check), pack validation and the pinned-package check.
+- **Options:** one proposal, as written in the chapter.
+- **Owner:** R. **Described in:** [08](08-testing.md#continuous-integration-proposed).
+
+### 06-O1 Firestore REST client token handling
+
+- **Undecided:** how the REST client handles token refresh and index or claim errors.
+- **Options:** proposed: call `getIdToken()` for every request and never cache the token string; on 401 retry once with `getIdToken(true)`; surface `FAILED_PRECONDITION` as a missing-index error; force `getIdToken(true)` after a role change.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#firestore).
+
+### 06-O2 Anonymous-to-full account upgrade
+
+- **Undecided:** the upgrade path, and whether hosting requires a verified email (the upgraded account has `email_verified: false`).
+- **Options:** proposed path: `updateEmail` then `updatePassword` on the signed-in `firebase_dart` user (keeps the uid), then `getIdToken(true)`; the Identity Toolkit `accounts:update` route is not used. The verified-email requirement is undecided.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#account-model).
+
+### 06-O3 Claim pickup after a role change
+
+- **Undecided:** how a client picks up a changed claim.
+- **Options:** proposed: the roles function writes an inbox notice to `/inbox/$uid`; the client calls `getIdToken(true)` and reloads `Entitlements`. Untested whether a client without the notice picks the claim up when its token expires.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#roles).
+
+### 06-O4 Where the phone-box clear-up runs
+
+- **Undecided:** where the phone-box clear-up runs.
+- **Options:** proposed: it moves from episode archive to the operation-end step (a function clears the box with admin REST); until built, the box stays with the locked stub.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#realtime-database-model-live-play).
+
+### S-1 Event entry wrapper
+
+- **Undecided:** the wrapper for event entries: full, redacted and hidden entries per recipient, the JSON shapes, the `req` acknowledgement and resync on a gap.
+- **Options:** hidden entries for events a recipient cannot see (chosen in the proposal, so `seq` stays consecutive); or per-recipient gaps, which would break the consecutive-`seq` rule.
+- **Owner:** R. **Described in:** [04](04-session.md#event-entries); also referenced from [03](03-protocol.md).
+
+### S-2 `SendPhoneMessage` names and fields
+
+- **Undecided:** the command and field names of `SendPhoneMessage(from, to, text)`. The behaviour (party rules, 1 to 2,000 UTF-16 units) is design.
+- **Options:** names and fields as proposed in the chapter.
+- **Owner:** R (an engine row, see the Proposed rows in [01](01-engine.md#planned-code-changes)). **Described in:** [04](04-session.md#in-game-phone).
+
+### S-3 Perspective-panel feature areas
+
+- **Undecided:** the grouping of feature areas (Episode console, Dossier, World, Phone, Library, Filing); the content of each is to be set by R.
+- **Options:** the grouping as proposed in the chapter.
+- **Owner:** R. **Described in:** [07](07-apps.md#perspective-panels).
+
+### S-4 How the built-in theme JSON ships
+
+- **Undecided:** how the built-in theme JSON ships and where `ThemeController` lives.
+- **Options:** recommended: JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec. Alternative: generated Dart constants (no asset loading in the package, but a generation step that CLAUDE.md section 10 asks to avoid or document, and rules-like data in code). The controller lives in `ui_kit` as proposed; if R prefers, it lives in each app.
+- **Owner:** R. **Described in:** [07](07-apps.md#layering).
+
+### DEC-07 Intrusion cues
+
+- **Undecided:** whether and how intrusion cues happen (id from the project library's design review). The theme chapter only says which colours such effects may use (T4).
+- **Options:** none written.
+- **Owner:** R and D. **Described in:** [07](07-apps.md#effect-and-highlight-tokens).
+
+### DEC-34 and GAP-33 Capability lock cards
+
+- **Undecided:** which capability-lock-card effects exist (library synthesis section 12, revision 4).
+- **Options:** none written.
+- **Owner:** R. **Described in:** [07](07-apps.md#effect-and-highlight-tokens).
 
 ## Known issues and follow-ups
 

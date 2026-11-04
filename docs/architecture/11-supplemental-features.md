@@ -25,11 +25,11 @@ Every level is archived. Chapters 01 to 08 and the developer guide say "episode"
 - **Settings.** The campaign owns the base settings and the pack version pin; a mission starts from a copy of the base (or of another mission) and may override it (FD-X1, R-A1). Join links, the roster and listings stay at the campaign (R-X0b).
 - **Players.** Players are invited and managed by the GM at the campaign; the Handler picks which characters take part in which missions (FD-X8, R-A6). A player is chosen per episode from the mission's aliases and plays one alias per episode unless the Handler allows more; someone can join a mission after it started (FD-X6).
 - **Aliases.** An alias belongs to one campaign at a time, can be in any number of operations or missions at the Handler's discretion (FD-X2), and keeps its stats, items, money and contacts between missions and operations in the same campaign (FD-X3).
-- **Handler personas.** The GM creates personas per campaign, not tied to the GM's account; players see only the persona inside an operation, and D asked for personas to be "moved" between campaigns (move or copy is open for D, FE-L3) (FD-X4, R-A4: [06](06-accounts-backend.md#account-model-fixed-concepts-proposed-fields)).
+- **Handler personas.** The GM creates personas per campaign, not tied to the GM's account; players see only the persona inside an operation, and D asked for personas to be "moved" between campaigns (move or copy is open for D, FE-L3) (FD-X4, R-A4: [06](06-accounts-backend.md#account-model)).
 - **Episode end.** The log is archived and a snapshot is kept ready to carry into the next episode. Each episode's archive and snapshot are kept until the mission ends so the Handler can roll back; once the mission is marked complete or submitted, all session data other than the latest snapshot is removed (FD-X7, R-A3). A rollback starts a new episode from an earlier snapshot.
 - **Mission end.** The Handler compiles the mission summary and fills in the debrief forms; aliases are sent their forms to fill in and return (FD-X7).
 - **Operation and campaign end.** The post-operation and post-campaign processes are not defined ([10](10-waiting-on-d.md)).
-- **Personal library (R-A5, in v1).** Everything a player writes, or is mentioned in, is available to them in a personal archive ([07](07-apps.md#rulings-that-shape-screens)). The document kinds are D's to confirm.
+- **Personal library (R-A5, in v1).** Everything a player writes, or is mentioned in, is available to them in a personal archive ([07](07-apps.md#planned-screens)). The document kinds are D's to confirm.
 - **Who owns the log.** The Episode owns one event log, one live RTDB tree, one sembast file and one host (X0, R-A2). The mission rows below (library, debrief, last 3 missions) are about missions.
 
 ## Agents, aliases and profiles
@@ -37,8 +37,8 @@ Every level is archived. Chapters 01 to 08 and the developer guide say "episode"
 - **Fictional profiles.** Every agent and alias profile field describes the in-world character, not the real person: name, sex, pronouns, blood type, organ-donor status, ethnicity, eye colour, height, weight, shoe size, handedness, profile image. None of it is personal data. Each alias carries its own copy of these fields.
 - **Fixed agent fields.** Two fields cannot be edited: the **badge number** (generated, see [Badge numbers](#badge-numbers)) and the **sign-up date**, set at creation. R's third fixed field, the player/handler account type, was replaced by the handler tier (below).
 - **No fixed account type.** Handler is a paid clearance tier, not a type chosen at sign-up. Handlers own aliases, and those aliases can join other handlers' operations.
-- **Character kinds (G19, D 2026-10-22).** An alias is created as an **agent alias**, an **Occult Organization member** (the same limits as an agent alias) or a **SKALD** (a civilian character, not an agent alias, with lower point limits: [01](01-engine.md#rulebook-gaps-and-settled-rulings)). The kind is chosen at creation; conversion between kinds is not ruled.
-- **Anonymous accounts** get no agent profile and no badge number until they upgrade. They keep the existing rules: one alias, can join, cannot host or create content ([06](06-accounts-backend.md#account-model-fixed-concepts-proposed-fields)).
+- **Character kinds (G19, D 2026-10-22).** An alias is created as an **agent alias**, an **Occult Organization member** (the same limits as an agent alias) or a **SKALD** (a civilian character, not an agent alias, with lower point limits: [01](01-engine.md#rulebook-values-the-engine-uses)). The kind is chosen at creation; conversion between kinds is not ruled.
+- **Anonymous accounts** get no agent profile and no badge number until they upgrade. They keep the existing rules: one alias, can join, cannot host or create content ([06](06-accounts-backend.md#account-model)).
 - **Private agent.** The agent's information is redacted on the public profile, and the alias list is partly hidden.
 - **Private alias.** The alias is left out of the alias list on the agent's public profile.
 - **Public profile.** The agent's public profile shows the agent, the public aliases, the operations they took part in and the missions they completed. The public badge links to it. The mission history comes from the Firestore mission records ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
@@ -132,7 +132,7 @@ The invite link names the campaign, `bard://join/<campaignId>?invite=<token>` (R
 
 ## Library and public content
 
-- **All public content is moderator-approved before it becomes available** (R). That covers mission submissions, public operation listings, public profiles and profile images. Proposed mechanism: a pending → public queue enforced by Firestore rules, like the library ([06](06-accounts-backend.md#library-fixed-concern-5-ruled-by-r-2026-10-20)); Dart functions deploy no Firestore triggers [V-23].
+- **All public content is moderator-approved before it becomes available** (R). That covers mission submissions, public operation listings, public profiles and profile images. Proposed mechanism: a pending → public queue enforced by Firestore rules, like the library ([06](06-accounts-backend.md#library)); Dart functions deploy no Firestore triggers [V-23].
 - **Moderators.** R and D are the only moderators, for missions and all other public content; concern 5 is unchanged. The `moderator` claim (06 Roles) is assigned once more moderators are chosen.
 - **Mission submissions.** Missions become a library kind, submitted through forms for the handler and the players (D's list). Every published mission gets a summary and a clearance level. A published mission is the **debrief forms only**; text logs and event logs are never made public (Q9, ruled by R 2026-10-27). The mission id is generated when the mission starts, independent of the episode ids (Proposed).
 - **Appearing in a published mission** is a per-player gameplay setting. Its default comes from the opt-in on the consent screen.
@@ -165,7 +165,7 @@ The in-app browseable manual uses the same gating as the PDF manual: it is avail
 - **Character sheet scanning:** OCR reads D's printed sheet and fills the character-creator UI (R). Proposed: the player reviews every field before saving, values go through the same validation as manual entry, and parsing is anchored to D's sheet layout. The OCR engine (on-device or a cloud API) is named by R at implementation.
 - **Badges:** scans public badges and shows the player's own sign-in code ([Badges and sign-in](#badges-and-sign-in)).
 - **Search:** level-1 glossary, bestiary and item data is bundled and searched on the device, offline, by signed-in accounts the tier allows. Higher levels are searched on the device once fetched and cached. Archived missions are searched in Firestore with keyword and tag fields only (FS4); mission records are in [12](12-firestore-collections.md#campaigns-operations-and-episodes).
-- **Offline access** follows [06](06-accounts-backend.md#offline-accounts-fixed-requirement).
+- **Offline access** follows [06](06-accounts-backend.md#offline-accounts).
 
 ## Supplemental-materials tool (deferred)
 

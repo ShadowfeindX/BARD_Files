@@ -1,6 +1,6 @@
 # 03. Protocol (`packages/protocol`)
 
-Two packages define what crosses a process or device boundary (F4, option A, ruled by R 2026-10-20: no wire-format concerns in the engine):
+Two packages define what crosses a process or device boundary (the engine has no wire-format concerns):
 
 - **`protocol_envelope`** (SDK-only): the envelope, the message types and version negotiation. It does not depend on `engine`, so `apps/functions` can depend on it alone.
 - **`protocol`**: the engine command and event codecs. It depends on `protocol_envelope` and `engine`.
@@ -34,7 +34,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | `body` | message-specific payload |
 
 - Encoding is JSON via `dart:convert` (no extra dependency). A binary codec can be added later behind the same `Codec` interface if size ever matters.
-- Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` with `dart:convert`, and there is no `build_runner` (Fixed, P6; ruled by R 2026-10-20), consistent with CLAUDE.md §10's "no hidden code generation".
+- Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` with `dart:convert`, and there is no `build_runner`, consistent with CLAUDE.md §10's "no hidden code generation".
 
 ## Messages
 
@@ -47,17 +47,17 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 | `rejected` | GM → client | The GM engine (or GM) rejected a request. References the request id. |
 | `events` | GM → clients | One or more events with consecutive `seq`, already filtered for the recipient. |
 | `resync` | client → GM | "I have up to seq N" after a gap or reconnect. |
-| `textlog` | GM → client | Fixed (P12). Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
+| `textlog` | GM → client | Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
 | `presence` | both | Online/away/typing; never part of the event log. |
 | `ping` / `pong` | both | Liveness. |
 
-There is no message by which a client sends an *event*. Only the GM produces events (Fixed authority model).
+There is no message by which a client sends an *event*. Only the GM produces events.
 
-A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is approved by D ([2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22)) and not built yet.
+A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved; the feature is not built yet.
 
-### Message bodies (Proposed)
+### Message bodies
 
-The table above names what each message carries; `packages/protocol_envelope` fixes the field names below. They are **Proposed** until R approves, and are the only wire details the spec had left open. Engine commands, events and state inside them are opaque JSON owned by `protocol`.
+The table above names what each message carries; `packages/protocol_envelope` defines the field names below. Proposed (open: [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies)). Engine commands, events and state inside them are opaque JSON owned by `protocol`.
 
 | Message | Body |
 |---|---|
@@ -66,15 +66,15 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 | `refused` | `reason`, `message?`, and one of `protocolMajor` / `engineMajor` / `requiredEngine` that matches the reason |
 | `request` | `requestId`, `command` |
 | `rejected` | `requestId`, `code`, `message?` |
-| `events` | `events` (non-empty): one entry per event, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`. Entry shapes are in [04-session.md](04-session.md#event-entries-proposed) |
+| `events` | `events` (non-empty): one entry per event, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`. Entry shapes are in [04-session.md](04-session.md#event-entries) |
 | `resync` | `lastSeq` |
 | `textlog` | `archive` (archived episode id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
 | `presence` | `status`: `online`, `away` or `typing` |
 | `ping` / `pong` | `nonce?` |
 
-Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and Proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model-fixed-concepts-proposed-fields)). A reason added by a later minor decodes as `unknown` on older clients.
+Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
 
-The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (Proposed).
+The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (proposed, part of [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies)).
 
 ## Ordering and delivery
 
@@ -96,7 +96,7 @@ Each event carries a `visibility`:
 
 The GM's session filters before sending. A player's engine therefore holds a **partial** state built from what that player may see. Read models in the engine must handle missing entities/components gracefully (for example, an unknown NPC's Health shows as unknown).
 
-The filtering is about immersion and fairness between honest clients, not security. With no anti-cheat (Fixed), a player can always inspect what their own device received, which is exactly what filtering limits.
+The filtering is about immersion and fairness between honest clients, not security. With no anti-cheat, a player can always inspect what their own device received, which is exactly what filtering limits.
 
 ## Version negotiation
 
@@ -107,11 +107,11 @@ On `hello`:
 3. **Engine minor/patch**: the client must be at least the version the episode's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
 4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the episode.
 
-Decoding is compatible within a major (Fixed): a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
+Decoding is compatible within a major: a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
 
 ## Snapshots
 
-A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** (P12) is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
+A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 

@@ -2,11 +2,11 @@
 
 The session package is the runtime layer: it owns live episodes, talks to transports and stores, enforces who may send what, and feeds the engine. It is pure Dart. Platform-specific pieces (sockets, Firebase, databases) are injected through interfaces.
 
-## Coarse actors (Fixed)
+## Coarse actors
 
 An actor here is a plain Dart object with a private mailbox (a queue) that handles one message at a time. Nothing else touches its state. This gives the ordering guarantees the event log needs without locks.
 
-Actors are **not** isolates (P7, ruled by R 2026-10-20): they are single-threaded mailbox objects. Isolates are not supported on Flutter web [V-13], are too heavy for this job, and the work per message is small. If UI lag appears, it is solved another way, not by moving actors to isolates.
+Actors are **not** isolates: they are single-threaded mailbox objects. Isolates are not supported on Flutter web [V-13], are too heavy for this job, and the work per message is small. If UI lag appears, it is solved another way, not by moving actors to isolates.
 
 | Actor | Lives on | Owns |
 |---|---|---|
@@ -19,7 +19,7 @@ Actors are **not** isolates (P7, ruled by R 2026-10-20): they are single-threade
 
 Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
-## The episode loop (GM canonical, Fixed)
+## The episode loop (GM canonical)
 
 ```
 request(cmd) ──► EpisodeHost
@@ -45,38 +45,38 @@ request(cmd) ──► EpisodeHost
 In short: authorize → dedupe → decide → [rolls broadcast; consequences to GM review] → seq + narrate + store → filter → broadcast → relay.
 
 - Storing comes before broadcast: an event is never broadcast before it is stored on the GM device.
-- **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `EpisodeHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
+- **GM review gate.** The gate lives in `EpisodeHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
-- **Auto-confirm** is a per-episode GM setting (F2; R ruled 2026-11-04 that it is separate from the Q5 request setting [below](#settings-resolution-r-a1-r-c1)). It is an `EpisodeSettings` field, default off, set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
-- **Death goes through the gate (R7, ruled by R 2026-10-27).** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-gaps-and-settled-rulings)).
-- **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
-- **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
-- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (W1, below), so autosave concerns non-web hosts only.
+- **Auto-confirm** is a per-episode GM setting, separate from the setting for requests between sittings ([below](#settings-resolution)). It is an `EpisodeSettings` field, default off, set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
+- **Death goes through the gate.** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-values-the-engine-uses)).
+- **Text log and head snapshot.** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs)). Periodic full snapshots for fast joins are unchanged.
+- **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
+- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (see [Play modes](#play-modes)), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
 - **Authorization** lives here, not in the engine: "only the GM may `RequireCheck`", "a player may only `RequestAction` for an alias they control", "anonymous accounts cannot host". The engine stays about rules; the session is about people.
 
-### Settings resolution (R-A1, R-C1)
+### Settings resolution
 
-Game settings (physical dice allowed, Handler-facing switches) belong to the mission and can be copied from another mission (D, 2026-10-29, FD-X1). R agreed on 2026-11-03 (R-A1) that the **campaign** owns the base settings and the pack version pin, and that each new mission starts as a copy of the base (or of another mission) and may override it. Proposed resolution: the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
+Game settings (physical dice allowed, Handler-facing switches) have a base at the **campaign**, which also owns the pack version pin. Each new mission starts as a copy of the base (or of another mission) and may override it. The resolved value is the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
 
-The F2 consequence auto-confirm is not one of these: R ruled on 2026-11-04 that it stays a per-episode setting. R-C1 (2026-11-03): the auto-confirm setting for requests made between sittings (purchases and contact releases, Q5) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
+The consequence auto-confirm is not one of these: it stays a per-episode setting. The auto-confirm setting for requests made between sittings (purchases and contact releases, see [Requests between sittings](#requests-between-sittings)) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
 
-### Names in the log (N1)
+### Names in the log
 
-D ruled the name rules on 2026-10-22; how lines are produced (R1 to R5) is R's and open ([10](10-waiting-on-d.md)).
+How lines are produced is open (N1-R1 to N1-R5, [10](10-waiting-on-d.md#4-open-for-r)).
 
-- **Before a reveal (D1).** The log names a character by a short description the Handler types ("the man in the grey coat"); with none, numbered unknowns ("Unknown 1", "Unknown 2").
-- **Reveals (D2, D3, D7).** The Handler can reveal a cover name first and the true name later, and can reveal a name to some agents only. A reveal is not taken back; the Handler can only give a new label from then on.
-- **Agents (D5).** Players' agents know each other's names from the start; the Handler can keep an agent a stranger.
-- **Phone (D6).** An unknown number shows as "Unknown number" until the Handler releases the contact; the Handler can set a label.
-- **Earlier lines (D4).** After a reveal, the lines of the current episode show the new name; archived logs do not change. A revealed name stays known in later episodes unless the Handler sets a new name (D, FD-N1).
+- **Before a reveal.** The log names a character by a short description the Handler types ("the man in the grey coat"); with none, numbered unknowns ("Unknown 1", "Unknown 2").
+- **Reveals.** The Handler can reveal a cover name first and the true name later, and can reveal a name to some agents only. A reveal is not taken back; the Handler can only give a new label from then on.
+- **Agents.** Players' agents know each other's names from the start; the Handler can keep an agent a stranger.
+- **Phone.** An unknown number shows as "Unknown number" until the Handler releases the contact; the Handler can set a label.
+- **Earlier lines.** After a reveal, the lines of the current episode show the new name; archived logs do not change. A revealed name stays known in later episodes unless the Handler sets a new name.
 
-Proposed mechanism, not ruled: a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
+Proposed mechanism (open: N1-R2, [10](10-waiting-on-d.md#4-open-for-r)): a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
 
-### RNG adapter (P5, Fixed)
+### RNG adapter
 
-The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web (P5 test requirement; not yet run). The version is pinned exactly, and known-seed test vectors are kept for native and web.
+The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web (not yet run). The version is pinned exactly, and known-seed test vectors are kept for native and web.
 
 Participants:
 
@@ -104,7 +104,7 @@ abstract interface class Link {
   Future<void> close();
 }
 
-abstract interface class EventStore {       // sembast 3.9.0 behind this interface (09-3, Fixed)
+abstract interface class EventStore {       // sembast 3.9.0 behind this interface
   Future<void> append(EpisodeId ep, List<StoredEvent> events,
       List<TextLogLine> text, Snapshot head);                         // one transaction, then a commit marker
   Stream<StoredEvent> read(EpisodeId ep, {int fromSeq = 1});
@@ -114,7 +114,7 @@ abstract interface class EventStore {       // sembast 3.9.0 behind this interfa
   Stream<TextLogLine> readText(EpisodeId ep, {int fromSeq = 1});
 }
 
-/// One narrated log line (P12, Fixed). Text is rendered per perspective at play
+/// One narrated log line. Text is rendered per perspective at play
 /// time, so the archive can show each viewer exactly what they saw.
 final class TextLogLine {
   final int seq;
@@ -127,11 +127,11 @@ abstract interface class Clock { DateTime now(); }
 
 Every interface has an in-memory implementation in `session` itself, used by tests and by single-device play.
 
-**Persistence (09-3, Fixed; ruled by R 2026-10-20).** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec (F5).
+**Persistence.** `EventStore` is implemented with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec.
 
-### Event entries (Proposed)
+### Event entries
 
-The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+Proposed (open: [S-1](09-open-decisions.md#s-1-event-entry-wrapper)). The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
 
 | Entry | Sent when | JSON |
 |---|---|---|
@@ -139,7 +139,7 @@ The engine event does not carry its own `seq`, and a recipient must see every `s
 | redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
 | hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
 
-A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is); the alternative, per-recipient gaps, would break the consecutive-`seq` rule. To be confirmed by R.
+A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds.
 
 Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
 
@@ -147,7 +147,7 @@ Authorization uses the identity verified at `hello` (`IdentityVerifier`), never 
 
 All modes run the same loop; they differ only in which `Transport` and whether a `RelayActor` is attached.
 
-**Transport build order (09-4, Fixed; ruled by R 2026-10-20):** in-process, LAN, Realtime Database relay, P2P. The packages for LAN and P2P (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled.
+**Transport build order:** in-process, LAN, Realtime Database relay, P2P. The packages for LAN and P2P (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled.
 
 | Mode | Transport | Backend | Notes |
 |---|---|---|---|
@@ -156,12 +156,12 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | In person, phones | LAN (or in-process + LAN) | none | GM device hosts; companion phones join on the local network. |
 | LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
 | P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
-| Network-hosted | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore (FS1, FS3) ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
+| Network-hosted | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online. |
 
-**Web build (W1, Fixed for now; ruled by R 2026-10-20):** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and R ruled that the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. D confirmed it on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22). Native builds can host every mode.
+**Web build:** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. Native builds can host every mode.
 
-**Physical dice (concern 7).** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). D approved the feature on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22); it is built after the demo, and the setting is resolved like the others ([above](#settings-resolution-r-a1-r-c1)).
+**Physical dice.** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). The feature is built after the demo, and the setting is resolved like the others ([above](#settings-resolution)).
 
 ## Reconnection and GM continuity
 
@@ -178,19 +178,19 @@ Because the GM's log is the single ordered truth, there are no concurrent writer
 
 The backend copy is a mirror, never a second authority. If the backend holds events the GM device does not (for example the GM resumed on a second device and then the first came back online), the first device must adopt the backend log before continuing; it never merges. The exact detection rule (compare last seq + hash of last event) is specified at implementation time.
 
-## Requests between sittings (Q5)
+## Requests between sittings
 
-A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Q5 auto-confirm for these is a setting with its base at the campaign and a per-mission override (R-C1, above). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are not ruled ([10](10-waiting-on-d.md)); the default (an assumption; R-C1's default was never ruled) is that purchases are not auto-confirmed, since F2 covers consequence events only.
+A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override ([above](#settings-resolution)). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are open (Q5, [10](10-waiting-on-d.md#4-open-for-r)); the working assumption is that purchases are not auto-confirmed, since the GM review gate covers consequence events only.
 
 ## In-game phone
 
-Players can send in-world text messages ("phone") that are forwarded to the GM (Fixed).
+Players can send in-world text messages ("phone") that are forwarded to the GM.
 
-- Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields **Proposed**). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
-- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box when the operation ends is a function's job after the archive is written (P17, changed by R 2026-11-03); the engine has no such event. The phone **contact list** belongs to the campaign and the phone box messages to the operation (Q7, R 2026-10-27).
+- Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields Proposed, open: [S-2](09-open-decisions.md#s-2-sendphonemessage-names-and-fields)). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
+- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box when the operation ends is a function's job after the archive is written; the engine has no such event. The phone **contact list** belongs to the campaign and the phone box messages to the operation.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
-- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box when the operation ends are R's rulings (holding both sides 2026-10-21, P17; clear point changed to operation end 2026-11-03); the operation-end step is not built yet, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
+- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. The box is cleared when the operation ends; that step is not built yet. See [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives
 
@@ -200,4 +200,4 @@ The session exposes per-perspective state streams:
 - **Player perspective:** the filtered state for one alias.
 - **Table perspective:** public-only, for a shared screen.
 
-The main app's per-perspective panels (Fixed) subscribe to these. A single device can show several perspectives at once (GM screen plus a table panel) because they are separate streams over the same host.
+The main app's per-perspective panels subscribe to these. A single device can show several perspectives at once (GM screen plus a table panel) because they are separate streams over the same host.

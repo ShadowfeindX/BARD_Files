@@ -7,11 +7,11 @@ Every package is testable on its own, with in-memory implementations of everythi
 - **Decide tests** per system: *given* a state built from a small event list, *when* a command with a scripted RNG (fixed faces), *then* exactly these events (or this rejection).
 - **Evolve tests** per event: *given* state, *when* event, *then* state.
 - **Replay invariant:** for recorded logs, `replay(events)` equals the state the host held after producing them.
-- **Rulebook examples as tests.** The worked examples in §2 (Agent Hall, Agent Vale, Agent Grimm) are tests now: the proficiency question is ruled (additional dice, G16; see [01-engine.md](01-engine.md#rulebook-gaps-and-settled-rulings)), so they are unblocked. They pin the engine to the book.
+- **Rulebook examples as tests.** The worked examples in §2 (Agent Hall, Agent Vale, Agent Grimm) are tests: proficiency adds dice (see [01-engine.md](01-engine.md#rulebook-values-the-engine-uses)). They pin the engine to the book.
 - **Pack validation tests:** valid core pack loads; each class of error (unknown key, missing reference, wrong `engineApi`) fails with a clear message.
 - **RNG tests:** known-seed vectors for `Xoshiro128pp` (`xrandom`, pinned exactly) produce the same sequence on both native and web test runs (guards against the web number differences in [V-14]) [V-28]. The vectors live with the `session` adapter; the engine's own tests use the scripted `Rng`.
-- **`var` node tests:** the approved placements evaluate with the engine-supplied value (`10 × var(newScore)`, `1d6 + var(helperSkillBonus)`).
-- **Review-gate tests (F2):** a consequence batch is held and not stored or broadcast until confirmed; an edit records `overriddenFrom`; `CheckResolved` is never held or altered.
+- **`var` node tests:** the supported placements evaluate with the engine-supplied value (`10 × var(newScore)`, `1d6 + var(helperSkillBonus)`).
+- **Review-gate tests:** a consequence batch is held and not stored or broadcast until confirmed; an edit records `overriddenFrom`; `CheckResolved` is never held or altered.
 
 ## Protocol
 
@@ -31,7 +31,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 - Fixture pairs per step (N in, N+1 out), including "needs decision" cases.
 - Newest step only: output loads and folds in the current engine.
-- Archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (P13 widget test: single tap never confirms; the "cannot be recovered" tick and typed episode name are both required).
+- Archive: frozen log byte-identical, text log carried over unchanged, genesis event references both; the confirmation screen cannot be passed with a single tap (widget test: single tap never confirms; the "cannot be recovered" tick and typed episode name are both required).
 
 ## Apps
 
@@ -41,17 +41,17 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 ## Backend
 
-- Security-rules tests and `backend` adapter tests against the Firebase Local Emulator Suite [V-19]. Both Realtime Database rules and Firestore rules are tested in the Emulator Suite (P10b). The RTDB rules suite is `firebase/rtdb_rules_test/` with the rules in `firebase/database.rules.json` (run with `bash firebase/run_rtdb_rules_test.sh`; see `firebase/README.md`). It started from probe 8.6's 116 emulator checks [V-38]: the two weakness checks now expect "refused" (GM deletes `meta`; a member overwrites another uid's signaling), the `phoneDraft` checks are replaced by one check that the path is gone, and new checks cover ruling 1 (no delete of `meta` or `meta/gm`), signaling by uid, signaling refused after lock, presence writable after lock, phone messages create-only, and the post-archive clean-up [V-50], plus presence refused once archived, `meta` validation and no signaling or phone messages for anonymous members [V-51], and the review follow-ups: no signaling reads for anonymous members, phone message shape and 2,000-character cap, `locked` never removed, non-member text log reads [V-52], clients (the GM included) refused when they set `meta/status` to `archived`, the text log `alias:null` read, and the phone text cap counting UTF-16 code units [V-53]. 200 of 200 pass. Firestore collections and their rules tests are still to be drafted.
+- Security-rules tests and `backend` adapter tests against the Firebase Local Emulator Suite [V-19]. Both Realtime Database rules and Firestore rules are tested in the Emulator Suite. The RTDB rules suite is `firebase/rtdb_rules_test/` with the rules in `firebase/database.rules.json` (run with `bash firebase/run_rtdb_rules_test.sh`; see `firebase/README.md`). The suite is based on probe 8.6's emulator checks [V-38] and covers: the GM cannot delete `meta`; a member cannot overwrite another uid's signaling; the `phoneDraft` path is gone; no delete of `meta` or `meta/gm`; signaling by uid, refused after lock; presence writable after lock; phone messages create-only; and the post-archive clean-up [V-50]. Also covered: presence refused once archived, `meta` validation, and no signaling or phone messages for anonymous members [V-51]; no signaling reads for anonymous members, phone message shape and 2,000-character cap, `locked` never removed, and non-member text log reads [V-52]; clients (the GM included) refused when they set `meta/status` to `archived`, the text log `alias:null` read, and the phone text cap counting UTF-16 code units [V-53]. 200 of 200 pass. Firestore collections and their rules tests are still to be drafted.
 - **Outbox restart test.** A request queued offline survives an app restart and is replayed once on reconnect. The SDK's own queue does not survive a restart [V-40], so this test is what proves offline requests are kept.
 - **Auth tests** (`backend`, against the emulator where it supports them): anonymous upgrade keeps the uid and forces a token refresh [V-39]; `EMAIL_EXISTS` and `WEAK_PASSWORD` map to user messages; a lost or wrong secure-store key ends in a clean signed-out state, not an error loop [V-44]; the keyring timeout guard fires instead of hanging [V-34].
 - `apps/functions` tests with the shared `protocol_envelope` fixtures.
 
 ## Continuous integration (Proposed)
 
-Pinned packages (`xrandom`, `sembast`, `hive`) are checked to be pinned exactly (F5).
+Proposed (open: [O-08-1](09-open-decisions.md#o-08-1-continuous-integration-job-list)). Pinned packages (`xrandom`, `sembast`, `hive`) are checked to be pinned exactly.
 
 1. `dart format` check, failing on unformatted files (style rule in CLAUDE.md §8).
 2. `flutter analyze` for the whole workspace.
 3. Tests per package.
-4. Dependency-rule check: fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)). Includes a **transitive check**: the resolved dependency graph of `apps/functions` must never contain `engine` (F4: it depends only on `protocol_envelope`).
+4. Dependency-rule check: fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)). Includes a **transitive check**: the resolved dependency graph of `apps/functions` must never contain `engine` (it depends only on `protocol_envelope`).
 5. Pack validation of `content_core`.

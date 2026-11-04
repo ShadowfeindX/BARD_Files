@@ -1,12 +1,12 @@
 # 05. Migrator (`packages/migrator`)
 
-## Purpose (Fixed)
+## Purpose
 
-Move one episode's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
+Move one episode's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
 
-## Why the migrator never imports the engine (Fixed, P8)
+## Why the migrator never imports the engine
 
-Ruled by R 2026-10-20 (P8): the migrator works on frozen JSON-level schemas, and each step is a pure `(json, decisions) -> (json, report)`.
+The migrator works on frozen JSON-level schemas, and each step is a pure `(json, decisions) -> (json, report)`.
 
 A pub workspace resolves one version of each package for the whole repository, and Dart does not allow two versions of the same package in one resolution [V-1]. The migrator cannot import engine N and engine N+1 side by side. It works on **serialized JSON** instead:
 
@@ -31,9 +31,9 @@ When engine major N+1 is released, the engine's `schema/` docs for N and N+1 are
 | Campaign-level data (aliases, settings) | yes | small dedicated steps |
 | Event log of major N | **no** | frozen and archived as-is, with its text rendering (below) |
 
-## Archived logs (Fixed: ruled by R)
+## Archived logs
 
-R ruled archive-only: the N-major log is **frozen, not converted** into the N+1 schema. Converting would force the migrator to invent values for fields the old schema never recorded, and those placeholders would sit in history forever.
+The N-major log is **frozen, not converted** into the N+1 schema. Converting would force the migrator to invent values for fields the old schema never recorded, and those placeholders would sit in history forever.
 
 An archived episode keeps two files side by side:
 
@@ -42,7 +42,7 @@ An archived episode keeps two files side by side:
 | Frozen event log | The original N-major events, byte-for-byte, never decoded by the N+1 engine | Nobody in normal use; kept as the exact record |
 | Text log | The plain-text rendering of every event as it appeared in the UI, stored per perspective (GM, public, redacted, specific aliases): the written description log the GM and players saw | The in-game log view and a separate archive viewer |
 
-**How the text log is produced (Fixed, P12).** There is no frozen prior engine (Fixed), so the N+1 app cannot render N-major events. The text is therefore written **during play**, by the engine that understood the events: each time an event is applied, its display text is appended to the episode's text log with its `seq`, time and `visibility`. At migration the text log already exists and is archived unchanged. Each line stores one rendered variant per perspective (see `TextLogLine` in [04-session.md](04-session.md#interfaces-the-session-depends-on)), so the archive viewer shows a player exactly the text that player saw (including the redacted version of hidden events), and the GM everything.
+**How the text log is produced.** There is no frozen prior engine, so the N+1 app cannot render N-major events. The text is therefore written **during play**, by the engine that understood the events: each time an event is applied, its display text is appended to the episode's text log with its `seq`, time and `visibility`. At migration the text log already exists and is archived unchanged. Each line stores one rendered variant per perspective (see `TextLogLine` in [04-session.md](04-session.md#interfaces-the-session-depends-on)), so the archive viewer shows a player exactly the text that player saw (including the redacted version of hidden events), and the GM everything.
 
 ```
 seq=1042  2026-10-16T20:14:03Z  vis=public  <agent> requests an action: <description>.
@@ -58,9 +58,9 @@ seq=1044  2026-10-16T20:14:40Z  vis=gm      <GM-only note>.
 EpisodeMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, episodeId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
 ```
 
-followed by the migrated snapshot as its initial state. The migrator transforms the **head snapshot** (the state at the N-major log's last `seq`, written by the N engine with every batch; see [04-session.md](04-session.md#the-episode-loop-gm-canonical-fixed)), so it never needs to fold events itself. Rolling autosave keeps the local head snapshot current after every batch and refreshes its RTDB copy before migration (P12). If the head snapshot is missing or its `seq` is not the log's last `seq`, the migrator refuses and nothing is written.
+followed by the migrated snapshot as its initial state. The migrator transforms the **head snapshot** (the state at the N-major log's last `seq`, written by the N engine with every batch; see [04-session.md](04-session.md#the-episode-loop-gm-canonical)), so it never needs to fold events itself. Rolling autosave keeps the local head snapshot current after every batch and refreshes its RTDB copy before migration. If the head snapshot is missing or its `seq` is not the log's last `seq`, the migrator refuses and nothing is written.
 
-`archives` lists **every** earlier archive, oldest first: a second migration (N+1 → N+2) copies the N entry forward and adds N+1, so all pre-migration history stays reachable from the newest genesis event without opening any frozen log. (Fixed, P12: the N+1 episode gets a new episode id and restarts `seq` at 1; the archived episode keeps its id.) Every later event uses the N+1 schema. In the in-game log the archived text appears above the genesis event as a clearly marked read-only section; the archive viewer opens the same text on its own (placement and viewer fixed, P12).
+`archives` lists **every** earlier archive, oldest first: a second migration (N+1 → N+2) copies the N entry forward and adds N+1, so all pre-migration history stays reachable from the newest genesis event without opening any frozen log. The N+1 episode gets a new episode id and restarts `seq` at 1; the archived episode keeps its id. Every later event uses the N+1 schema. In the in-game log the archived text appears above the genesis event as a clearly marked read-only section; the archive viewer opens the same text on its own.
 
 **What is lost.** The N+1 engine cannot replay, query or inspect N-major events (for example re-opening a past roll's breakdown as structured data, or computing statistics across the boundary). Only the text and the migrated end-state carry forward. The frozen log is kept so nothing is destroyed, but it is not usable by the N+1 app.
 
@@ -70,16 +70,16 @@ followed by the migrated snapshot as its initial state. The migrator transforms 
 2. GM chooses "Migrate". The migrator runs locally on the GM device and produces: new snapshot, new pack, report.
 3. The app shows the report: unchanged, transformed, dropped, and **needs decision** items (for example, a removed condition type with no successor). The GM resolves each decision item.
 4. The new engine validates the result (loads the pack, folds the snapshot). Any failure aborts with nothing written.
-5. **Explicit confirmation of information loss (Fixed: ruled by R; P13).** Before anything is written, the app shows a dedicated warning screen, separate from the report, that states plainly:
+5. **Explicit confirmation of information loss.** Before anything is written, the app shows a dedicated warning screen, separate from the report, that states plainly:
    - the episode's event history will be **frozen**; from now on it is viewable only as text;
    - past events can no longer be replayed, re-opened as structured data or used by the new engine;
    - anything the report lists as dropped is gone from the new episode;
    - **this cannot be undone or recovered.**
 
-   The GM must take a deliberate action to proceed (Fixed, P13): tick "I understand this information cannot be recovered" and type the episode's name. A single tap never confirms it; a widget test covers this.
-6. On confirmation the episode is locked, then the archive is written to Firestore, then the live data is cleaned up (R 2026-10-21). The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived episode (frozen event log, text log and final head snapshot) is then written by the `archiveEpisode` HTTPS function (FS3), chunked into a subcollection to stay under Firestore's 1 MiB per-document limit (FS5); a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new episode is then created. The original N data is kept until the GM deletes it.
+   The GM must take a deliberate action to proceed: tick "I understand this information cannot be recovered" and type the episode's name. A single tap never confirms it; a widget test covers this.
+6. On confirmation the episode is locked, then the archive is written to Firestore, then the live data is cleaned up. The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived episode (frozen event log, text log and final head snapshot) is then written by the `archiveEpisode` HTTPS function, chunked into a subcollection to stay under Firestore's 1 MiB per-document limit; a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new episode is then created. The original N data is kept until the GM deletes it.
 
-Players do nothing. When they next join, they receive the new episode under N+1 and see a notice in the log that history before the migration is archived text (Proposed).
+Players do nothing. When they next join, they receive the new episode under N+1 and see a notice in the log that history before the migration is archived text (proposed; open: [O-05-1](09-open-decisions.md#o-05-1-notice-after-migration)).
 
 ## Chaining
 
