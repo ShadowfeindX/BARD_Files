@@ -21,7 +21,7 @@ Later rulings are added to their group with the date in the row (for example P10
 | F1 | Rulebook gaps settled: proficiency bonus is an additional dice roll (G16); Health = END × LCK; Sanity = WIS × LCK; top category Cat-Ω, values decided by the Handler (G12); disorder table is a clean 1–6. The occult check attribute (C5/G6) was ruled by D on 2026-10-22. | [01](01-engine.md), [08](08-testing.md) |
 | F2 | GM review gate in `EpisodeHost`: consequence events (damage, sanity loss, conditions, any category value) are held as a GM-only pending batch; the GM confirms or edits; an edit is recorded on the event (`overriddenFrom`); only then seq, narrate, store and broadcast. Per-episode auto-confirm. Rolls are never gated: `CheckResolved` broadcasts immediately and rolled faces are never altered. Covers rulebook decision 21. | [01](01-engine.md), [04](04-session.md) |
 | F3 (2) | Skill = name, description, category (one of five, organizational only), attribute, proficiency. No "allowed uses". | [01](01-engine.md), [02](02-rules-packs.md) |
-| F3 (3) | Operation-scoped pack tier under Campaign for per-episode GM content: same schema and validator, pinned and logged. | [02](02-rules-packs.md) |
+| F3 (3) | Episode-scoped pack tier under Campaign for per-episode GM content: same schema and validator, pinned and logged. | [02](02-rules-packs.md) |
 | Concern 7 | `CheckResolved` reserves `source` (`rng` \| `entered`, plus who entered: GM or alias). The physical-dice feature is approved by D (2026-10-22), built after the demo. | [01](01-engine.md) |
 
 ### Packs and content

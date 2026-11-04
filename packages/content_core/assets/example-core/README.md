@@ -36,7 +36,7 @@ This folder is a **small sample** of what a B.A.R.D. content pack looks like. It
 | `npcs/` | One sample NPC, the Cult Footsoldier. | p36 |
 | `strings/` | Display text, kept apart so wording can change without touching rules. | n/a |
 
-A second, tiny pack sits next to this folder in `../example-operation/`. It is what one Handler's own session-only skill looks like: the same file shapes and checks, just owned by one game. This sample holds only its skills file.
+A second, tiny sample pack is in the project library at `packs/example-operation/` (not in this repository). It is what one Handler's own skill for a single episode looks like: the same file shapes and checks, just owned by one game. That sample holds only its manifest and skills file.
 
 ## What is already decided
 
