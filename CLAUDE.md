@@ -137,4 +137,4 @@ No other external tool, MCP, service or package source is used unless R names it
 
 - UI style and design (in review).
 - Transport packages for LAN and P2P play: each goes to R when its transport is scheduled.
-- The full list of open and pending-D items is in `docs/architecture/09-open-decisions.md`.
+- Open, held and deferred items are in docs/architecture/09-open-decisions.md; what still waits on D is in docs/architecture/10-waiting-on-d.md; settled rulings are in docs/architecture/decision-record.md.
