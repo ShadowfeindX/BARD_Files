@@ -166,6 +166,7 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 - FS2 on Windows for natural expiry, plus revoked sessions, disabled users, password change and refresh-token failure (Linux natural expiry, composite indexes and claim rules: done [V-43][V-45]).
 - FS3: the RTDB role from a deployed function running as its dedicated service account (tested by impersonation only) [V-46].
 - 8.4 claim pickup on Windows (Linux done [V-42]).
+- Storage: rules and client behaviour of Cloud Storage for Firebase (rules pack files) are not yet probed.
 - RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).
 - Opening an existing plaintext `firebase_auth` box with the cipher (the B5 migration step) [V-34][V-44].
 - **VER-14 (themes, T1; defined in the project library's design review, recorded here as the repo's entry):** the built-in theme variants (the 12 sets in the library's `design/colorblind-palettes.md`), and the confirm, Warning and Locked colours are tested with real colour-blind players (at least protan, deutan and tritan viewers and one low-vision viewer) on the target displays. Testers to be chosen by R and D; values are revised if the test disagrees with the simulation. Proposed extension, not in the library's entry: include the `windowEdge`, effect and document colours once their values are set (T4, T6, T11).

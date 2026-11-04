@@ -107,7 +107,7 @@ On `hello`:
 3. **Engine minor/patch**: the client must be at least the version the episode's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
 4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the episode (fetching is planned; 10 §5 'Library and pack index'; today the pack is bundled).
 
-Decoding is compatible within a major: a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
+Decoding is compatible within a major: a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory (planned; [01 Deprecation](01-engine.md#deprecation)), per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
 
 ## Snapshots
 

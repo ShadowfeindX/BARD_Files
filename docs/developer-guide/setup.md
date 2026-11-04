@@ -21,7 +21,7 @@ On Windows use the matching `windows` archive from the same storage path and add
 
 ## First build
 
-The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist). See [content_core/README.md](../../packages/content_core/README.md).
+The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist; unverified). See [content_core/README.md](../../packages/content_core/README.md).
 
 From the repository root:
 
@@ -69,7 +69,7 @@ The CI workflow is `.github/workflows/ci.yml`, described in [08-testing.md](../a
 4. If the package is new to a layer, add it to `layerRules` in `tool/lib/dependency_rules.dart` **and** to the table in [00-overview.md](../architecture/00-overview.md#dependency-rules); the two must agree.
 5. Run `bash tool/check_all.sh`.
 
-`test` is pinned at 1.31.1 on purpose: Flutter 3.47.7 pins `test_api` 0.7.12, and later `test` versions need a newer `test_api`, so the workspace would not resolve. Move it up together with the Flutter pin.
+`test` is pinned at 1.31.1 on purpose: Flutter 3.47.7 pins `test_api` 0.7.12, and later `test` versions need a newer `test_api`, so the workspace would not resolve (unverified). Move it up together with the Flutter pin.
 
 ## Adding a package
 

@@ -6,7 +6,7 @@ Accounts, session persistence and relay, rules pack distribution, information di
 
 ## Stack
 
-The stack follows the backend-split investigation (project library: `architecture/backend-split.md` and its review). Firebase is preferred, with the Firebase console as the admin tool for D and content auditors. Data is split between two databases: RTDB for live play, Firestore for data at rest (see [Firestore](#firestore)).
+The stack follows the backend-split investigation (project library: `architecture/backend-split.md`). Firebase is preferred, with the Firebase console as the admin tool for D and content auditors. Data is split between two databases: RTDB for live play, Firestore for data at rest (see [Firestore](#firestore)).
 
 | Layer | Choice | Notes |
 |---|---|---|
@@ -18,7 +18,7 @@ The stack follows the backend-split investigation (project library: `architectur
 | Hosting | Firebase Hosting (web build) (planned) | — |
 | Cloud Run | No separate service planned | Dart functions themselves deploy to Cloud Run [V-33] |
 
-Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42] and the Firestore claims/index follow-up [V-43] (Linux only), and natural expiry [V-45] (Linux only). Android was not probed.
+Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42], the FS2 claims/index follow-up [V-43] and natural expiry [V-45] (Linux only). Android was not probed.
 
 ### Backend port and adapters
 
@@ -83,7 +83,7 @@ Campaign
 
 - **Handler personas.** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed, open: [FE-L3](10-waiting-on-d.md#fe-l3)). Not built: see the Handler persona entity (R-A4) row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
 
-Profiles, aliases and campaigns are searchable account data and live in Firestore. Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
+Profiles, aliases and campaigns are searchable account data and live in Firestore (planned; 10 §5 'Campaign-level members and rules' / 'Backend adapters and the sembast `EventStore`'). Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 Rules:
 
@@ -122,7 +122,7 @@ A badge is a printable/scannable code on a physical agent badge that signs an ag
 - **Evidence:** a malformed custom token is rejected with `invalid-custom-token` [V-21]. A token minted in a deployed function (`createCustomToken`, no key file) signed in via `firebase_dart` on Linux once the runtime service account held Service Account Token Creator [V-33]. A real custom token (minted with `gcloud iam service-accounts sign-jwt`) signed in on **Windows and Linux** [V-41]. The badge function and the flow end to end are not built yet.
 - **Deploy checklist:** grant **Service Account Token Creator** (`roles/iam.serviceAccountTokenCreator`) to the function's runtime service account on itself; without it `createCustomToken` fails with `iam.serviceAccounts.signBlob` denied [V-33].
 - **Packages (no package is added before R approves it; Proposed, open: [S-8](09-open-decisions.md#s-8-badge-packages)):** printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows/Linux beta, or USB 2D keyboard-wedge scanners). Each is proposed with its purpose and alternatives when badges are scheduled.
-- Badges are optional, per agent, listed and revocable from account settings.
+- Badges are optional, per agent, listed and revocable from account settings (planned; 10 §5 'Campaign-level members and rules' / 'Backend adapters and the sembast `EventStore`').
 - Offline: a badge cannot create a new sign-in without the backend. An agent already signed in on that device keeps working from the local cache (planned; 10 §5 'Offline account cache and session outbox').
 
 ## Offline accounts
