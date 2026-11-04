@@ -164,6 +164,7 @@ void main() {
       );
       final line = narrator.narrate(t.state, rolled.single);
       expect(line.redacted, tableRedaction);
+      expect(line.player, isNull);
       expect(line.gm, 'Random table "Test Table": 1d6 2 = 2. Low.');
     },
   );

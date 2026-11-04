@@ -125,7 +125,7 @@ RandomTable? parseRandomTable(ObjectReader r, int? packMajor) {
   final id = r.string('id');
   final name = r.string('name');
   final expr = r.exprOrPending('dice');
-  final lead = r.has('lead') ? r.string('lead') : null;
+  final lead = r.optionalString('lead');
   final rows = r.objects('rows', (row) {
     final from = row.integer('from');
     final to = row.integer('to');

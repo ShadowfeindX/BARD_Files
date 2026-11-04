@@ -577,6 +577,9 @@ void main() {
       expect(loaded.lead, isNull);
       final led = withTable({...table(), 'lead': 'It stirs.'});
       expect(led.pack!.randomTable('wild')!.lead, 'It stirs.');
+      for (final bad in <Object?>['', null]) {
+        expect(withTable({...table(), 'lead': bad}).ok, isFalse);
+      }
     });
 
     test('a gap, an overlap and a row out of range are errors', () {
