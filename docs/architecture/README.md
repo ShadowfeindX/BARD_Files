@@ -8,7 +8,7 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 
 | File | What it covers |
 |---|---|
-| [00-overview.md](00-overview.md) | Goals, fixed decisions, repository layout, package map and dependency rules |
+| [00-overview.md](00-overview.md) | Goals, platform and stack, repository layout, package map and dependency rules |
 | [01-engine.md](01-engine.md) | The pure-Dart game engine: entities, components, systems, commands, events, dice and checks |
 | [02-rules-packs.md](02-rules-packs.md) | Rules packs and content: what the engine owns versus what packs own, versioning, the public library |
 | [03-protocol.md](03-protocol.md) | Wire format shared by every client and server: envelopes, messages, versioning, visibility |

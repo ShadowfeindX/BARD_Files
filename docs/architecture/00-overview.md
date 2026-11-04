@@ -7,9 +7,9 @@
 3. Keep game rules testable and reusable everywhere: main app, companion phone app, and any server.
 4. Let R and D maintain and extend the system without Claude: small packages, plain data, few dependencies, no hidden magic.
 
-## Fixed decisions
+## Platform and stack
 
-The platform, structure and stack the application is built on. Settled decisions and their reasons are in [decision-record.md](decision-record.md); items that wait on D are in [10-waiting-on-d.md](10-waiting-on-d.md).
+The platform, structure and stack the application is built on. Decisions and their reasons are in [decision-record.md](decision-record.md); items that wait on D are in [10-waiting-on-d.md](10-waiting-on-d.md).
 
 | Area | Decision |
 |---|---|
@@ -25,13 +25,13 @@ The platform, structure and stack the application is built on. Settled decisions
 | Updates | Engine updates apply to episodes automatically by default; pack updates apply manually by default. GMs get a toggle for each. |
 | Cross-major | Migrator only. Each engine major knows only its own schema. A separate migrator transforms an episode's state and pack from N to N+1, run by the GM, who reviews the result. No frozen prior engine, no old web build. Old event logs are frozen, not converted, with a plain-text log kept beside them; the GM explicitly confirms the unrecoverable loss. |
 | Accounts | Agent (player account) with many aliases; each alias locked to one campaign at a time (moving needs the destination GM's approval; the source campaign is notified; an alias in a running episode cannot move until it ends). Anonymous accounts can join any episode, have exactly one alias, cannot GM, host or create content. Badges are an optional scannable login. |
-| Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Adopted stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). |
+| Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). |
 | Content | GMs create NPCs, items, skills, techniques. D publishes default content (cloud-hosted). The public library shows only verified items. Typst document templating comes later. |
 | State management | `signals_flutter` 7.1.0 (publisher rodydavis.com), in the apps and `ui_kit` only; not the umbrella `signals`. Engine, protocol, session and migrator stay free of it ([V-29]). |
 | Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<op>?alias=<id>`; verified live on Linux and Windows ([V-30]). |
 | Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). |
 | Randomness | Pub package `xrandom` 0.7.2, class `Xoshiro128pp` (never the `Xrandom`/`Drandom`/`Qrandom` aliases), pinned exactly, used in `session` behind the engine's `Rng` interface ([V-28]). See [01-engine.md](01-engine.md#rng). |
-| Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled. |
+| Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
 | Immersion | In-game phone messaging forwarded to the GM; per-perspective (player vs GM) panels. |
 
 ## Still open
@@ -116,7 +116,7 @@ dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
 
-\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are the approved packages for `apps/functions` (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the backend stack. The other third-party packages above are used at the versions in the Fixed decisions table and in the verification register ([V-28] to [V-36]); each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
+\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are the approved packages for `apps/functions` (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the backend stack. The other third-party packages above are used at the versions in the Platform and stack table and in the verification register ([V-28] to [V-36]); each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
 
 `apps/functions` mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveEpisode`), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed. Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group. It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
@@ -128,7 +128,7 @@ Why these rules:
 - **theme_core never imports Flutter** so the theme model, validator and colour math are testable in plain Dart and can serve later additions (theme distribution, per-campaign settings) without a widget layer. When it is built, the pub workspace members and the layer table in `tool/lib/dependency_rules.dart` are updated in the same change.
 - **session never imports Flutter** so the same episode loop runs in the apps, a CLI, and tests. Platform-specific transports and stores are injected.
 
-New pub dependencies in any package go to R first (CLAUDE.md §6). Not yet approved, and going to R when their feature is scheduled: `web_socket_channel`, `bonsoir`, `flutter_webrtc`, `barcode`, `mobile_scanner`, `flutter_zxing`.
+New pub dependencies in any package go to R first (CLAUDE.md §6). Not yet approved, and going to R when their feature is scheduled (transport packages: [S-6](09-open-decisions.md#s-6-transport-packages)): `web_socket_channel`, `bonsoir`, `flutter_webrtc`, `barcode`, `mobile_scanner`, `flutter_zxing`.
 
 ## Layering inside the Flutter apps
 

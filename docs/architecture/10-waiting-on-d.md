@@ -16,8 +16,8 @@ Asked on `D-followup-2.md` (round 3) unless noted. A blank answer counts as Late
 
 | Id | Subject | Default (assumption) | Changes |
 |---|---|---|---|
-| FD-M1 | Who pays sanity at a ritual: the Handler marks who is present and who takes part; amount per payer | Each payer loses the full amount for the effect (not halved), Handler can change it | 01 Magic rulings; `occult.json` `sanityPayers`; review tray |
-| FD-M3 | Should the app help the Handler build a cast DC | A labelled factor list (time, helpers, circumstances, artifact) the Handler adds up and can overwrite | 07 Rulings that shape screens; occult row |
+| FD-M1 | Who pays sanity at a ritual: the Handler marks who is present and who takes part; amount per payer | Each payer loses the full amount for the effect (not halved), Handler can change it | 01 Magic: casting, sanity cost, focus items and artifacts; `occult.json` `sanityPayers`; review tray |
+| FD-M3 | Should the app help the Handler build a cast DC | A labelled factor list (time, helpers, circumstances, artifact) the Handler adds up and can overwrite | 07 Planned screens; occult row |
 | FD-M4 | Casting without training: any numeric guideline | None; the Handler switches on "may cast anyway" per cast | 01 `missingOccultTraining` |
 | FE-M5 | Focus item: which actions it reduces and by how much | None (no suggestion) | `occult.json` `focusItem` (stays `null`); 01 |
 | FE-M6 | Who decides what counts as a focus item; how many | Handler approves; one at a time | `focusItem`; 07 |

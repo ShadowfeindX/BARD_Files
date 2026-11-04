@@ -34,7 +34,7 @@ core/                           pack id
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  combat.json                   Proposed: actions per turn
+  combat.json                   Proposed (open: API-1): actions per turn
   occult.json                   magic categories, sanity costs (§8; "cast magic" is one roll with a Handler-set DC)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
@@ -70,18 +70,18 @@ A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There
 
 ### Pack-side values by file
 
-What the game rules mean for each pack file. Field names and shapes marked Proposed are not final. A value D has not given stays `null` in the pack and the feature stays off (CLAUDE.md §9). The engine side of each item is in [01](01-engine.md#rulebook-values-the-engine-uses).
+What the game rules mean for each pack file. Field names and shapes marked Proposed are not final (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). A value D has not given stays `null` in the pack and the feature stays off (CLAUDE.md §9). The engine side of each item is in [01](01-engine.md#rulebook-values-the-engine-uses).
 
 | File | Content | Shape |
 |---|---|---|
 | `skills.json` | Mind Shielding stays (WIL); Eldritch Lore (INT) and Vehicle Modification (INT) are added; Insight uses WIS; the paired skills (Alchemy and Advanced Alchemy, Explosive Disposal and Explosives) stay separate; categories come from the book's skill list, never reconstructed | data only |
-| `occult.json` | The cast attribute is WIL, or the named skill's attribute; `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail; `ritualDefaults` is Handler guidance only; the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is `null` until its reduction is given (open: FE-M5 in [10](10-waiting-on-d.md)) | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed |
-| `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute; `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed |
-| `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6. The reworked tables are open ([10](10-waiting-on-d.md), FD-S2) | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed |
-| `damage.json`, `threats.json` | Damage dice explode; `min` is a floor on the total damage, and a melee weapon's floor is the greater of its MIN and the STR score. Weapon MIN values stay `null` until they are given | `meleeFloor`: Proposed |
+| `occult.json` | The cast attribute is WIL, or the named skill's attribute; `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail; `ritualDefaults` is Handler guidance only; the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is `null` until its reduction is given (open: FE-M5 in [10](10-waiting-on-d.md)) | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed, open: API-1 |
+| `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute; `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed, open: API-1 |
+| `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6. The reworked tables are open ([10](10-waiting-on-d.md), FD-S2) | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed, open: API-1 |
+| `damage.json`, `threats.json` | Damage dice explode; `min` is a floor on the total damage, and a melee weapon's floor is the greater of its MIN and the STR score. Weapon MIN values stay `null` until they are given | `meleeFloor`: Proposed, open: API-1 |
 | `proficiency.json`, `advancement.json` | Proficiency and advancement dice do not explode | `explode: false`, data only |
-| `attributes.json`, `proficiency.json` (creation) | Creation limits by character kind: `agent` (also Occult Organization members) and `skald` | profile names and fields: Proposed |
-| `combat.json` | One Major, one Minor and one reaction per turn by default | `actionsPerTurn`: Proposed |
+| `attributes.json`, `proficiency.json` (creation) | Creation limits by character kind: `agent` (also Occult Organization members) and `skald` | profile names and fields: Proposed, open: API-1 |
+| `combat.json` | One Major, one Minor and one reaction per turn by default | `actionsPerTurn`: Proposed, open: API-1 |
 | `tables/` | Random tables are a generic kind; the engine ships no rows, the table content is D's | as in the structure above |
 | `npcs/`, `threats.json` | Human adversaries use attributes, skills and `items/` like a player alias; class numbers apply to supernatural classes only | note for when the enemy defense and attack numbers are given |
 
@@ -102,7 +102,7 @@ It is a named number supplied by the engine at evaluation time. Placements:
 | Placement | Expression |
 |---|---|
 | Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
-| Assistance bonus, in `difficulty.json` | the helper's attribute score (key name Proposed) |
+| Assistance bonus, in `difficulty.json` | the helper's attribute score (key name Proposed, open: API-1) |
 
 The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.
 
@@ -158,7 +158,7 @@ Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecat
 4. Cross-validate references (a skill that names an attribute that does not exist, an item referencing an unknown damage category).
 5. Produce an immutable `RulesPack` and its `contentHash`.
 
-The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed) lets D check a pack without running the app.
+The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed, open: API-1) lets D check a pack without running the app.
 
 Backend code (Cloud Functions) does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Publishing validates on the publishing device before upload, and every device validates again when it loads a pack, so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
@@ -185,7 +185,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 - **Revocable.** Verification can be revoked: the item goes back to pending, with a reason. Copies already in GMs' packs are unchanged.
 - **Record.** Each library item records the verifier, the date and the version verified.
 - **Where it lives.** The library lives in Firestore. Verification is written by the reviewer's client under Firestore rules, never by the submitting client; a function can take it over later if the rules get awkward. See [06-accounts-backend.md](06-accounts-backend.md).
-- Library items are copied into a GM's pack when used, with provenance (for example `libraryRef: library/<id>@<version>`; the field name is provisional with the pack shape and must not reuse the stripped `source` annotation key), so a library edit never changes a running campaign behind the GM's back.
+- Library items are copied into a GM's pack when used, with provenance (for example `libraryRef: library/<id>@<version>`; the field name is open with the pack shape (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) and must not reuse the stripped `source` annotation key), so a library edit never changes a running campaign behind the GM's back.
 
 ## Distribution
 
@@ -195,4 +195,4 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 ## Documents (Typst, later)
 
-R plans document templating with Typst later: documents stored as text and rebuilt on clients as PDFs. No strict templates now. The architecture leaves a seam: a `DocumentSource` (text + data bindings) stored as pack or campaign content, and a `DocumentRenderer` interface in the app layer. No engine involvement. Choosing how Typst is invoked on each platform is future work for R (open: T10 in [09-open-decisions.md](09-open-decisions.md#open-for-r-themes)).
+Document templating with Typst comes later: documents stored as text and rebuilt on clients as PDFs. No strict templates now. The architecture leaves a seam: a `DocumentSource` (text + data bindings) stored as pack or campaign content, and a `DocumentRenderer` interface in the app layer. No engine involvement. Choosing how Typst is invoked on each platform is future work for R (open: T10 in [09-open-decisions.md](09-open-decisions.md#open-for-r-themes)).
