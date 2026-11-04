@@ -133,6 +133,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Backend adapters and the sembast `EventStore` (only `InMemoryEventStore` exists today), `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
 - Theme build: `theme_core` and the `ui_kit` theme (a placeholder `BardTheme` exists today).
 - Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
+- GM pack authoring (entity templates in the GM's own packs): no pack editor exists today (see [02](02-rules-packs.md)).
 - Physical dice feature (see [01](01-engine.md)).
 - Remaining engine systems: `CombatSystem` and the `encounter` state, `VehicleSystem`, `OccultSystem`, `InventorySystem`, `GmSystem` (see [01](01-engine.md#systems)). There is no outcome override of a resolved roll; consequence edits go through the review gate.
 - <a id="deep-link-join"></a>Deep-link join: wire `app_links` to `go_router` and register the `bard://join/<campaignId>?invite=<token>` scheme on Windows and Linux (the package is pinned, not wired; see [07](07-apps.md)). The link form follows from players being managed at campaign level and is awaiting R's confirmation.

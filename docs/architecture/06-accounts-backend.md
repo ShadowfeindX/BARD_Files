@@ -288,7 +288,7 @@ Payments are a backend role. The payment design is deferred: no provider is deci
 
 ## Environments
 
-Three Firebase projects (planned; projects not yet created): **dev, staging and prod**. The RTDB rules are tested in the Local Emulator Suite; the Firestore rules and the functions are to be tested there (open: [S-7](09-open-decisions.md#s-7-firestore-collections) for the Firestore rules), as Firebase's security checklist recommends [V-19]. Desktop clients need network access to `*.firebaseio.com`, `*.firebasedatabase.app`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com` and `firestore.googleapis.com` (allowlist used by the probes) [U].
+Three Firebase projects (planned): **dev, staging and prod**. The RTDB rules are tested in the Local Emulator Suite; the Firestore rules and the functions are to be tested there (open: [S-7](09-open-decisions.md#s-7-firestore-collections) for the Firestore rules), as Firebase's security checklist recommends [V-19]. Desktop clients need network access to `*.firebaseio.com`, `*.firebasedatabase.app`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com` and `firestore.googleapis.com` (allowlist used by the probes) [U].
 
 ## Probe order
 

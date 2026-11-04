@@ -171,9 +171,9 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 
 ## Reconnection and GM continuity
 
-- A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot.
+- A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export).
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
-- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that.
+- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export).
 
 ## Offline and sync semantics
 

@@ -89,7 +89,7 @@ The table gives the target values. The example pack and the engine still hold pl
 
 Rounding: wherever a pack states a fraction, it states the rounding direction beside it, and the direction favours the player.
 
-Still `null`: armor and damage reduction, enemy defense and attack, advancement purchase limits, currency. Not yet given: armor and damage reduction ([G8](10-waiting-on-d.md#g8)), enemy defense and attack ([G11](10-waiting-on-d.md#g11)), advancement purchase limits ([G14](10-waiting-on-d.md#g14)), currency ([Q6](10-waiting-on-d.md#q6)).
+Still `null` and not yet given: armor and damage reduction ([G8](10-waiting-on-d.md#g8)), enemy defense and attack ([G11](10-waiting-on-d.md#g11)), advancement purchase limits ([G14](10-waiting-on-d.md#g14)), currency ([Q6](10-waiting-on-d.md#q6)).
 
 ### Named variables in pack formulas
 
@@ -181,7 +181,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 | Episode-scoped | a GM, for one episode | pinned to that episode | no |
 
 - The **episode-scoped tier** sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and, once PackUpdated is built, its use is logged like any other pack change (planned; 10 §5 'Pack update event').
-- GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
+- GMs create NPCs, items, skills and techniques as entity templates in their own pack(s) (planned; no pack editor today). These are ordinary pack files, so they use the same validator.
 - The **public library** is a government-style archive showing only items with `verification: verified`.
 - Planned (10 §5): library verification, the Firestore library, Cloud Storage distribution and the offline cache are not built.
 - **Who verifies.** At first only R and D hold the verification claim. It is set by the roles function; more auditors can be added later via the console.

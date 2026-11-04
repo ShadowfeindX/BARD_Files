@@ -7,7 +7,7 @@
 | Flutter (stable) | 3.47.7 | `.flutter-version` (CI reads it) and `environment.flutter` in the Flutter members (`backend`, `ui_kit`, `apps/bard`, `apps/companion`) |
 | Dart SDK | 3.13.5 (ships with that Flutter) | `environment.sdk` in each pubspec |
 
-`go_router` 18.1.1 and `app_links` 7.2.2 need Flutter 3.44 or newer, so the pin must not go lower. To move to a newer Flutter, change `.flutter-version` and the `environment` lines together, run `bash tool/check_all.sh`, and note it in `CHANGELOG.md`.
+`go_router` 18.1.1 and `app_links` 7.2.2 need Flutter 3.44 or newer (unverified; not yet checked with an approved tool), so the pin must not go lower. To move to a newer Flutter, change `.flutter-version` and the `environment` lines together, run `bash tool/check_all.sh`, and note it in `CHANGELOG.md`.
 
 Install Flutter from Google's storage (CLAUDE.md §6). On Linux:
 

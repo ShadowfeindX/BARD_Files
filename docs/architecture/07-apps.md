@@ -21,7 +21,7 @@ lib/
       <feature>_view.dart          widgets only; no logic beyond show/hide, layout, animation
       <feature>_view_model.dart    UI state + commands (user intents) for that view
   data/
-    repositories/                  sources of truth exposed to view models
+    repositories/                  (target; as built: data/services only, view models call services directly) sources of truth exposed to view models
     services/                      wrappers over session, backend gateway, local store, platform
   app/
     composition.dart               builds services/repositories and injects them (one place)
