@@ -35,11 +35,11 @@ request(cmd) ──► EpisodeHost
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
                          auto-confirm skips the wait when the episode's setting says so
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
-                      StoreActor.append(events + text lines + head snapshot of next)
+                      StoreActor.append (planned) (events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
                    6. state = next
                    7. for each participant: filter by visibility → send `events`
-                   8. RelayActor mirrors (if network-hosted)
+                   8. RelayActor mirrors (planned; if network-hosted)
 ```
 
 In short: authorize → dedupe → decide → [rolls broadcast; consequences to GM review] → seq + narrate + store → filter → broadcast → relay.
@@ -83,7 +83,7 @@ Participants:
 ```
 `events` ──► EpisodeParticipant
                1. check seq continuity (gap → `resync`)
-               2. StoreActor.append (local cache, for offline viewing)
+               2. StoreActor.append (planned; local cache, for offline viewing)
                3. state = fold(evolve, events)
                4. notify listeners (view models)
 ```
@@ -114,6 +114,9 @@ abstract interface class EventStore {
   Future<HeadSnapshot?> headSnapshot(String episodeId);               // state at last seq
   Future<void> saveRngDrawCount(String episodeId, int drawCount);     // draws made without stored events
   Future<int> rngDrawCount(String episodeId);
+  // Planned (periodic full snapshots; 10 §5), not in event_store.dart today:
+  Future<void> putSnapshot(EpisodeId ep, Snapshot snapshot);
+  Future<Snapshot?> latestSnapshot(EpisodeId ep);
 }
 
 /// One narrated log line. Text is rendered per perspective at play
@@ -158,10 +161,10 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | In person, phones | LAN (or in-process + LAN) | none | GM device hosts; companion phones join on the local network. |
 | LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
 | P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
-| Network-hosted | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
+| Network-hosted (planned) | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online. |
 
-**Web build:** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. Native builds can host every mode.
+**Web build:** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web` (planned). Native builds can host every mode.
 
 **Physical dice.** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). The feature is not built (workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)), and the setting is resolved like the others ([above](#settings-resolution)).
 
@@ -192,7 +195,7 @@ Players can send in-world text messages ("phone") that are forwarded to the GM.
 - The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box when the operation ends is a function's job after the archive is written; the engine has no such event. The phone **contact list** belongs to the campaign and the phone box messages to the operation.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
-- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. The box is cleared when the operation ends; that step is not built yet. See [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
+- On the RTDB relay (planned), each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. The box is cleared when the operation ends; that step is not built yet. See [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives
 

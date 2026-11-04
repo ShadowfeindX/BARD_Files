@@ -137,6 +137,8 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Remaining engine systems: `CombatSystem` and the `encounter` state, `VehicleSystem`, `OccultSystem`, `InventorySystem`, `GmSystem` (see [01](01-engine.md#systems)). There is no outcome override of a resolved roll; consequence edits go through the review gate.
 - Pack update event: applying a newer pack version records `PackUpdated(from, to)` (see [02](02-rules-packs.md#episodes-pin-packs)).
 - Periodic full snapshots for fast joins: the `EventStore` methods to store and read them (see [04](04-session.md)).
+- RTDB live relay: event and request mirror, listeners, `RelayActor` wiring and per-audience batching (see [03](03-protocol.md#size), [06](06-accounts-backend.md)).
+- Offline account cache and session outbox: the local record of a signed-in account and the queue of requests made offline, replayed on reconnect (see [06](06-accounts-backend.md)).
 - Session actors: `StoreActor`, `RelayActor` and `SessionDirectory` (built today: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor`; see [04](04-session.md)).
 - Capability gate (`canHost`, `canEditPacks`) in the apps, and the sembast persistence the apps use (see [07](07-apps.md)).
 - Cloud Functions: badge login, roles, push, `archiveEpisode`, clean-up and the pack publishing helper (none exist yet; see [06](06-accounts-backend.md)).

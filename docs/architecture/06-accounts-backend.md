@@ -108,7 +108,7 @@ Rules:
 
 ## Roles
 
-Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including a manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run).
+Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function (planned, 10 §5) with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including a manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run).
 
 Design (Proposed, open: [06-O3](09-open-decisions.md#06-o3-claim-pickup-after-a-role-change)): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid`; the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. Whether a client that never gets the notice picks up the claim when its token next refreshes on expiry is **untested**: V-45 shows the token refresh, not claims, and in V-42 the plain `getIdToken()` did not show the claim while the old token was still valid.
 
@@ -116,7 +116,7 @@ Design (Proposed, open: [06-O3](09-open-decisions.md#06-o3-claim-pickup-after-a-
 
 A badge is a printable/scannable code on a physical agent badge that signs an agent in. It depends on probe 8.3, which **passed** on Windows and Linux [V-41].
 
-- **Sign-in path:** scanning sends the badge credential to the **badge-login HTTPS Dart function**, which verifies it and returns a custom token minted with `firebase_admin_sdk` `createCustomToken` [V-24]; the app signs in with `signInWithCustomToken`. Firebase rules see `sign_in_provider == "custom"` [V-9][V-41]. Developer claims put in the token at minting survive a forced refresh [V-41].
+- **Sign-in path:** scanning sends the badge credential to the **badge-login HTTPS Dart function** (planned, 10 §5), which verifies it and returns a custom token minted with `firebase_admin_sdk` `createCustomToken` [V-24]; the app signs in with `signInWithCustomToken`. Firebase rules see `sign_in_provider == "custom"` [V-9][V-41]. Developer claims put in the token at minting survive a forced refresh [V-41].
 - **Symbology:** PDF417, not QR.
 - **Payload:** only the badge id and a 256-bit secret (about 70 ASCII characters). The secret is stored **hashed**; the badge is revocable and never carries a password.
 - **Evidence:** a malformed custom token is rejected with `invalid-custom-token` [V-21]. A token minted in a deployed function (`createCustomToken`, no key file) signed in via `firebase_dart` on Linux once the runtime service account held Service Account Token Creator [V-33]. A real custom token (minted with `gcloud iam service-accounts sign-jwt`) signed in on **Windows and Linux** [V-41]. The badge function and the flow end to end are not built yet.
@@ -127,11 +127,11 @@ A badge is a printable/scannable code on a physical agent badge that signs an ag
 
 ## Offline accounts
 
-A signed-in account works offline from a local cache. The app keeps its own local record (profile, aliases, campaigns, packs by content hash, episode logs) in the local store (sembast; not built, 10 §5; see [04-session.md](04-session.md)).
+A signed-in account works offline from a local cache. The app keeps its own local record (profile, aliases, campaigns, packs by content hash, episode logs) in the local store (sembast; not built; 10 §5 'Offline account cache and session outbox'; see [04-session.md](04-session.md)).
 
 `firebase_dart` does **not** keep pending writes across a restart. Probe 8.1 on Windows and Linux [V-40]: a write queued while offline is readable locally, but after the app exits or is killed and restarts, it is gone from the server and from the local cache. A write that reached the server before the restart is still in the local cache afterwards. Within one process, a write queued with `goOffline` is delivered on `goOnline` [V-21].
 
-So the session's **outbox is required**: requests made offline are stored in the local store (sembast; not built, 10 §5) and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). The app never relies on the SDK's offline queue to carry a write past the end of the process.
+So the session's **outbox is required**: requests made offline are stored in the local store (sembast; not built; 10 §5 'Offline account cache and session outbox') and replayed as ordinary requests on reconnect; the GM stays canonical, so replay is safe (dedupe by request id, [03-protocol.md](03-protocol.md#ordering-and-delivery)). The app never relies on the SDK's offline queue to carry a write past the end of the process.
 
 ### Auth token storage
 
@@ -239,7 +239,7 @@ Not built (10 §5). The pack index (id, version, content hash, Storage path) is 
 
 ## Relay
 
-Planned (the relay is not built; 10 §5). In network-hosted mode the backend relays and persists. With this stack the live relay **is RTDB**: the GM writes event batches under `/episodes/$ep/events`, participants listen; players write requests under their own uid, the GM listens. A listener on a second client instance received writes in the probe, with reads and writes around 50 ms [V-21]. No custom relay server. Once an episode is archived, its log is read from Firestore.
+Planned (the relay is not built; 10 §5 'RTDB live relay'). In network-hosted mode the backend relays and persists. With this stack the live relay **is RTDB**: the GM writes event batches under `/episodes/$ep/events`, participants listen; players write requests under their own uid, the GM listens. A listener on a second client instance received writes in the probe, with reads and writes around 50 ms [V-21]. No custom relay server. Once an episode is archived, its log is read from Firestore.
 
 ## Cloud Functions
 
@@ -276,7 +276,7 @@ Probe evidence is in [V-33]. The planned function dependencies are `firebase_adm
 
 ## Push notifications
 
-`firebase_messaging` 17.0.0 describes itself as delivering messages on Android and iOS, and the investigation found no Windows or Linux support [V-26][U]. On those platforms notifications are **in-app only**, via RTDB `/inbox/$uid`, which desktop clients listen to live. Mobile and web push go through the push function.
+`firebase_messaging` 17.0.0 describes itself as delivering messages on Android and iOS, and the investigation found no Windows or Linux support [V-26][U]. On those platforms notifications are **in-app only**, via RTDB `/inbox/$uid`, which desktop clients listen to live. Mobile and web push go through the push function (planned, 10 §5).
 
 ## App Check
 

@@ -111,11 +111,11 @@ Decoding is compatible within a major: a client reads everything older minors wr
 
 ## Snapshots
 
-A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. Planned (periodic full snapshots; store methods to be added, 10 §5): these snapshots are a cache: the event log stays the source of truth. The **head snapshot** is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
+Planned (periodic full snapshots; store methods to be added, 10 §5): a snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These snapshots are a cache: the event log stays the source of truth. The **head snapshot** is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 
-The session batches events so each relay write is one small Realtime Database node per audience. RTDB's documented guidance of about 1,000 writes per second per database (not a hard limit) [V-25] is far above what a table produces. Other transports use the same batching for simplicity.
+Planned (RTDB relay, [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule) 'RTDB live relay'): the session batches events so each relay write is one small Realtime Database node per audience. RTDB's documented guidance of about 1,000 writes per second per database (not a hard limit) [V-25] is far above what a table produces. Other transports use the same batching for simplicity.
 
 ## Testing
 
