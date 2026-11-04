@@ -7,7 +7,7 @@ Two packages define what crosses a process or device boundary (the engine has no
 
 Both are pure Dart and know nothing about sockets, Firebase or Flutter. The sections below on envelope, messages, ordering and version negotiation describe `protocol_envelope`; codecs for engine commands and events live in `protocol`.
 
-One protocol serves every transport: in-process, LAN, P2P, and backend relay. A transport only moves opaque frames.
+One protocol serves every transport: in-process, LAN, P2P, and backend relay (LAN and P2P planned; 00 Transports). A transport only moves opaque frames.
 
 ## Envelope
 
@@ -72,7 +72,7 @@ The table above names what each message carries; `packages/protocol_envelope` de
 | `presence` | `status`: `online`, `away` or `typing` |
 | `ping` / `pong` | `nonce?` |
 
-Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and `anonymousAliasLimit` (Proposed, open: [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies); a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
+Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and `anonymousAliasLimit` (built; open: [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies); a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
 
 The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (proposed, part of [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies)).
 

@@ -103,7 +103,7 @@ It is a named number supplied by the engine at evaluation time. Placements:
 
 | Placement | Expression |
 |---|---|
-| Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
+| Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` (planned; advancement purchases are not built; 01 Planned code changes) |
 | Assistance bonus, in `difficulty.json` | as built: `1d6 + var(helperSkillBonus)`. Planned: the helper's attribute score (key name `helperAttribute`, Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) |
 
 The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.

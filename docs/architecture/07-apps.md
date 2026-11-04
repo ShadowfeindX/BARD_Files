@@ -32,7 +32,7 @@ lib/
 - View models talk to repositories; repositories wrap services. The `session` package is used through a service, so view models never see actors or transports.
 - View models expose **commands** (Flutter guide terminology for user-intent callbacks [V-2]). A command such as `requestLockpick()` turns into an engine command sent through the session. It never computes an outcome.
 - **State management:** Dart Signals, through `signals_flutter` 7.1.0 (publisher rodydavis.com; Flutter bindings over `signals_core`) in `apps/` and `ui_kit` [V-29]. The umbrella `signals` package is not used; the engine stays SDK-only. View models expose signals, and views read them.
-- **Routing:** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The canonical join link is `bard://join/<campaignId>?invite=<token>` (R-A6), which every target can register; https links come later where supported. The V-30 live check on Linux and Windows covered the earlier `bard://join/<op>?alias=<id>` form only [V-30]. Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). Android https links, when added, need `assetlinks.json`.
+- **Routing:** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The canonical join link is `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join)), which every target can register; https links come later where supported. The V-30 live check on Linux and Windows covered the earlier `bard://join/<op>?alias=<id>` form only [V-30]. Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). Android https links, when added, need `assetlinks.json`.
 - **Persistence:** sembast (+ `sembast_web` for web player caches) behind the session's `EventStore` (planned; only `InMemoryEventStore` today, 10 §5), see [04-session.md](04-session.md#interfaces-the-session-depends-on).
 - Package versions are re-verified on pub.dev before each enters a pubspec.
 
@@ -341,7 +341,7 @@ The open theme items ([T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t
 - Hosting capabilities differ by platform (the web build cannot host, see [04-session.md](04-session.md#play-modes)). The UI asks the session which transports are available instead of checking the platform itself.
 
 - Desktop builds reach Firebase through `firebase_dart` (planned; not built, 10 §5): probed on Windows and Linux, the v1 desktop targets ([06-accounts-backend.md](06-accounts-backend.md#stack)). Push notifications are in-app only on Windows and Linux.
-- **Windows identity.** The Windows runner's company and product names decide where `flutter_secure_storage` keeps the auth-box key (`%APPDATA%\<company>\<product>\`) [V-44]. They are set once before the first release and not changed, or every user is signed out.
+- **Windows identity (planned; see [06 Auth token storage](06-accounts-backend.md#auth-token-storage)).** The Windows runner's company and product names decide where `flutter_secure_storage` keeps the auth-box key (`%APPDATA%\<company>\<product>\`) [V-44]. They are set once before the first release and not changed, or every user is signed out.
 
 ### Web build role
 

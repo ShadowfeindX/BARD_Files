@@ -28,7 +28,7 @@ The platform and stack chosen for the application; planned parts are labelled ([
 | Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Content | GMs create NPCs, items, skills, techniques. D publishes default content (cloud-hosted). The public library shows only verified items (planned; 10 §5 'Library and pack index'). Typst document templating comes later (open: [T10](09-open-decisions.md#t10)). |
 | State management | `signals_flutter` 7.1.0 (publisher rodydavis.com), in the apps and `ui_kit` only; not the umbrella `signals`. Engine, protocol, session and migrator stay free of it ([V-29]). |
-| Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<campaignId>?invite=<token>` (R-A6; the V-30 live check covered the earlier `bard://join/<op>?alias=<id>` form only). Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). |
+| Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); the V-30 live check covered the earlier `bard://join/<op>?alias=<id>` form only). Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). |
 | Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Randomness | Pub package `xrandom` 0.7.2, class `Xoshiro128pp` (never the `Xrandom`/`Drandom`/`Qrandom` aliases), pinned exactly, used in `session` behind the engine's `Rng` interface ([V-28]). See [01-engine.md](01-engine.md#rng). |
 | Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not yet on the approved list (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
@@ -103,7 +103,7 @@ Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden a
 apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, theme_core (planned), signals_flutter, go_router, app_links
 ui_kit                    ──► signals_flutter, theme_core (planned; Flutter widgets and theme widgets; the theme model is in theme_core)
 apps/functions            ──► protocol_envelope, firebase_functions, firebase_admin_sdk*   (never protocol, never the engine)
-backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned), flutter_secure_storage, sembast + sembast_web (pinned; the `EventStore`), FlutterFire (`firebase_core`, plus only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client
+backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned; planned), flutter_secure_storage, sembast + sembast_web (pinned; planned; the `EventStore`), FlutterFire (`firebase_core`, plus only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client
 session                   ──► protocol, engine, xrandom (pinned; Rng adapter)
 protocol                  ──► protocol_envelope, engine   (codecs for engine commands/events)
 protocol_envelope         ──► (Dart SDK only)
@@ -148,6 +148,6 @@ The app shell never computes outcomes. A view model may format a number the engi
 
 - **Immutability.** Engine state, components, commands and events are immutable values. New state is a new value.
 - **Sealed families.** Commands and events are `sealed` class hierarchies so every `switch` over them is checked for exhaustiveness by the compiler [V-16]. Adding an event type is a deliberate, visible change.
-- **Interfaces at every boundary.** Transport, event store, clock, RNG source, backend gateway and pack source are interfaces with in-memory test implementations.
+- **Interfaces at every boundary.** Transport, event store, clock and RNG source are interfaces with in-memory test implementations, as built. The backend gateway and pack source are interfaces too (planned; 10 §5 'Backend adapters and the sembast EventStore').
 - **Plain data for content.** Rules values are files that D can edit without touching Dart (CLAUDE.md §9).
 - **One way to do each thing.** One event log format, one envelope, one pack format.

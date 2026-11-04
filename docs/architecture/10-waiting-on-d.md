@@ -135,7 +135,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
 - Physical dice feature (see [01](01-engine.md)).
 - Remaining engine systems: `CombatSystem` and the `encounter` state, `VehicleSystem`, `OccultSystem`, `InventorySystem`, `GmSystem` (see [01](01-engine.md#systems)). There is no outcome override of a resolved roll; consequence edits go through the review gate.
-- Deep-link join: wire `app_links` to `go_router` and register the `bard://join/<campaignId>?invite=<token>` scheme on Windows and Linux (the package is pinned, not wired; see [07](07-apps.md)).
+- <a id="deep-link-join"></a>Deep-link join: wire `app_links` to `go_router` and register the `bard://join/<campaignId>?invite=<token>` scheme on Windows and Linux (the package is pinned, not wired; see [07](07-apps.md)). The link form follows from players being managed at campaign level and is awaiting R's confirmation.
 - Pack update event: applying a newer pack version records `PackUpdated(from, to)` (see [02](02-rules-packs.md#episodes-pin-packs)).
 - Periodic full snapshots for fast joins: the `EventStore` methods to store and read them (see [04](04-session.md)).
 - RTDB live relay: event and request mirror, listeners, `RelayActor` wiring and per-audience batching (see [03](03-protocol.md#size), [06](06-accounts-backend.md)).

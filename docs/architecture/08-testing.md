@@ -36,8 +36,8 @@ Every package is testable on its own, with in-memory implementations of everythi
 ## Apps
 
 - Planned: view-model unit tests with fake repositories.
-- Widget tests for views with behavior (dice breakdown, phone thread).
-- Integration tests for the main flow (request → check → result) using the in-memory transport.
+- Widget tests for views with behavior live in `packages/ui_kit/test` (dice breakdown, phone panel, perspective panel).
+- Integration widget tests for the main flow (request → check → result) using the in-memory transport, in `apps/bard/test`.
 
 ## Backend
 
