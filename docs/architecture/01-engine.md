@@ -279,7 +279,7 @@ Deprecation signals that something still works now but will change later. A new 
 |---|---|
 | Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` (planned CI check; [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)) |
 | Pack authors (D, GMs) | The pack validator reports each deprecated key or entry as a **warning**, never an error, with the note and removal major |
-| GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack |
+| GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack (planned; 10 §5 'Pack update event') |
 | Players | Nothing; deprecation never changes play |
 
 Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs).

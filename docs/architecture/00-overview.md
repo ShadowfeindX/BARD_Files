@@ -23,12 +23,12 @@ The platform and stack chosen for the application; planned parts are labelled ([
 | Rolls | The app adjudicates where possible. The GM decides when a roll is needed and which skill. Rolls are never gated or altered; the GM reviews consequence values (damage, sanity loss, conditions) and may edit them before they are broadcast. Seeded, logged RNG: the engine's `Rng` interface, with the `xrandom` adapter in the GM's `session`. The log stores resolved results, so history never changes. |
 | Vocabulary vs values | The engine owns vocabulary (kinds of things and how they compute). Rules packs own values. The app shell never affects outcomes. Packs declare the engine API major they need. |
 | Updates | Engine updates apply to episodes automatically by default; pack updates apply manually by default. GMs get a toggle for each. |
-| Cross-major | Migrator only. Each engine major knows only its own schema. A separate migrator transforms an episode's state and pack from N to N+1, run by the GM, who reviews the result. No frozen prior engine, no old web build. Old event logs are frozen, not converted, with a plain-text log kept beside them; the GM explicitly confirms the unrecoverable loss. |
+| Cross-major | Migrator only. Each engine major knows only its own schema. A separate migrator (planned; 10 §5 'Migrator package') transforms an episode's state and pack from N to N+1, run by the GM, who reviews the result. No frozen prior engine, no old web build. Old event logs are frozen, not converted, with a plain-text log kept beside them; the GM explicitly confirms the unrecoverable loss. |
 | Accounts | Agent (player account) with many aliases; each alias locked to one campaign at a time (moving needs the destination GM's approval; the source campaign is notified; an alias in a running episode cannot move until it ends). Anonymous accounts can join any episode, have exactly one alias, cannot GM, host or create content (campaign model planned; 10 §5 'Campaign-level members and rules'; the anonymous one-alias limit is built in the session layer). Badges are an optional scannable login (planned; not built, 10 §5). |
 | Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Content | GMs create NPCs, items, skills, techniques. D publishes default content (cloud-hosted). The public library shows only verified items (planned; 10 §5 'Library and pack index'). Typst document templating comes later (open: [T10](09-open-decisions.md#t10)). |
 | State management | `signals_flutter` 7.1.0 (publisher rodydavis.com), in the apps and `ui_kit` only; not the umbrella `signals`. Engine, protocol, session and migrator stay free of it ([V-29]). |
-| Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<op>?alias=<id>`; verified live on Linux and Windows ([V-30]). |
+| Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<campaignId>?invite=<token>` (R-A6; the V-30 live check covered the earlier `bard://join/<op>?alias=<id>` form only). Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). |
 | Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Randomness | Pub package `xrandom` 0.7.2, class `Xoshiro128pp` (never the `Xrandom`/`Drandom`/`Qrandom` aliases), pinned exactly, used in `session` behind the engine's `Rng` interface ([V-28]). See [01-engine.md](01-engine.md#rng). |
 | Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not yet on the approved list (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
@@ -100,8 +100,8 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`. `dev_dependencies` (test-only) follow the same table except for the single exception listed below it, and the analysis and test tooling (`flutter_lints`, `test`, `flutter_test`), which every package may use. The repository tooling package `tool/` may use `yaml` only. The check is `tool/bin/check_dependency_rules.dart` ([developer guide](../developer-guide/setup.md#the-checks)).
 
 ```
-apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, theme_core, signals_flutter, go_router, app_links
-ui_kit                    ──► signals_flutter, theme_core (Flutter widgets and theme widgets; the theme model is in theme_core)
+apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, theme_core (planned), signals_flutter, go_router, app_links
+ui_kit                    ──► signals_flutter, theme_core (planned; Flutter widgets and theme widgets; the theme model is in theme_core)
 apps/functions            ──► protocol_envelope, firebase_functions, firebase_admin_sdk*   (never protocol, never the engine)
 backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned), flutter_secure_storage, sembast + sembast_web (pinned; the `EventStore`), FlutterFire (`firebase_core`, plus only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client
 session                   ──► protocol, engine, xrandom (pinned; Rng adapter)
@@ -110,7 +110,7 @@ protocol_envelope         ──► (Dart SDK only)
 engine                    ──► (Dart SDK only)
 migrator                  ──► (Dart SDK only)     (works on serialized JSON, never imports engine)
 content_core              ──► (none; data only)
-theme_core                ──► (Dart SDK only)     (name open: T11; built-in themes as JSON assets)
+theme_core                ──► (Dart SDK only)     (planned; 10 §5 'Theme build'; name open: T11; built-in themes as JSON assets)
 
 dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)

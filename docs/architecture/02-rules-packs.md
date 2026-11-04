@@ -131,7 +131,7 @@ Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecat
    }
    ```
 
-   Here `since` 1.5.0 and `removeIn` 2 refer to the pack's version. Within a pack major the entry keeps working; removing it is a pack major bump. GMs see the warning in the pack-update summary before they choose to apply the update.
+   Here `since` 1.5.0 and `removeIn` 2 refer to the pack's version. Within a pack major the entry keeps working; removing it is a pack major bump. GMs see the warning in the pack-update summary (planned; 10 §5 'Pack update event') before they choose to apply the update.
 3. **Pack-deprecated fields.** A pack author can deprecate a single field on one of their own objects with an optional `deprecatedFields` map, keyed by field name, using the same record:
 
    ```json
@@ -167,7 +167,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 ## Episodes pin packs
 
 - The pack version pin lives at the **campaign** (campaign level planned, not built; 10 §5 'Campaign-level members and rules'; the episode `packRef` is built) so characters' numbers do not change between missions; the episode-scoped pack tier stays below it. An episode records `packRef = (id, version, contentHash)` in its meta when created.
-- **Pack updates are manual by default.** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event (planned; not built, 10 §5), so the log shows exactly when values changed.
+- **Pack updates are manual by default.** When a newer pack version exists the GM sees it, with a summary of what changed (planned; 10 §5 'Pack update event'), and chooses when to apply. Applying records a `PackUpdated(from, to)` event (planned; not built, 10 §5), so the log shows exactly when values changed.
 - **Engine updates are automatic by default** within a major. The GM toggles for both live in episode settings and are stored in episode meta.
 - Because events carry resolved results, a pack update never changes past outcomes.
 
