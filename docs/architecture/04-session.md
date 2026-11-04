@@ -171,9 +171,9 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 
 ## Reconnection and GM continuity
 
-- A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export).
+- A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only).
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
-- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export).
+- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export; 10 §5 'Local log export and resume from export').
 
 ## Offline and sync semantics
 
@@ -195,7 +195,7 @@ Players can send in-world text messages ("phone") that are forwarded to the GM.
 - Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields Proposed, open: [S-2](09-open-decisions.md#s-2-sendphonemessage-names-and-fields)). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
 - The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box when the operation ends is a function's job after the archive is written; the engine has no such event. The phone **contact list** belongs to the campaign and the phone box messages to the operation.
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
-- The companion app's phone screen is just a view over these events for one alias.
+- The companion app's phone screen is just a view over these events for one alias (planned; 10 §5 'Companion app').
 - On the RTDB relay (planned), each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. The box is cleared when the operation ends; that step is not built yet. See [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives

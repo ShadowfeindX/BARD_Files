@@ -302,7 +302,7 @@ Credentialed probes can run in the cloud or on the project's Windows PC. Full st
 | done | 8.1b functions read/write RTDB over REST, callable by URL | Done [V-33] |
 | done | Least IAM role for RTDB from functions | Done by impersonation [V-46]; not run from a deployed function |
 | done | Token storage and secure store, Linux and Windows | Done [V-34][V-35][V-44] |
-| 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; rules in place (see above) |
+| 1 | 8.6 RTDB rules prototype | Done in the emulator [V-38]; rules in the repository (not deployed) |
 | 2 | 8.5 anonymous upgrade, Windows and Linux | Done [V-39] |
 | 3 | 8.3 real custom token, Windows and Linux | Done [V-41] |
 | 4 | 8.4 custom-claim pickup | Done on Linux [V-42]; Windows not run |
