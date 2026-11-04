@@ -36,7 +36,7 @@ Asked on `D-followup-2.md` (round 3) unless noted. A blank answer counts as Late
 | <a id="fd-d4"></a>FD-D4 | Who sees the death screen | The player who lost the character and the Handler; others see a log line | 07 |
 | <a id="fd-d5"></a>FD-D5 | Can the Handler undo a death | Yes, as a logged Handler action; players cannot | 01 `CharacterDied` |
 | <a id="fd-a1"></a>FD-A1 | Must a helper pass the Cat-D gate check first; may an untrained character help | Yes to the gate (as in the book); untrained may help | 01 item 9; `difficulty.json` `assistance` |
-| <a id="fd-a2"></a>FD-A2 | Which score a helper adds | The helper's own score in the roll's attribute; helpers allowed = roller's score + 1 | 01 item 9; `var` `helperAttribute` |
+| <a id="fd-a2"></a>FD-A2 | Which attribute's score a helper adds. Settled: each helper adds a flat attribute score; open: the roll's attribute or the helper's best | The helper's own score in the roll's attribute (assumption); helpers allowed = roller's score + 1 | 01 item 9; `var` `helperAttribute` |
 | <a id="fd-c1"></a>FD-C1 | Aim, Dodge and Parry | Aim is a Minor action, +1 on a shot, needed beyond 500 ft; Dodge against any attack, Parry only melee | `combat.json`; `CombatSystem` |
 | <a id="fd-c2"></a>FD-C2 | When the reaction refreshes | Once per round, at the start of the character's turn | `combat.json`; `CombatSystem` |
 | <a id="fd-g9"></a>FD-G9 | Does Strength add to melee damage dice; is MIN applied before damage reduction; MIN per weapon category | Strength only as the floor; MIN before DR | `damage.json` `meleeFloor`, `min` values (homework 8) |
@@ -127,13 +127,21 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Campaign-level members and rules (R-A6): RTDB `members` move to the campaign; the rules change goes through the Opus gate.
 - Operation-end phone box clear (R-C2): a function clears the box after the archive.
 - Snapshot pruning (R-A3): after a mission is complete or submitted, remove all session data except the latest snapshot.
-- Apply the settled rulings to the example pack and engine (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; `meleeFloor` in `damage.json`; the explode flags in `damage.json` and `threats.json`, `proficiency.json` and `advancement.json` (today `null`); removal of the `chosenAttribute`/`fallback` and `sanityCheckOptions` placeholders in `occult.json`; the `luckAdvantage` placeholder; `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Insight on WIS; Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
+- Apply the target pack and engine values (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; `meleeFloor` in `damage.json`; the explode flags in `damage.json` and `threats.json`, `proficiency.json` and `advancement.json` (today `null`); removal of the `chosenAttribute`/`fallback` and `sanityCheckOptions` placeholders in `occult.json`; the `luckAdvantage` placeholder; `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Insight on WIS; Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
 - Rename the `occult.json` block `ritualDefaults.focusItem` to `artifact`, with a new `focusItem` left `null` (see [01](01-engine.md#planned-code-changes)).
 - Migrator package: steps, schemas, archives, fixtures and the `EpisodeMigrated` genesis event (the package is a stub today).
 - Backend adapters and the sembast `EventStore` (only `InMemoryEventStore` exists today), `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
 - Theme build: `theme_core` and the `ui_kit` theme (a placeholder `BardTheme` exists today).
 - Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
 - Physical dice feature (see [01](01-engine.md)).
+- Remaining engine systems: `CombatSystem` and the `encounter` state, `VehicleSystem`, `OccultSystem`, `InventorySystem`, `GmSystem` (see [01](01-engine.md#systems)). There is no outcome override of a resolved roll; consequence edits go through the review gate.
+- Pack update event: applying a newer pack version records `PackUpdated(from, to)` (see [02](02-rules-packs.md#episodes-pin-packs)).
+- Periodic full snapshots for fast joins: the `EventStore` methods to store and read them (see [04](04-session.md)).
+- Session actors: `StoreActor`, `RelayActor` and `SessionDirectory` (built today: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor`; see [04](04-session.md)).
+- Capability gate (`canHost`, `canEditPacks`) in the apps, and the sembast persistence the apps use (see [07](07-apps.md)).
+- Cloud Functions: badge login, roles, push, `archiveEpisode`, clean-up and the pack publishing helper (none exist yet; see [06](06-accounts-backend.md)).
+- Library and pack index: Firestore library, verification, Cloud Storage pack distribution and the offline pack cache (see [02](02-rules-packs.md#distribution), [06](06-accounts-backend.md)).
+- Entitlements read model (see [06](06-accounts-backend.md)).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
 The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).

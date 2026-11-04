@@ -1,5 +1,7 @@
 # 05. Migrator (`packages/migrator`)
 
+Planned: the package is a stub today ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
+
 ## Purpose
 
 Move one episode's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).

@@ -111,7 +111,7 @@ Decoding is compatible within a major: a client reads everything older minors wr
 
 ## Snapshots
 
-A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. These periodic snapshots are a cache: the event log stays the source of truth. The **head snapshot** is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
+A snapshot is `EpisodeState` at a given `seq`, serialized with the engine's schema and filtered per perspective. It lets late joiners and reconnecting clients skip replaying a long log. Planned (periodic full snapshots; store methods to be added, 10 §5): these snapshots are a cache: the event log stays the source of truth. The **head snapshot** is different: the GM host writes it with every batch as the exact state at the last `seq`; it is what the migrator transforms and what an archived episode keeps as its final state ([04-session.md](04-session.md), [05-migrator.md](05-migrator.md)).
 
 ## Size
 

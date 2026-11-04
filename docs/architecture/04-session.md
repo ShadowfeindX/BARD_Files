@@ -13,11 +13,11 @@ Actors are **not** isolates: they are single-threaded mailbox objects. Isolates 
 | `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
 | `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
 | `ConnectionActor` | both ends, one per link | One transport link: framing, ping, backoff, hands decoded messages to its owner |
-| `StoreActor` | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
-| `RelayActor` | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
-| `SessionDirectory` | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
+| `StoreActor` (planned, 10 §5) | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
+| `RelayActor` (planned, 10 §5) | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
+| `SessionDirectory` (planned, 10 §5) | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-Supervision is simple: `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+As built: `EpisodeHost`, `EpisodeParticipant` and `ConnectionActor`; the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical)
 
@@ -49,7 +49,7 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
 - **Auto-confirm** is a per-episode GM setting, separate from the setting for requests between sittings ([below](#settings-resolution)). It is an `EpisodeSettings` field, default off, set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
 - **Death goes through the gate.** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-values-the-engine-uses), [planned code changes](01-engine.md#planned-code-changes)).
-- **Text log and head snapshot.** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs)). Periodic full snapshots for fast joins are unchanged.
+- **Text log and head snapshot.** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs)). Planned: periodic full snapshots for fast joins (store methods to be added; 10 §5).
 - **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch (planned: the `sembast` 3.9.0 store, 10 §5; today only `InMemoryEventStore` exists), then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
 - **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes; open: [S-5](09-open-decisions.md#s-5-head-snapshot-mirror-interval)), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (see [Play modes](#play-modes)), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
@@ -95,12 +95,12 @@ Optimistic UI is allowed only for presentation (a "sent" spinner). A participant
 ```dart
 abstract interface class Transport {        // one per kind: in-process, LAN, P2P, relay
   Stream<Link> incoming();                  // host side
-  Future<Link> connect(Address address);    // client side
+  Future<Link> connect(Address address);    // client side; Address wraps a String
 }
 
 abstract interface class Link {
-  Stream<Frame> get frames;
-  Future<void> send(Frame frame);
+  Stream<String> get frames;                // frames are opaque strings
+  Future<void> send(String frame);
   Future<void> close();
 }
 
@@ -163,7 +163,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 
 **Web build:** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. Native builds can host every mode.
 
-**Physical dice.** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). The feature is built after the demo, and the setting is resolved like the others ([above](#settings-resolution)).
+**Physical dice.** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). The feature is not built (workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)), and the setting is resolved like the others ([above](#settings-resolution)).
 
 ## Reconnection and GM continuity
 

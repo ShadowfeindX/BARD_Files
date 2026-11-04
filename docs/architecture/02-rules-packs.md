@@ -18,7 +18,7 @@ If a new rule needs a new *kind* of thing, that is an engine change. If it needs
 
 **Format.** A pack is a folder of JSON files plus a manifest. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too.
 
-**Pack shape.** The file list below is the layout; files and fields added for creation profiles, combat defaults and assistance are additive. The authoring source for the example pack is `packages/content_core/assets/example-core/`; the project library holds a copy for D.
+**Pack shape.** The file list below is the layout; files and fields added for creation profiles, combat defaults and assistance are additive. The repo holds a provisional copy of the example pack (`packages/content_core/assets/example-core/`); the project library holds the version D edits. D's pack is pending (10 §5 "Apply the target pack and engine values").
 
 ```
 core/                           pack id
@@ -72,13 +72,13 @@ A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There
 
 What the game rules mean for each pack file. Field names and shapes marked Proposed are not final (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). A value D has not given stays `null` in the pack and the feature stays off (CLAUDE.md §9). The engine side of each item is in [01](01-engine.md#rulebook-values-the-engine-uses).
 
-The table gives the target values. The example pack and the engine still hold placeholders or older values for several of them (listed per row as "pack today"); applying the target values is the "Apply the settled rulings…" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule).
+The table gives the target values. The example pack and the engine still hold placeholders or older values for several of them (listed per row as "pack today"); applying the target values is the "Apply the target pack and engine values" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule).
 
 | File | Content | Shape |
 |---|---|---|
-| `skills.json` | Mind Shielding is on WIL; Insight's attribute is not yet set (`null`). Planned pack changes: Insight on WIS; Eldritch Lore (INT), Vehicle Modification (INT), Advanced Alchemy, Explosive Disposal and Explosives added as separate entries (Advanced Alchemy, Explosive Disposal and Explosives are not yet in the pack; the "Apply the settled rulings…" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule) adds them); categories come from the book's skill list, never reconstructed | data only |
+| `skills.json` | Mind Shielding is on WIL; Insight's attribute is not yet set (`null`). Planned pack changes: Insight on WIS; Eldritch Lore (INT), Vehicle Modification (INT), Advanced Alchemy, Explosive Disposal and Explosives added as new entries beside the existing Alchemy (the pack keeps Alchemy; the three are not yet in the pack; the "Apply the target pack and engine values" row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule) adds them); categories come from the book's skill list, never reconstructed | data only |
 | `occult.json` | The cast attribute is WIL, or the named skill's attribute; `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail; `ritualDefaults` is Handler guidance only; the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is `null` until its reduction is given (open: [FE-M5](10-waiting-on-d.md#fe-m5)). As built, the block `ritualDefaults.focusItem` holds the book's rule (+1d6, +2 Sanity per category above D); planned: that block is renamed `artifact` and a new `focusItem` stays `null` (open: [FE-M5](10-waiting-on-d.md#fe-m5) to [FE-M9](10-waiting-on-d.md#fe-m9)). Pack today: `chosenAttribute` and `sanityCheckOptions` are placeholders; there are no `sanityCheckOn`, `sanityPayers` or `artifact` keys | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
-| `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute (which score a helper adds: [FD-A2](10-waiting-on-d.md#fd-a2)); `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only. Pack today: the fumble `basis` is a placeholder (gap G1) with no `rounding`, and the engine produces no fumble outcome; `assistance.cap` is a placeholder, `assistance.bonus` is `1d6 + var(helperSkillBonus)` and the `luckAdvantage` block is still present with a placeholder | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
+| `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute (which attribute's score a helper adds: [FD-A2](10-waiting-on-d.md#fd-a2)); `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only. Pack today: the fumble `basis` is a placeholder (gap G1) with no `rounding`, and the engine produces no fumble outcome; `assistance.cap` is a placeholder, `assistance.bonus` is `1d6 + var(helperSkillBonus)` and the `luckAdvantage` block is still present with a placeholder | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6. The reworked tables are open ([FD-S3](10-waiting-on-d.md#fd-s3)). Pack today: none of `pick`, `resistDc`, `halfRounding` or `fumbleExtra` exists, the `fumble` entry is a placeholder, and `disorders.json` has `rollDie: null` with a Willpower DC 10 disorder check | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `damage.json`, `threats.json` | Damage dice explode; `min` is a floor on the total damage, and a melee weapon's floor is the greater of its MIN and the STR score. Weapon MIN values stay `null` until they are given. Pack today: `explode` is `null` on every damage category and there is no `meleeFloor` | `meleeFloor`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `proficiency.json`, `advancement.json` | Proficiency and advancement dice do not explode | `explode: false`, data only. Pack today: every `explode` flag in these two files is `null` |
@@ -167,7 +167,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 ## Episodes pin packs
 
 - The pack version pin lives at the **campaign** so characters' numbers do not change between missions; the episode-scoped pack tier stays below it. An episode records `packRef = (id, version, contentHash)` in its meta when created.
-- **Pack updates are manual by default.** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event, so the log shows exactly when values changed.
+- **Pack updates are manual by default.** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event (planned; not built, 10 §5), so the log shows exactly when values changed.
 - **Engine updates are automatic by default** within a major. The GM toggles for both live in episode settings and are stored in episode meta.
 - Because events carry resolved results, a pack update never changes past outcomes.
 
@@ -183,6 +183,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 - The **episode-scoped tier** sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and its use is logged like any other pack change.
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
 - The **public library** is a government-style archive showing only items with `verification: verified`.
+- Planned (10 §5): library verification, the Firestore library, Cloud Storage distribution and the offline cache are not built.
 - **Who verifies.** At first only R and D hold the verification claim. It is set by the roles function; more auditors can be added later via the console.
 - **Revocable.** Verification can be revoked: the item goes back to pending, with a reason. Copies already in GMs' packs are unchanged.
 - **Record.** Each library item records the verifier, the date and the version verified.
@@ -190,6 +191,8 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 - Library items are copied into a GM's pack when used, with provenance (for example `libraryRef: library/<id>@<version>`; the field name is Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) and must not reuse the stripped `source` annotation key), so a library edit never changes a running campaign behind the GM's back.
 
 ## Distribution
+
+Planned (10 §5): Cloud Storage, the pack index and the offline cache are not built; today the core pack ships bundled.
 
 - The core pack ships inside the apps (offline first) and is also published to the backend so newer versions can be fetched.
 - Pack files live in Cloud Storage and the pack index lives in Firestore. Pack files are immutable per version; a new version is a new upload.

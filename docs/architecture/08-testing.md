@@ -48,14 +48,14 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 ## Continuous integration
 
-The workflow is `.github/workflows/ci.yml`: one job, `check`, on a Linux runner, for every pull request and every push to `main`. `bash tool/check_all.sh` runs steps 2 to 8 locally, in the same order ([developer guide](../developer-guide/setup.md#the-checks)); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only. The steps are:
+The workflow is `.github/workflows/ci.yml`: one job, `check`, on a Linux runner, for every pull request and every push to `main`. `bash tool/check_all.sh` runs steps 2 to 8 locally (after `flutter pub get`), in the same order ([developer guide](../developer-guide/setup.md#the-checks)); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only. The steps are:
 
 1. Install Flutter from Google storage at the version in `.flutter-version`, then resolve the workspace (`flutter pub get`).
 2. Build the rules pack from the annotated source (`bash tool/build_pack.sh`); the generated pack is kept out of git.
 3. `dart format` check, failing on unformatted files (style rule in CLAUDE.md §8).
 4. `flutter analyze` for the whole workspace.
 5. Dependency-rule check (`tool/bin/check_dependency_rules.dart`): fail if any `pubspec.yaml` lists a package its layer may not, under `dependencies` or `dev_dependencies`, allowing only the listed test-only exception (`migrator` → `engine`) ([00-overview.md](00-overview.md#dependency-rules)). Includes a **transitive check**: the resolved dependency graph of `apps/functions` must never contain `engine` or `protocol` (it depends only on `protocol_envelope`).
-6. Exact-pin check (`tool/bin/check_pins.dart`): every external dependency is an exact version, which covers every hosted dependency (today `xrandom`, `signals_flutter` and the test tooling; `sembast` and `hive` once they enter a pubspec).
+6. Exact-pin check (`tool/bin/check_pins.dart`): every external dependency is an exact version, which covers every hosted dependency (today `xrandom`, `signals_flutter`, `go_router`, `app_links`, `yaml` and the test tooling; `sembast` and `hive` once they enter a pubspec).
 7. Pack-current check (`bash tool/build_pack.sh --check`): the generated pack is present, current and has no extra files.
 8. Tests for every package that has a `test/` folder (`bash tool/test_all.sh`). Pack validation of the example pack runs here, through the engine's pack loader tests.
 9. Web run of the tests: `dart test -p node` in `packages/engine` and `packages/session`.
