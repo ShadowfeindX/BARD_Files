@@ -33,7 +33,7 @@ request(cmd) ──► EpisodeHost
                    4. rolls: go straight on to steps 5-8 (never gated)
                       consequences: held as a GM-only pending batch (GM review gate)
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
-                         auto-confirm skips the wait when the setting says so (resolved from the mission or campaign setting)
+                         auto-confirm skips the wait when the episode's setting says so
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
                       StoreActor.append(events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
@@ -47,7 +47,7 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - Storing comes before broadcast: an event is never broadcast before it is stored on the GM device.
 - **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `EpisodeHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
-- **Auto-confirm** is a GM setting, resolved like the other settings ([below](#settings-resolution-r-a1-r-c1)). With it on, a pending batch is confirmed without waiting for the GM.
+- **Auto-confirm** is a per-episode GM setting (F2; R ruled 2026-11-04 that it is separate from the Q5 request setting [below](#settings-resolution-r-a1-r-c1)). It is an `EpisodeSettings` field, default off, set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
 - **Death goes through the gate (R7, ruled by R 2026-10-27).** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-gaps-and-settled-rulings)).
 - **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
 - **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
@@ -58,9 +58,9 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 
 ### Settings resolution (R-A1, R-C1)
 
-Game settings (physical dice allowed, auto-confirm, Handler-facing switches) belong to the mission and can be copied from another mission (D, 2026-10-29, FD-X1). R agreed on 2026-11-03 (R-A1) that the **campaign** owns the base settings and the pack version pin, and that each new mission starts as a copy of the base (or of another mission) and may override it. Proposed resolution: the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
+Game settings (physical dice allowed, Handler-facing switches) belong to the mission and can be copied from another mission (D, 2026-10-29, FD-X1). R agreed on 2026-11-03 (R-A1) that the **campaign** owns the base settings and the pack version pin, and that each new mission starts as a copy of the base (or of another mission) and may override it. Proposed resolution: the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
 
-R-C1 (2026-11-03): the auto-confirm setting for requests made between sittings (purchases and contact releases, Q5) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
+The F2 consequence auto-confirm is not one of these: R ruled on 2026-11-04 that it stays a per-episode setting. R-C1 (2026-11-03): the auto-confirm setting for requests made between sittings (purchases and contact releases, Q5) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
 
 ### Names in the log (N1)
 
@@ -180,7 +180,7 @@ The backend copy is a mirror, never a second authority. If the backend holds eve
 
 ## Requests between sittings (Q5)
 
-A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override (R-C1, above). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are not ruled ([10](10-waiting-on-d.md)); the default (an assumption; R-C1's default was never ruled) is that purchases are not auto-confirmed, since F2 covers consequence events only.
+A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Q5 auto-confirm for these is a setting with its base at the campaign and a per-mission override (R-C1, above). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are not ruled ([10](10-waiting-on-d.md)); the default (an assumption; R-C1's default was never ruled) is that purchases are not auto-confirmed, since F2 covers consequence events only.
 
 ## In-game phone
 
