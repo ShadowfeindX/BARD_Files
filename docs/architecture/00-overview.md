@@ -11,7 +11,7 @@
 
 The platform, structure and stack the application is built on. Decisions and their reasons are in [decision-record.md](decision-record.md); items that wait on D are in [10-waiting-on-d.md](10-waiting-on-d.md).
 
-| Area | Decision |
+| Area | Choice |
 |---|---|
 | Stack | Flutter / Dart only. |
 | Targets | v1: **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now. |
@@ -37,7 +37,7 @@ The platform, structure and stack the application is built on. Decisions and the
 ## Still open
 
 - **Waiting on D or R**: game-content and design items are in [10-waiting-on-d.md](10-waiting-on-d.md); platform and theme items are in [09-open-decisions.md](09-open-decisions.md).
-- **Firestore collections** are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed; open: P10c, [09-open-decisions.md](09-open-decisions.md#held)). The Realtime Database live-play model is in [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play); its rules are checked by the emulator suite in `firebase/` [V-50].
+- **Firestore collections** are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed; open: [S-7](09-open-decisions.md#s-7-firestore-collections)). The Realtime Database live-play model is in [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play); its rules are checked by the emulator suite in `firebase/` [V-50].
 - **Probes:** all scheduled backend probes are done ([verification.md](verification.md#probe-status)); 8.1c, 8.7, Storage through `firebase_dart` and long sessions are not scheduled.
 
 Every external choice stays behind an interface so it does not leak into the engine, protocol or migrator.
@@ -84,7 +84,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   migrator/                   pure Dart. Major N → N+1 transforms on serialized data.
   content_core/               D's default rules pack as data under assets/.
   backend/                    Flutter + Firebase adapters behind session/app interfaces.
-  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11; not built).
+  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11 (09-open-decisions.md#t11); not built).
   ui_kit/                     Shared widgets, theme widgets and controller, perspective panels.
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
@@ -110,7 +110,7 @@ protocol_envelope         ──► (Dart SDK only)
 engine                    ──► (Dart SDK only)
 migrator                  ──► (Dart SDK only)     (works on serialized JSON, never imports engine)
 content_core              ──► (none; data only)
-theme_core                ──► (Dart SDK only)     (name open: T11; built-in themes as JSON assets)
+theme_core                ──► (Dart SDK only)     (name open: T11 (09-open-decisions.md#t11); built-in themes as JSON assets)
 
 dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)

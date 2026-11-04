@@ -192,7 +192,7 @@ These are applied to the named chapters in a later change:
 
 | Ruling | Changes |
 |---|---|
-| P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the badge records in the Firestore account-data draft (P10c), the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
+| P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the badge records in the Firestore account-data draft (open: [S-7](09-open-decisions.md#s-7-firestore-collections)), the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
 | 09-2 | Invite links use `bard://join/<op>?invite=<token>` with no `alias=`. Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
 | P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, the [09](09-open-decisions.md) Targets row, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
 | 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim is assigned once moderators beyond R and D are chosen. |

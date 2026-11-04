@@ -57,7 +57,7 @@ The theme widgets and theme controller over the pure-Dart theme package `theme_c
 
 ## Themes and player appearance settings
 
-Details marked **Proposed** are not final. Each carries the id of its open item: T2, T3, T4, T6, T10 and T11 in [09](09-open-decisions.md#open-for-r-themes); T5 and T7 e (the label wording) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-29, DEC-34, VER-14).
+Details marked **Proposed** are not final. Each carries the id of its open item: [T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t3), [T4](09-open-decisions.md#t4), [T6](09-open-decisions.md#t6), [T10](09-open-decisions.md#t10) and [T11](09-open-decisions.md#t11) in [09](09-open-decisions.md#open-for-r-themes); [T5](09-open-decisions.md#t5) and [T7 e](09-open-decisions.md#t7) (the label wording) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-29, DEC-34, VER-14).
 
 ### What the theme system provides
 
@@ -65,16 +65,16 @@ Details marked **Proposed** are not final. Each carries the id of its open item:
 2. The player picks one of the built-in themes (**Phosphor**, **Manila**, **Night Desk**) and, separately, how it renders from a drop-down: normal, high contrast, or a colour-blind mode. The drop-down lists only the variants the chosen theme provides (Proposed, open: [T3](09-open-decisions.md#open-for-r-themes)).
 3. Each theme is self-contained: its colour-blind and contrast variants are saved together with its defaults.
 4. A player can create a custom theme and set, in the UI, any colour the built-in themes set.
-5. Players can import and export themes. In v1 they share themes only outside the app, as exported files (open: T5).
+5. Players can import and export themes. In v1 they share themes only outside the app, as exported files (open: [T5](09-open-decisions.md#t5)).
 6. There are no limits on player theming: no cap on the number of custom themes, on name length or on overrides. A theme may name a **base** theme and store only the values it overrides ([Derived themes](#derived-themes-base-and-overrides); Proposed, open: [T3](09-open-decisions.md#open-for-r-themes)).
 7. The Handler cannot force a change from one theme to another, and since a variant is part of a theme, cannot force a variant either (the variant part is Proposed, open: [T4](09-open-decisions.md#open-for-r-themes)). The Handler can force certain screen colours, highlights or effects that other game features describe (capability lock cards, synthesis §12, revision 4, with [DEC-34 and GAP-33](09-open-decisions.md#dec-34-and-gap-33-capability-lock-cards) undecided; intrusion cues, [DEC-07](09-open-decisions.md#dec-07-intrusion-cues) undecided). The colours for those are part of every palette ([Effect and highlight tokens](#effect-and-highlight-tokens)). A theme that lacks a colour a newer feature needs is completed from a built-in ([Outdated themes](#outdated-themes); Proposed, open: [T4](09-open-decisions.md#open-for-r-themes)). Whether and how intrusions happen is not decided here.
 8. All documents will eventually be rendered by an in-house pipeline (typst or another solution), so documents may be affected by theme. Document colours are tokens in every palette and custom themes may change them. A document mode switch shows the standard, fixed scheme ([Documents and document mode](#documents-and-document-mode)).
 9. The chip text tokens are named `onSuccess`, `onPartial`, `onFailure`, `onWarning`, `onLocked` and `onConfirm`. The window edge has its own token, `windowEdge`, set on every built-in theme and variant ([Window edge](#window-edge)). Invalid themes are rejected on import; the colour format is in [Colour format](#colour-format).
-10. The first-launch default follows the OS brightness, as a **System** option in the theme selector ([The player's setting](#the-players-setting)). The variant labels are Normal, High contrast, Red-green safe and Blue-yellow safe; the label wording is open (T7 e).
+10. The first-launch default follows the OS brightness, as a **System** option in the theme selector ([The player's setting](#the-players-setting)). The variant labels are Normal, High contrast, Red-green safe and Blue-yellow safe; the label wording is open ([T7 e](09-open-decisions.md#t7)).
 11. The theme model is a separate package, so that it can grow after v1 (theme distribution, per-campaign theme settings, custom icons, images, animations) ([Layering](#layering)).
 12. Testing with colour-blind players is owed (VER-14).
 
-Whether the Handler console follows the same appearance setting as the player experience is open (T2).
+Whether the Handler console follows the same appearance setting as the player experience is open ([T2](09-open-decisions.md#t2)).
 
 ### Theme document
 
@@ -108,12 +108,12 @@ Names as in the synthesis §6.1, plus chip text tokens, the window edge, effect 
 | Surfaces | `desk`, `window`, `windowRaised`, `labelCell` |
 | Lines and text | `rule`, `windowEdge`, `ink`, `inkMuted` |
 | Interaction | `signal`, `signalFill`, `onSignalFill` |
-| Documents | `paper`, `paperInk`, `paperAlert` (§6.1); `paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact` (Proposed, open: T6) |
+| Documents | `paper`, `paperInk`, `paperAlert` (§6.1); `paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact` (Proposed, open: [T6](09-open-decisions.md#t6)) |
 | Redaction | `redact` |
 | Status | `lineOk`, `lineDown`, `markLow`, `markMid`, `markHigh` |
 | Functional hues | `supervisor`, `anomaly` |
 | Result and state chips (fill / text) | `success` / `onSuccess`, `partial` / `onPartial`, `failure` / `onFailure`, `warning` / `onWarning`, `locked` / `onLocked`, `confirm` / `onConfirm` |
-| Effects and highlights | `highlight`, `intrusionGround`, `onIntrusionGround`, `sceneTint` (all Proposed, open: T4) |
+| Effects and highlights | `highlight`, `intrusionGround`, `onIntrusionGround`, `sceneTint` (all Proposed, open: [T4](09-open-decisions.md#t4)) |
 
 §6.1 and the study name the chips by outcome (success, partial, failure, warning, locked, confirm) and give each a fill and a text colour. The six outcome `on…` names are new; `onSignalFill` is already in §6.1. There are 42 tokens per variant.
 
@@ -129,7 +129,7 @@ Names as in the synthesis §6.1, plus chip text tokens, the window edge, effect 
 | Manila | `#5F5348` (beige shade 57, §6.1) | 4.28 | 7.11 | 4.28 | yes |
 | Night Desk | `#B8D8E9` (blue tint 72) | 12.81 | 9.08 | 5.57 | yes |
 
-So the 12 values are Phosphor `#C0D8C2` in `normal`, `highContrast`, `redGreenSafe` and `blueYellowSafe`; Manila `#5F5348` in all four; Night Desk `#B8D8E9` in all four. The edge is chrome, and chrome is the same in every variant (§6.1, study §1). All three are printed steps of the palette cards. On the dark themes no step weaker than these reaches 3:1 against the title bar without landing on the interactive hue: Phosphor's tint 60 is `signal` and Night Desk's tint 54 is `signalFill`, so the edge takes the next printed step above them (contrast against `signal`: Phosphor 1.32, Night Desk 1.82, also computed; against `ink`: 1.30 for both). A light edge suits the dark themes' boxed, light-on-dark look (§6.0); Manila keeps the §6.1 value, which is also its `inkMuted`. The values are Proposed (open: T11). The library's palette study (`colorblind-palettes.md`) and the synthesis §6.1 should be updated with this token; this spec does not edit the library.
+So the 12 values are Phosphor `#C0D8C2` in `normal`, `highContrast`, `redGreenSafe` and `blueYellowSafe`; Manila `#5F5348` in all four; Night Desk `#B8D8E9` in all four. The edge is chrome, and chrome is the same in every variant (§6.1, study §1). All three are printed steps of the palette cards. On the dark themes no step weaker than these reaches 3:1 against the title bar without landing on the interactive hue: Phosphor's tint 60 is `signal` and Night Desk's tint 54 is `signalFill`, so the edge takes the next printed step above them (contrast against `signal`: Phosphor 1.32, Night Desk 1.82, also computed; against `ink`: 1.30 for both). A light edge suits the dark themes' boxed, light-on-dark look (§6.0); Manila keeps the §6.1 value, which is also its `inkMuted`. The values are Proposed (open: [T11](09-open-decisions.md#t11)). The library's palette study (`colorblind-palettes.md`) and the synthesis §6.1 should be updated with this token; this spec does not edit the library.
 
 #### Effect and highlight tokens
 
@@ -142,18 +142,18 @@ These are the colours a Handler-forced effect may use. The Handler never picks a
 | `anomaly` | Design (§6.1: "Paranatural intrusions only") | Accent of an intrusion cue (DEC-07, once decided) and corrupted-content marks inside a window (P34) | §6.1, same in every variant |
 | `supervisor` | Design (§6.1: Handler chrome accent) | `SET BY HANDLER` line and Handler-set labels | §6.1, same in every variant |
 | `rule`, `ink`, `inkMuted` | Design (§7.6 lock card anatomy) | Lock card box, reason text, time and setter | §6.1, same in every variant |
-| `highlight` | **Proposed, new** (open: T4) | A Handler highlight of a field, record or window: a 2 px outline plus a word tag | Initially each theme's `supervisor`, same in every variant |
-| `intrusionGround` | **Proposed, new** (open: T4) | Ground of a full-window takeover cue (P15, only as DEC-07 allows once decided) | Initially each theme's `desk`, same in every variant |
-| `onIntrusionGround` | **Proposed, new** (open: T4) | Text and glyphs on `intrusionGround` | Initially each theme's `anomaly` (8.57:1 on Phosphor's `desk`, §6.1; Manila and Night Desk pairs not yet computed), same in every variant |
-| `sceneTint` | **Proposed, new** (open: T4) | Scene tint set by the Handler (P33), drawn at low opacity over `desk` and title bars only, never under body text | Initially each theme's `anomaly`, same in every variant; the "fixed accessible set" of tints P33 mentions is a DEC-07 detail |
+| `highlight` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | A Handler highlight of a field, record or window: a 2 px outline plus a word tag | Initially each theme's `supervisor`, same in every variant |
+| `intrusionGround` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Ground of a full-window takeover cue (P15, only as DEC-07 allows once decided) | Initially each theme's `desk`, same in every variant |
+| `onIntrusionGround` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Text and glyphs on `intrusionGround` | Initially each theme's `anomaly` (8.57:1 on Phosphor's `desk`, §6.1; Manila and Night Desk pairs not yet computed), same in every variant |
+| `sceneTint` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Scene tint set by the Handler (P33), drawn at low opacity over `desk` and title bars only, never under body text | Initially each theme's `anomaly`, same in every variant; the "fixed accessible set" of tints P33 mentions is a DEC-07 detail |
 
-The design has no values for the four new tokens. The initial values above reuse existing tokens so that no colour is invented; before they ship, each new pair is computed with the study's method (contrast and CIEDE2000 against the chips and chrome) and the result goes with the names to T4 ([09](09-open-decisions.md#open-for-r-themes)).
+The design has no values for the four new tokens. The initial values above reuse existing tokens so that no colour is invented; before they ship, each new pair is computed with the study's method (contrast and CIEDE2000 against the chips and chrome) and the names and the computed results are reported under [T4](09-open-decisions.md#t4).
 
-**Player opt-out (Proposed, open: T4).** The player's effects setting (§6.6) beats any forced effect: with effects off, a scene tint, takeover or corruption cue is not drawn and a static one-line notice with the same words appears instead. Lock cards and the highlight's word tag are not cosmetic effects (they carry state the player needs), so they always show, without motion.
+**Player opt-out (Proposed, open: [T4](09-open-decisions.md#t4)).** The player's effects setting (§6.6) beats any forced effect: with effects off, a scene tint, takeover or corruption cue is not drawn and a static one-line notice with the same words appears instead. Lock cards and the highlight's word tag are not cosmetic effects (they carry state the player needs), so they always show, without motion.
 
 #### Rendering rules that are not tokens
 
-(§6.1, §6.6, §10.1, §12.3.) Every chip has a 1 px `ink` outline (`paperInk` on paper), 2 px in `highContrast`. Every result and state chip always shows its glyph and word (check mark in a square and SUCCESS, half-filled diamond and PARTIAL SUCCESS, cross in a circle and FAILURE, triangle and WARNING, padlock and LOCKED). The redaction bar keeps its 1 px `rule` outline on dark themes. A forced effect always carries its glyph and its words (lock glyph and reason, `SET BY HANDLER · [TIME]`, the highlight's word tag, an intrusion's label; wording open: [T7 e](09-open-decisions.md#pending-d)): Handler effects never depend on a custom colour to carry meaning. `sceneTint` never lowers text contrast below 4.5:1, the same rule §10.1 sets for the form watermark. No token can remove a glyph, a word or an outline.
+(§6.1, §6.6, §10.1, §12.3.) Every chip has a 1 px `ink` outline (`paperInk` on paper), 2 px in `highContrast`. Every result and state chip always shows its glyph and word (check mark in a square and SUCCESS, half-filled diamond and PARTIAL SUCCESS, cross in a circle and FAILURE, triangle and WARNING, padlock and LOCKED). The redaction bar keeps its 1 px `rule` outline on dark themes. A forced effect always carries its glyph and its words (lock glyph and reason, `SET BY HANDLER · [TIME]`, the highlight's word tag, an intrusion's label; wording open: [T7 e](09-open-decisions.md#t7)): Handler effects never depend on a custom colour to carry meaning. `sceneTint` never lowers text contrast below 4.5:1, the same rule §10.1 sets for the form watermark. No token can remove a glyph, a word or an outline.
 
 #### Colour format
 
@@ -241,7 +241,7 @@ Some pairs carry meaning the player must always be able to read. After lookup, t
 
 The setting is `{ themeId, variant, documentMode, updatedAt }`.
 
-**Theme selector (layout Proposed, open: [T7 e](09-open-decisions.md#pending-d)).** The selector lists **System** first, then Phosphor, Manila and Night Desk, then the client's custom themes by name. System follows the OS brightness live: dark gives Night Desk and light gives Manila, and a change of OS brightness while the app runs switches the theme. The variant drop-down still applies under System. The first-launch default is System with variant `normal`, and a player returns to this behaviour at any time by choosing System. The brightness comes from the platform through Flutter `MediaQuery` [U]. The labels are open (T7 e).
+**Theme selector (layout Proposed, open: [T7 e](09-open-decisions.md#t7)).** The selector lists **System** first, then Phosphor, Manila and Night Desk, then the client's custom themes by name. System follows the OS brightness live: dark gives Night Desk and light gives Manila, and a change of OS brightness while the app runs switches the theme. The variant drop-down still applies under System. The first-launch default is System with variant `normal`, and a player returns to this behaviour at any time by choosing System. The brightness comes from the platform through Flutter `MediaQuery` [U]. The labels are open ([T7 e](09-open-decisions.md#t7)).
 
 Resolution, in order:
 
@@ -252,7 +252,7 @@ Resolution, in order:
 ### Where it is stored
 
 - **Every account, every client:** the setting and the custom themes live in the client's small account/cache database (`sembast_web` on the web player), anonymous (tier 0) and full accounts alike. Nothing is written to Firestore or RTDB, so no rule, field whitelist or document cap is involved and `agents/{uid}` is untouched ([12](12-firestore-collections.md#agentsuid-private)). Play works offline. On the web player the data is expected to be lost when the browser's site storage is cleared [U]; on native it goes with the app's data. Export is the backup and the way to move themes to another client.
-- **Cross-client sync (open: T2):** whether it is wanted at all in v1. Proposed: local storage per client plus export and import in v1, optional sync later. If sync is added: a separate owner-only document (`appearance/{uid}`, deferred in [12](12-firestore-collections.md#collections-at-a-glance)), never `agents/{uid}`, whose `keys().hasOnly` whitelist stays; a derived theme would sync together with its custom bases.
+- **Cross-client sync (open: [T2](09-open-decisions.md#t2)):** whether it is wanted at all in v1. Proposed: local storage per client plus export and import in v1, optional sync later. If sync is added: a separate owner-only document (`appearance/{uid}`, deferred in [12](12-firestore-collections.md#collections-at-a-glance)), never `agents/{uid}`, whose `keys().hasOnly` whitelist stays; a derived theme would sync together with its custom bases.
 - **Privacy, kept for the case that sync is added:** a synced colour-blind variant could reveal a real person's vision condition, which is outside [11](11-supplemental-features.md#real-personal-data)'s real-personal-data list and its consent scope. If sync is added, the variant is stored as a neutral rendering label (`variant`) with no health framing anywhere in the data or the UI, owner-only, never public, never indexed, never visible to the GM and never used for anything but rendering (the variant could instead stay local-only, or 11 could be amended). With storage on the client only, nothing leaves the device.
 
 ### Custom themes
@@ -265,10 +265,10 @@ Resolution, in order:
 
 ### Documents and document mode
 
-- **Documents follow the theme.** Bureau forms, handouts and other paper documents (§10 Forms and filing) render with the document tokens of the resolved theme. In the built-ins these are the same in every theme and variant (§6.1: paper is a fiction object), so the built-ins look as the design shows; custom themes may change them. The four document tokens `paperInkMuted`, `paperRule`, `paperStamp` and `paperRedact` are Proposed (open: T6) and cover what the forms need beyond §6.1: `paperInkMuted` (margin text such as the vertical "Form Approved." line, time stamps), `paperRule` (fill lines, table rules and the header rules), `paperStamp` (stamps and the classification line, single ink colour) and `paperRedact` (redaction bars on paper). Proposed built-in values, from §6.1 ladder steps whose contrast on beige tint 45 is already computed there: `paperInkMuted` `#5F5348` (5.57:1), `paperRule` `#7E6E5F` (3.66:1), `paperStamp` `#A8382B` (as `paperAlert`, 4.81:1), `paperRedact` `#050505` (Manila's `redact`). The seal keeps its own colours in every theme and mode (§6.7); it is artwork, not tokens.
-- **Document mode (Proposed, open: T6).** Every view that displays a document has a **Document mode** toggle (a checkbox or button in its title bar; label wording open: T7 e), in every theme and variant. It switches that document to the **standard paper set**: the built-in document token values above, fixed, not themeable, not stored in any theme document and not affected by the effect-safety rule because it already passes. Chip outlines on paper stay `paperInk`. The toggle acts per view; the setting's `documentMode` is the remembered preference applied when a document opens (default off). Changing the toggle in a view does not change the preference unless the player ticks "Remember for all documents".
-- **Print and export defaults (Proposed).** Printing or exporting a document always uses the standard paper set, never the custom theme. The design review's DEC-29 proposes black on white for print by default with the paper tint as an option; which one is the default is open (T10).
-- **Renderer (open: T10).** Documents will eventually be rendered by an in-house pipeline (typst or another solution). The choice of renderer is open: any new dependency or tool needs approval first (CLAUDE.md §6). The synthesis §10 Forms and filing (§10.6 Print and export) has the related ideas. Until then document views are Flutter widgets drawn from the tokens.
+- **Documents follow the theme.** Bureau forms, handouts and other paper documents (§10 Forms and filing) render with the document tokens of the resolved theme. In the built-ins these are the same in every theme and variant (§6.1: paper is a fiction object), so the built-ins look as the design shows; custom themes may change them. The four document tokens `paperInkMuted`, `paperRule`, `paperStamp` and `paperRedact` are Proposed (open: [T6](09-open-decisions.md#t6)) and cover what the forms need beyond §6.1: `paperInkMuted` (margin text such as the vertical "Form Approved." line, time stamps), `paperRule` (fill lines, table rules and the header rules), `paperStamp` (stamps and the classification line, single ink colour) and `paperRedact` (redaction bars on paper). Proposed built-in values, from §6.1 ladder steps whose contrast on beige tint 45 is already computed there: `paperInkMuted` `#5F5348` (5.57:1), `paperRule` `#7E6E5F` (3.66:1), `paperStamp` `#A8382B` (as `paperAlert`, 4.81:1), `paperRedact` `#050505` (Manila's `redact`). The seal keeps its own colours in every theme and mode (§6.7); it is artwork, not tokens.
+- **Document mode (Proposed, open: [T6](09-open-decisions.md#t6)).** Every view that displays a document has a **Document mode** toggle (a checkbox or button in its title bar; label wording open: [T7 e](09-open-decisions.md#t7)), in every theme and variant. It switches that document to the **standard paper set**: the built-in document token values above, fixed, not themeable, not stored in any theme document and not affected by the effect-safety rule because it already passes. Chip outlines on paper stay `paperInk`. The toggle acts per view; the setting's `documentMode` is the remembered preference applied when a document opens (default off). Changing the toggle in a view does not change the preference unless the player ticks "Remember for all documents".
+- **Print and export defaults (Proposed).** Printing or exporting a document always uses the standard paper set, never the custom theme. The design review's DEC-29 proposes black on white for print by default with the paper tint as an option; which one is the default is open ([T10](09-open-decisions.md#t10)).
+- **Renderer (open: [T10](09-open-decisions.md#t10)).** Documents will eventually be rendered by an in-house pipeline (typst or another solution). The choice of renderer is open: any new dependency or tool needs approval first (CLAUDE.md §6). The synthesis §10 Forms and filing (§10.6 Print and export) has the related ideas. Until then document views are Flutter widgets drawn from the tokens.
 
 ### Import and export
 
@@ -282,11 +282,11 @@ Resolution, in order:
 - **After validation (not errors):** a derived file whose base is not installed is imported and flagged as in [Chain checks](#chain-checks), with **Flatten** offered. A full theme on an older `tokenSet` is imported and flagged as in [Outdated themes](#outdated-themes), with **Add missing colours** offered. The advisory checks run on the imported theme.
 - **Ids:** an import keeps the file's id when no theme on this client has it, so overrides-only files from the same author still find their base. If the id is taken by a custom theme, the player chooses **Replace** (updates it in place; its derived themes follow) or **Keep both** (new id; the name gets a suffix, " (2)"). Before a Replace, the cycle check runs on the incoming document's base chain against the installed themes; if replacing would create a loop, Replace is refused with the loop named, and Keep both or Flatten is offered. A built-in id is never replaced: the import gets a new id.
 - **Data only.** The schema has no field for a URL, script, asset path, image or font, and unknown fields are rejected, so importing never fetches or runs anything.
-- **Sharing (open: T5):** players share themes outside the app, as exported files. No in-app gallery, upload or moderation queue in v1 (Proposed, open: [T5](09-open-decisions.md#pending-d)), so no public content is involved ([11](11-supplemental-features.md#library-and-public-content)).
+- **Sharing:** players share themes outside the app, as exported files. No in-app gallery, upload or moderation queue in v1 (Proposed, open: [T5](09-open-decisions.md#t5)), so no public content is involved ([11](11-supplemental-features.md#library-and-public-content)).
 
 ### Technical safeguards
 
-There are no limits on player theming. These safeguards are not theming limits: they only stop corrupt or hostile data from hanging the parser or the resolver. Both values are Proposed (open: T3).
+There are no limits on player theming. These safeguards are not theming limits: they only stop corrupt or hostile data from hanging the parser or the resolver. Both values are Proposed (open: [T3](09-open-decisions.md#t3)).
 
 | Safeguard | Proposed | Why |
 |---|---|---|
@@ -297,11 +297,11 @@ No cap on the number of custom themes, name length, overrides or variants.
 
 ### Layering
 
-The theme model is a separate package so that it can grow after v1 without touching `ui_kit` or the engine. The package name `theme_core` is Proposed (open: T11), in line with `content_core`.
+The theme model is a separate package so that it can grow after v1 without touching `ui_kit` or the engine. The package name `theme_core` is Proposed (open: [T11](09-open-decisions.md#t11)), in line with `content_core`.
 
 - **`theme_core`** (pure Dart, Dart SDK only, no Flutter import): the theme document model (`ThemeDocument`, `ThemeVariant`, colour values), the hand-written JSON codec and validator, the token registry with token sets, alpha capability and the version map, the resolver (fallback built-in, lookup, chain checks, outdated fill, effect-safety pairs), the colour math (WCAG contrast, CIEDE2000, and the Machado et al. CVD simulation, shared by the editor advisories and the tests), the standard paper set, and the built-in theme JSON files under `assets/themes/`.
 - **How the built-ins ship (Proposed, open: [S-4](09-open-decisions.md#s-4-how-the-built-in-theme-json-ships)):** as JSON assets in `theme_core`, declared in its pubspec's `flutter: assets:` section the same way `content_core` declares its pack today (state of our code, `packages/content_core/pubspec.yaml`, a package without a Flutter dependency). `ui_kit` loads them through the Flutter asset bundle and passes the strings to `theme_core`'s codec, so `theme_core` never imports Flutter; `theme_core`'s own tests read the files directly. The JSON stays the single source D edits (CLAUDE.md §9), the same validator checks built-ins and imports, and nothing is generated.
-- **`ui_kit`** (Flutter and `signals_flutter`, plus `theme_core`): the asset loader for the built-ins, the settings, selector, editor and document-mode widgets, and a `ThemeController` that exposes the resolved tokens as a signal, follows the OS brightness for System, and maps the tokens to Flutter `ThemeData` plus a theme extension for the custom tokens [U].
+- **`ui_kit`** (Flutter and `signals_flutter`, plus `theme_core`): the asset loader for the built-ins (Proposed, open: [S-4](09-open-decisions.md#s-4-how-the-built-in-theme-json-ships)), the settings, selector, editor and document-mode widgets, and a `ThemeController` that exposes the resolved tokens as a signal, follows the OS brightness for System, and maps the tokens to Flutter `ThemeData` plus a theme extension for the custom tokens [U].
 - **Apps:** an `AppearanceRepository` in `data/repositories` over the local store only (no backend gateway in v1), built in `composition.dart`, using `theme_core`'s codec to store and load theme documents. View models read and write through it (layering above; CLAUDE.md §8). The companion app uses the same pieces.
 - **Dependency rules:** [00](00-overview.md#dependency-rules) gains `theme_core ──► (Dart SDK only)`, and `ui_kit` and the apps may import it. When the package is built, the pub workspace member list and the layer table in `tool/lib/dependency_rules.dart` (checked by `tool/bin/check_dependency_rules.dart`) are updated in the same change.
 - **Extension room (not designed):** theme distribution, per-campaign theme settings, and custom icons, images and animations are possible additions after v1. None of them is designed here; the separate package gives them a place.
@@ -310,7 +310,7 @@ The theme model is a separate package so that it can grow after v1 without touch
 
 ### Accessibility, and what is not guaranteed
 
-- The built-in variants pass the study's hard rules a to e (`colorblind-palettes.md` §1, §2.4). Achromatopsia separation is required of `highContrast` only. Warning falls below 15 dE from the result chips in three built-in sets (Manila Default, Manila Blue-yellow safe, Night Desk High contrast); there the glyph and word carry it. The four new effect tokens are not yet computed (open: T4); `windowEdge` is checked for contrast only.
+- The built-in variants pass the study's hard rules a to e (`colorblind-palettes.md` §1, §2.4). Achromatopsia separation is required of `highContrast` only. Warning falls below 15 dE from the result chips in three built-in sets (Manila Default, Manila Blue-yellow safe, Night Desk High contrast); there the glyph and word carry it. The four new effect tokens are not yet computed (open: [T4](09-open-decisions.md#t4)); `windowEdge` is checked for contrast only.
 - The figures come from a simulation, not from people. Testing with colour-blind users is owed: VER-14, defined in the project library's design review (`design/review-list-for-R.md`) and recorded in [09](09-open-decisions.md#still-unproven). Values may change after it.
 - Custom and imported themes are not guaranteed accessible. The advisories inform the player and do not block. The one exception is the effect-safety rule: forced effects and documents are always readable.
 - Not covered: OS forced-colours and high-contrast modes, and colour shifts from texture, anti-aliasing and display calibration (study §6). Print uses the standard paper set. Text size, reduced motion and the signal texture are separate settings (§6.3, §6.5, §6.6), not part of a theme.
@@ -331,7 +331,7 @@ The theme model is a separate package so that it can grow after v1 without touch
 
 ### Open items
 
-The open theme items (T2, T3, T4, T6, T10, T11) are in [09](09-open-decisions.md#open-for-r-themes); T5 and T7 e are under [Pending D](09-open-decisions.md#pending-d).
+The open theme items ([T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t3), [T4](09-open-decisions.md#t4), [T6](09-open-decisions.md#t6), [T10](09-open-decisions.md#t10), [T11](09-open-decisions.md#t11)) are in [09](09-open-decisions.md#open-for-r-themes); [T5](09-open-decisions.md#t5) and [T7 e](09-open-decisions.md#t7) are under [Pending D](09-open-decisions.md#pending-d).
 
 ## Platform rules
 
@@ -350,11 +350,11 @@ The web build is a lightweight, player-only client that reaches people who have 
 
 Proposed screens that follow from the game rules; none is built.
 
-- **Death screen.** A character reaching 0 Health flashes a death screen. Proposed (open: FD-D4, [10](10-waiting-on-d.md#1-unanswered-questions-for-d)): show it to the player who lost the character and the Handler, with the other players seeing a line in the log.
-- **Handler effect list.** The Handler picks the DC and the effect from a list of one-click effects built on the engine's consequence events, plus a custom text option (the list contents are open: FD-D2, [10](10-waiting-on-d.md#1-unanswered-questions-for-d)). The sanity review tray shows the book's ranges as suggestions.
-- **Cast DC helper.** The Handler types the final DC; a labelled factor list is Proposed (open: FD-M3, [10](10-waiting-on-d.md#1-unanswered-questions-for-d)).
+- **Death screen.** A character reaching 0 Health flashes a death screen. Proposed (open: [FD-D4](10-waiting-on-d.md#fd-d4)): show it to the player who lost the character and the Handler, with the other players seeing a line in the log.
+- **Handler effect list.** The Handler picks the DC and the effect from a list of one-click effects built on the engine's consequence events, plus a custom text option (the list contents are open: [FD-D2](10-waiting-on-d.md#fd-d2)). The sanity review tray shows the book's ranges as suggestions.
+- **Cast DC helper.** The Handler types the final DC; a labelled factor list is Proposed (open: [FD-M3](10-waiting-on-d.md#fd-m3)).
 - **Roster shows personas.** Inside an operation the roster shows the Handler persona, never the GM account.
-- **Personal library.** A per-account view over archived documents the player wrote or is mentioned in; a read-only index in Firestore pointing at archived items, with no new storage of the content. The document kinds are open (FE-L5, [10](10-waiting-on-d.md#1-unanswered-questions-for-d)).
+- **Personal library.** A per-account view over archived documents the player wrote or is mentioned in; a read-only index in Firestore pointing at archived items, with no new storage of the content. The document kinds are open ([FE-L5](10-waiting-on-d.md#fe-l5), [10](10-waiting-on-d.md#1-unanswered-questions-for-d)).
 - **Name reveals.** The player log renders names from what that viewer knows ([04](04-session.md#names-in-the-log)).
 
 ## The app shell never affects outcomes

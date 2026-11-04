@@ -49,17 +49,17 @@ Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED
 - surfaces `FAILED_PRECONDITION` as a missing-index error (a deploy problem, not a user error); every query the app runs has its composite index declared with the Firestore collection draft;
 - forces `getIdToken(true)` after a role change before relying on a claim (see [Roles](#roles)).
 
-**Natural expiry** (Linux, `firebase_dart` 1.6.2, session restored from storage in a second process [V-45]): a stale ID token gets 401 from Firestore REST, and a plain `getIdToken()` after expiry returns a new working token by itself. Proposed (open: [06-O1](09-open-decisions.md#06-o1-firestore-rest-client-token-handling)): the REST client calls `getIdToken()` for **every request** and never caches the token string; on a 401 it retries once with `getIdToken(true)` before surfacing a sign-in error. Not tested: revoked sessions, disabled users, password change, refresh-token failure, Windows [V-45].
+**Natural expiry** (Linux, `firebase_dart` 1.6.2, session restored from storage in a second process [V-45]): a stale ID token gets 401 from Firestore REST, and a plain `getIdToken()` after expiry returns a new working token by itself. The REST client calls `getIdToken()` for **every request**. Proposed (open: [06-O1](09-open-decisions.md#06-o1-firestore-rest-client-token-handling)): it never caches the token string, and on a 401 it retries once with `getIdToken(true)` before surfacing a sign-in error. Not tested: revoked sessions, disabled users, password change, refresh-token failure, Windows [V-45].
 
 **Search.** Standard edition: structured queries (equality, range, array-contains on keyword and tag fields), with composite indexes where needed. No full-text search. Text search needs an Enterprise edition database [V-36]. Standard bills per document read [V-36].
 
 **Document sizing.** Archived event and text logs are chunked into a subcollection (one document per N batches), never one document per episode, to stay under the 1 MiB document cap [V-7]. A function wrote and read back a chunk of about 920 KiB (900 items) through `firebase_admin_sdk` [V-33].
 
-**Firestore collections** (collection names, document shapes, rules, indexes) are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [P10c Firestore collections](09-open-decisions.md#held)). RTDB rules are tested in the Emulator Suite; Firestore rules are not drafted yet.
+**Firestore collections** (collection names, document shapes, rules, indexes) are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)). RTDB rules are tested in the Emulator Suite. The Firestore rules are drafted in chapter 12 (Proposed) and have not been run yet; they are tested in the Emulator Suite too.
 
 ## Account model
 
-The field-level shapes are Proposed (open: [P10c Firestore collections](09-open-decisions.md#held)).
+The field-level shapes are Proposed (open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 ```
 Agent (account)
@@ -81,9 +81,9 @@ Campaign
   └─ operations[]
 ```
 
-- **Handler personas.** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed, open: FE-L3 in [10-waiting-on-d.md](10-waiting-on-d.md)). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
+- **Handler personas.** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed, open: [FE-L3](10-waiting-on-d.md#fe-l3)). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
 
-Profiles, aliases and campaigns are searchable account data and live in Firestore. Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed).
+Profiles, aliases and campaigns are searchable account data and live in Firestore. Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 Rules:
 
@@ -102,7 +102,7 @@ Rules:
 - Anonymous data does not survive clearing local storage or switching devices [V-8]; the UI says so before an anonymous player invests in a character.
 - Enforcement: the session refuses host/GM/content commands from anonymous agents, and rules in RTDB and Firestore refuse the corresponding writes using `auth.token.firebase.sign_in_provider` [V-9]. The RTDB rules prototype refuses `meta`, head and event writes from anonymous tokens in the emulator [V-38]; live tokens carry the values the rules check (`anonymous`, `password`, `custom`) [V-39][V-41]. Rules on the deployed database are not tested yet.
 - **One alias per anonymous account** is enforced in three places:
-  1. **Backend.** The rule lives in Firestore. Proposed mechanism (open: [P10c Firestore collections](09-open-decisions.md#held)): an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. The document path is `aliases/{uid}/items/anon` with the rule in [12-firestore-collections.md](12-firestore-collections.md#aliases-characters) (rule behaviour unproven until the Emulator Suite tests).
+  1. **Backend.** The rule lives in Firestore. Proposed mechanism (open: [S-7](09-open-decisions.md#s-7-firestore-collections)): an anonymous account's alias is a single fixed-key document, creatable only when it does not already exist, so a second alias is impossible. Full accounts use generated ids. The document path is `aliases/{uid}/items/anon` with the rule in [12-firestore-collections.md](12-firestore-collections.md#aliases-characters) (rule behaviour unproven until the Emulator Suite tests).
   2. **App.** The account repository hides "create alias" for anonymous agents once that alias exists and offers the upgrade instead.
   3. **Session (local and LAN play without the backend).** A guest agent identity carries `kind: anonymous`; `EpisodeHost` refuses a `hello` that presents a second alias for the same anonymous agent id.
 
@@ -147,7 +147,7 @@ By default `firebase_dart` 1.6.2 stores the refresh token and email in plaintext
 
 ## Realtime Database model (live play)
 
-The design comes from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]; the review sheet is in the project library (`architecture/rtdb-draft-review.md`). The rules file is in the repository at `firebase/database.rules.json`. Its emulator checks are in `firebase/rtdb_rules_test/` ([08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the post-archive clean-up [V-50], the presence, `meta` validation and anonymous-member rules [V-51] and the follow-up checks [V-52] (see [Rules behavior](#rules-behavior)). The live tree is `/episodes/$ep` (with `/presence/$ep`); the suite passes 200 of 200 on these paths [V-56]. RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed).
+The design comes from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]; the review sheet is in the project library (`architecture/rtdb-draft-review.md`). The rules file is in the repository at `firebase/database.rules.json`. Its emulator checks are in `firebase/rtdb_rules_test/` ([08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the post-archive clean-up [V-50], the presence, `meta` validation and anonymous-member rules [V-51] and the follow-up checks [V-52] (see [Rules behavior](#rules-behavior)). The live tree is `/episodes/$ep` (with `/presence/$ep`); the suite passes 200 of 200 on these paths [V-56]. RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 ```
 /episodes/$ep/meta                      gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq
@@ -187,7 +187,7 @@ Design notes from probe 8.6:
 - **Resync indexes:** `events/$audience` and `textlog/$audience` declare `.indexOn: ["seq"]`; `orderBy="seq"&startAt=N` and `limitToLast` then work for members. Catch-up by key needs no index (as in [V-33]). An unindexed `orderBy` is refused with 400 on REST [V-38].
 - **Refusals are indistinguishable.** A failed `.validate` returns the same 401 `Permission denied` as an unauthorized write, so the client logs the refused payload locally to tell the two apart in debugging [V-38].
 - **Rules do not check `seq` order or gaps.** That stays the GM client's job; rules only require a numeric `seq`, create-only keys and a valid audience [V-38].
-- **The one-alias rule is not in RTDB.** It is in Firestore ([12](12-firestore-collections.md#aliases-characters), Proposed); RTDB only checks that a member entry carries one `aliasId` [V-38].
+- **The one-alias rule is not in RTDB.** It is in Firestore ([12](12-firestore-collections.md#aliases-characters), Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)); RTDB only checks that a member entry carries one `aliasId` [V-38].
 - **Lookups per evaluation** are at most 3 `root.child` reads, under the limit of 10 the probe write-up cites for RTDB rules [U] (a static count, not a load test) [V-38].
 
 ### Rules behavior
@@ -210,20 +210,20 @@ Shown by `firebase/database.rules.json` and its emulator checks [V-50]–[V-54] 
 
 Not covered by the probe (carry to implementation): rules deployed to a real project with signed tokens, custom claims in RTDB rules, member removal, payload size limits, load, and `firebase_dart` listeners against these rules [V-38].
 
-Account data (`/users`, aliases, badges, `/campaigns` and transfers, `/packs`, `/archive/pending`, `/archive/public`, `/news`) is in Firestore; paths are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed).
+Account data (`/users`, aliases, badges, `/campaigns` and transfers, `/packs`, `/archive/pending`, `/archive/public`, `/news`) is in Firestore; paths are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 Notes on the live tree:
 
 - **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them.
 - **Head snapshot.** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-episode interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
 - **Joins.** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38]. Players are invited and managed at the campaign; the Handler picks which characters join which missions.
-- **Retention.** Once a mission is marked complete or submitted, all of its session data other than the latest snapshot is removed ([12](12-firestore-collections.md#archives); open: FE-L4, [10](10-waiting-on-d.md)). Until then each episode's archive and snapshot are kept so the Handler can roll back.
+- **Retention.** Once a mission is marked complete or submitted, all of its session data other than the latest snapshot is removed ([12](12-firestore-collections.md#archives); D to confirm: [FE-L4](10-waiting-on-d.md#fe-l4)). Until then each episode's archive and snapshot are kept so the Handler can roll back.
 - **Archiving.** The order is lock, archive, clean-up. The GM client first sets `meta/locked`, which rules check [V-38], so nothing more can be written to the events, textlog, head, requests, phone or signaling branches once the log is frozen (presence stays writable under the lock); then the `archiveEpisode` function (below) copies the frozen log to Firestore; then the clean-up below runs. The lock cannot be undone, so a failed archive write is retried against the locked data; until a retry succeeds the locked episode stays in RTDB with its status unchanged, so nothing is lost; the archive step sets `archived` and the clean-up runs only after the archive write is confirmed. Archived logs are chunked into a Firestore subcollection. Migrated episodes get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs)). **Clean-up after archive:** once the archive write is confirmed, a function deletes the live branches (`events`, `textlog`, `requests`, `head`, `signaling`, `presence`) with admin REST and keeps `meta` and `members` as the locked stub (`meta` is never deleted). The phone box is cleared at operation end; not built yet (workstream row: [10](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)). Until then the box stays with the locked stub. Admin REST bypasses rules, so the clean-up needs no rule; the checks show `meta`, `members` and `phone` remain, `meta` stays locked, members can still read it [V-50]; `phone` remaining and a player still reading their box are shown by [V-56]. The archive step sets `meta/status` to `archived` with admin REST, after the lock and before the clean-up deletes anything, and the rules then refuse presence writes, so a member's client cannot recreate presence after the clean-up [V-51]. Only admin REST can set that value: the rules refuse `archived` from any client, the GM included, before or after the lock [V-53]. An episode that is never archived needs a manual clean-up script, because deployed Dart functions have no scheduled triggers [V-23].
 - **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches. Traffic and cost at an assumed table size are approximated in the project library (`architecture/rtdb-traffic-cost-estimate.md`): about 2,200 writes per 4-hour session (an approximation from an assumed profile, not a measurement), about 0.15 writes per second.
 
 ## Library
 
-The library is the government-style public archive of verified items. It lives in Firestore with `pending` and `public` collections (names drafted in [12](12-firestore-collections.md#library-packs-and-listings): `libraryPending`, `libraryPublic`, `libraryData`; Proposed).
+The library is the government-style public archive of verified items. It lives in Firestore with `pending` and `public` collections (names drafted in [12](12-firestore-collections.md#library-packs-and-listings): `libraryPending`, `libraryPublic`, `libraryData`; Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 - Submissions land as pending items.
 - **Verification claim: R and D only**, at first. It is set by the roles function; more auditors are added later through the console. Revocable.
@@ -288,7 +288,7 @@ Three Firebase projects: **dev, staging and prod**. RTDB rules and Firestore rul
 
 ## Probe order
 
-Credentialed probes can run in the cloud or on a developer PC. Full status and evidence paths: [verification.md](verification.md#probe-status).
+Credentialed probes can run in the cloud or on the project's Windows PC. Full status and evidence paths: [verification.md](verification.md#probe-status).
 
 | Order | Probe | Status |
 |---|---|---|

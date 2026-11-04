@@ -58,13 +58,13 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 
 ### Settings resolution
 
-Game settings (physical dice allowed, Handler-facing switches) have a base at the **campaign** (open: FE-L2, [10](10-waiting-on-d.md)), which also owns the pack version pin. Each new mission starts as a copy of the base (or of another mission) and may override it. The resolved value is the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
+Game settings (physical dice allowed, Handler-facing switches) have a base at the **campaign** (D to confirm: [FE-L2](10-waiting-on-d.md#fe-l2)), which also owns the pack version pin. Each new mission starts as a copy of the base (or of another mission) and may override it. The resolved value is the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
 
 The consequence auto-confirm is not one of these: it stays a per-episode setting. The auto-confirm setting for requests made between sittings (purchases and contact releases, see [Requests between sittings](#requests-between-sittings)) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
 
 ### Names in the log
 
-How lines are produced is open (N1-R1 to N1-R5, [10](10-waiting-on-d.md#4-open-for-r)).
+How lines are produced is open ([N1-R1](10-waiting-on-d.md#n1-r1), [N1-R2](10-waiting-on-d.md#n1-r2), [N1-R4](10-waiting-on-d.md#n1-r4), [N1-R5](10-waiting-on-d.md#n1-r5)).
 
 - **Before a reveal.** The log names a character by a short description the Handler types ("the man in the grey coat"); with none, numbered unknowns ("Unknown 1", "Unknown 2").
 - **Reveals.** The Handler can reveal a cover name first and the true name later, and can reveal a name to some agents only. A reveal is not taken back; the Handler can only give a new label from then on.
@@ -72,11 +72,11 @@ How lines are produced is open (N1-R1 to N1-R5, [10](10-waiting-on-d.md#4-open-f
 - **Phone.** An unknown number shows as "Unknown number" until the Handler releases the contact; the Handler can set a label.
 - **Earlier lines.** After a reveal, the lines of the current episode show the new name; archived logs do not change. A revealed name stays known in later episodes unless the Handler sets a new name.
 
-Proposed mechanism (open: N1-R2, [10](10-waiting-on-d.md#4-open-for-r)): a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
+Proposed mechanism (open: [N1-R2](10-waiting-on-d.md#n1-r2)): a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
 
 ### RNG adapter
 
-The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web (not yet run). The version is pinned exactly, and known-seed test vectors are kept for native and web.
+The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web. The vectors are in `packages/session/test/xoshiro_rng_test.dart`, and CI runs them on the VM and, with `dart test -p node` in `packages/session`, on Node.js. The version is pinned exactly, and known-seed test vectors are kept for native and web.
 
 Participants:
 
