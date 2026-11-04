@@ -83,11 +83,11 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 |---|---|
 | `CharacterSystem` | creation steps (§3), attribute/skill allocation rules, advancement purchases (§9) |
 | `CheckSystem` | action requests, check requirements, resolution, opposed checks, assistance, overrides (§2, §5) |
-| `VitalsSystem` | damage, DR, healing, critical injury triggers, sanity loss and recovery (§4, §7) |
+| `VitalsSystem` | damage, DR, healing, sanity loss and recovery (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (G7, below); no critical-injury triggers (cut, C1) |
 | `ConditionSystem` | applying, ticking and clearing conditions, afflictions, disorders (§4) |
-| `CombatSystem` | initiative, rounds, turn order, action economy (major/minor/reaction), range penalties, movement (§7) |
+| `CombatSystem` | initiative, rounds, turn order, action economy (one major, one minor, one reaction by default, G10), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
-| `OccultSystem` | Settled by D (2026-10-22): one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (M2, M3). Details still open: focus-item rule (FD-M2). |
+| `OccultSystem` | Settled by D (2026-10-22): one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (M2, M3; see [Magic rulings](#magic-rulings-m3-focus-items-and-artifacts)). The focus-item reduction is not ruled ([10](10-waiting-on-d.md)). |
 | `InventorySystem` | items, equipment, transfer |
 | `MessagingSystem` | in-game phone messages (see [04-session.md](04-session.md#in-game-phone)) |
 | `TableSystem` | rolls on the pack's random tables (`RollTable` → `TableRolled`, R-B2): the seeded RNG rolls the table's dice, the total picks one row, and the event carries the faces, total, the table's lead-in and the row text. A roll, never held for review (F2). Players read only the fiction (lead-in, then row); the GM's line has the dice; a redacted roll shows players a redaction bar (R, 2026-11-03). Table content is D's; the engine ships no rows |
@@ -112,8 +112,8 @@ GM:      ApplyConsequence(...)                                      → (held fo
 - `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, advantage pool and the kept result, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it.
 - Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
-- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
-- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-episode GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
+- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. An auto-confirm setting skips the wait (default at the campaign, overridable per mission: [04](04-session.md#settings-resolution-r-a1-r-c1)). **Death at 0 Health goes through the gate (R7, ruled 2026-10-27):** it is part of the confirmed damage batch, so the Handler can edit the damage before the character dies; the Handler's own `KillCharacter` is not gated. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
+- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a GM setting that is off by default) is approved by D (2026-10-22) and built after the demo (see [the record](decision-record.md#decisions-record-ruled-by-d-2026-10-22)). Proposed: `ResolveCheck` takes optional `faces`, validated against the dice the check would roll and refused unless `EpisodeSettings.allowPhysicalDice` (default `false`) is on; entered faces are recorded with `source: entered` and who entered them, and, like app rolls, are never re-rolled or changed. The setting follows the settings levels ([04](04-session.md#settings-resolution-r-a1-r-c1)).
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
@@ -127,14 +127,14 @@ The engine implements these **kinds** of mechanics from the rulebook. All number
 | Proficiency tiers | tier key → bonus expression; the proficiency bonus is additional dice, Proficient +1d4 and Expert +1d6 (G16) | tiers and their bonus dice |
 | Difficulty categories | category key → DC | category table |
 | Exploding die | on max face of the primary die, roll again and add, chaining (§2) | which dice explode (rulebook: primary only) |
-| Luck advantage | roll N extra primary dice, keep the best total (§2) | N's source (rulebook: LCK) |
+| Luck advantage | roll N extra primary dice, keep the best total (§2). Replaced by flashback (G2, FB1): nothing is built, the pack block stays pending | N's source (rulebook: LCK) |
 | Partial success | within X of the DC (§2, §4) | X |
-| Fumble | total ≤ fraction of DC (§2) | fraction |
+| Fumble | total ≤ fraction of DC, rounded down (§2; G1, K1) | fraction |
 | Opposed check | both sides roll, higher wins, ties to GM (§5, §7) | — |
 | Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (D, 2026-10-22; was `1d6 + var(helperSkillBonus)`) | gate DC, cap, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
-| Damage | category → dice and minimum (§6), DR subtracts first (§7) | damage table, DR formula |
-| Sanity check | resist roll, outcome band → full/half/none/extra loss (§4) | bands, losses |
+| Damage | category → dice and minimum (§6); MIN is a floor on the total (G9); DR subtracts first (§7) | damage table, DR formula |
+| Sanity check | resist roll against the DC for the current Sanity band; outcome band → full/half/none/extra loss (§4, G5) | bands, losses |
 | Range bands | band → penalty, weapon-category restrictions (§7) | bands, penalties |
 
 A **dice expression** is engine vocabulary: a small data structure (not a string parsed at runtime) such as `Dice(count: 1, sides: 6, explode: true)`, `Const(3)`, `Sum([...])`, `KeepHighest(pool, n)`, `Var(key)`. Packs write these in data form; the engine evaluates them with the RNG and returns both the value and the breakdown.
@@ -162,18 +162,50 @@ The engine can represent each variant; the **values** come from the rulebook as 
 4. **Disorder table (settled).** §4 reads as a clean table of rolls 1 to 6.
 5. **Occult check attribute (settled by D, 2026-10-22, C5/G6).** WIL by default, or the attribute of the skill the player names. "Cast magic" is one roll: the Handler sets the final DC from the circumstances (time, helpers, focus items). See the D rulings below.
 
-Settled by D (2026-10-22; the cards are in [10-pending-d.md](10-pending-d.md), the record in [09](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)):
+Settled by D (2026-10-22 unless dated; the record is [decision-record.md](decision-record.md#decisions-record-ruled-by-d-2026-10-22)). Shapes named here are Proposed; the rulings are Fixed:
 
-6. **Rounding (K1).** Always to the benefit of the player; each rounding names its direction.
+6. **Rounding (K1).** "When rounding in B.A.R.D. we ALWAYS round to the benefit of the player." Every rounding in the engine or a pack names its direction (`rounding: "down" | "up"` beside the fraction, Proposed). D agreed the list on 2026-10-29 (FD-K1): damage to players rounds down, healing and XP round up, sanity loss rounds down, and thresholds that cause bad outcomes (the fumble threshold) round down.
 7. **"Roll" means the total (K2, G1)** in most cases, unless otherwise specified (D). A fumble is a total at or below 25% of the DC, rounded down.
 8. **Exploding dice (G3).** The primary d6 and damage dice; not the proficiency die or any other.
-9. **Assistance (G4, G18).** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score. The `helperSkillBonus` variable above is replaced (open questions: FD-A1, FD-A2).
-10. **Sanity (G5).** The Handler sets the loss; the resist DC follows current Sanity (20/40/60/80/100% = Cat-S/A/B/C/D); half loss rounds down; a failed disorder check rolls 1d6 on the disorder table. D will rework the sanity tables.
-11. **Death (G7).** 0 Health is death; 0 Sanity passes the character to the Handler; the Handler can kill at any time. The 1.3.1 critical-injury table is cut (C1); whether the incapacitated state is also gone is FD-D1.
-12. **Weapon MIN (G9).** A floor on the total damage; melee floor is the greater of MIN and the STR score; Whether Strength also adds to damage dice is not ruled (FD-G9).
-13. **Turn (G10).** One Major, one Minor and one reaction by default; Handler-granted items, bonuses or skills may raise them.
-14. **Creation (G19).** Limits by character kind (agent alias or Occult Organization member: 20 points, one attribute at 5, two at 4, at least 1 Expert; SKALD civilian: 15 points).
-15. **Advantage and disadvantage (G2)** are to be replaced by flashback (FB1); nothing is built for them.
+9. **Assistance (G4, G18).** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score. The `helperSkillBonus` variable above is replaced. Proposed pack shape: `assistance.cap` `{"type": "attributePlus", "plus": 1}`; refusal code `tooManyHelpers`. Whether the helper still passes the Cat-D gate check first, and whether an untrained character may help, is not ruled ([10](10-waiting-on-d.md)).
+10. **Sanity (G5).** The Handler sets the loss; the book's ranges are suggestions and nothing rolls automatically. The resist DC follows current Sanity: 0 to 20% of maximum is Cat-S (DC 21), 21 to 40% Cat-A, 41 to 60% Cat-B, 61 to 80% Cat-C, 81 to 100% Cat-D (D agreed the bands on 2026-10-29, FD-S1). Half loss rounds down. In an anomalous attack a partial success halves the loss, or the Handler sets a narrative effect. A fumbled resist roll costs the full loss plus 1, and the Handler describes the complication. A failed disorder check rolls 1d6 on the disorder table. Proposed pack shape: `sanity_events.json` `pick: "gm"`, `resistDc.bands`, `halfRounding: "down"`, `fumbleExtra: 1`; `disorders.json` `rollDie` 1d6. D will supply the reworked sanity and disorder tables; until then the book's ranges stay as suggestions and the pack keeps `null` where D has not given a value.
+11. **Death (G7).** 0 Health is death (the app shows a death screen); 0 Sanity passes the character to the Handler's control, very likely ending in a bad narrative event and death; the Handler can kill a character at any time. The Handler chooses the DC and the effect from a list of automated effects (the engine's consequence events: damage, sanity loss, condition, modifier) plus a custom text option. The 1.3.1 critical-injury table is cut (C1). Death at 0 Health goes through the review gate (R7, below). Proposed: `KillCharacter` (Handler), `CharacterDied`, `ControlTransferred`.
+12. **Weapon MIN (G9).** A floor on the total damage, modifiers included; the melee floor is the greater of the weapon's MIN and the STR score (Proposed pack shape `meleeFloor: "max(min, STR)"`). Weapon MIN values stay `null` where D has not given them; whether Strength also adds to damage dice is not ruled.
+13. **Turn (G10).** One Major, one Minor and one reaction (Dodge or Parry) between turns by default (Proposed `combat.json` `actionsPerTurn: {major: 1, minor: 1, reaction: 1}`); an item, bonus or skill the Handler grants may raise any of them (Proposed component `ActionBudgetBonus`). What Aim and the reactions answer, and when the reaction refreshes, are not ruled.
+14. **Creation (G19).** Limits by character kind, not exact totals. Agent alias or Occult Organization member: at most 20 attribute points, one attribute at 5, two at most at 4, at least 1 Expert, Proficients optional. SKALD (civilian character, not an agent alias): at most 15 points, one attribute at most 4, two at most 3; D wrote "1 expertise and 1 proficiency and neither is mandatory". Proposed: pack creation profiles `agent` and `skald` replace the single attribute range and proficiency counts, and `CharacterSystem` takes a profile. The remaining caps, the minimum score and how many skills an agent may take are not ruled.
+15. **Advantage and disadvantage (G2)** are replaced by flashback (FB1, [below](#flashback-fb1)); nothing is built for them, and the `luckAdvantage` block stays pending.
+16. **Human adversaries (HA1, FD-H1).** Human adversaries get their stats from weapons and gear exactly like players: attributes, skills and `items/`. The enemy defense and attack numbers (G11, Later) apply only to supernatural classes.
+
+### Magic rulings (M3, focus items and artifacts)
+
+Ruled by D (2026-10-22, M3; 2026-10-29, FD-M2). `OccultSystem` is one roll kind with a Handler-set DC; the rest is how it is paid for:
+
+- **When sanity is checked (M3a).** The Handler decides when a sanity check is needed (for example when casting against a supernatural entity); the default is on a success only. A cast carries a Handler flag that requires the check on any cast (Proposed `sanityCheckOn: "success"`).
+- **Who pays (M3b).** Every player present at the ritual pays sanity on a success, whether or not they cast; on a fail only the players taking part in the cast pay. The cost is the result of the effect going off, not a cost of the magic ("people go crazy when they see a demon appear, whoever summoned it"). This replaces the book's "each caster pays half". Proposed `sanityPayers: {onSuccess: "present", onFail: "participants"}`; the cast records who is present and who takes part, and amounts are suggested per payer through the review tray.
+- **Training (M3d).** Casting normally needs skill, training, knowledge or guidance; a high-affinity individual (high WIL, related skills, Handler discretion) may cast under extreme circumstances or spontaneously. A missing prerequisite is refused unless the Handler allows it on that cast (Proposed `RejectionCode` `missingOccultTraining` with a Handler allowance flag). No numeric affinity threshold is ruled.
+- **Focus item and artifact (FD-M2, R-B1).** They are different things. A **focus item** is a personally relevant item (a favourite trinket, an item from childhood) that grounds the agent and reduces the Sanity cost of certain actions. An **artifact** is a dangerous, powerful item with its own will: using it costs Sanity and takes the player's mental fortitude. The book labels the artifact rule "Focus Items" (Section 8, Casting & Rituals: +1d6, +2 Sanity per category above D). Pack keys: `artifact` holds the book's rule; `focusItem` is new and stays `null` until D rules the reduction. Using both together makes any failure catastrophic; the outcome comes from a random table (the `tables/` kind and `TableSystem`, R-B2), whose content is D's. The focus-item reduction, who approves a focus item, and the artifact's resist roll are not ruled.
+- **Cast DC.** All factors (time, helpers, focus items, circumstances) are folded into the one DC the Handler types. `ritualDefaults` stays in `occult.json` as Handler guidance only, not as engine rules.
+
+### Flashback (FB1)
+
+D asked (2026-10-22) for flashback to replace advantage and disadvantage: a player adds a bonus to a **failed** roll by giving a narrative reason, from past preparation, why they would have succeeded. R ruled (R8, 2026-10-27) that, because rolled faces are never altered (F2), a flashback is an additive, logged event beside the roll: the original roll stays as rolled and the bonus is shown next to it. Proposed names: `UseFlashback` command and `FlashbackUsed` event; the narrator and the `ui_kit` breakdown show both. The size of the bonus, how often it may be used, who approves the reason, whether it can rescue a fumble, and what happens to Luck's extra dice are not ruled ([10](10-waiting-on-d.md)); nothing is built.
+
+### Rulings that need code (Proposed rows)
+
+None of these is built. Names and shapes are Proposed; the ruling behind each is stated above or in the chapter named. Each becomes a workstream row, sequenced by R.
+
+| Ruling | Proposed code | Where it is described |
+|---|---|---|
+| Cast magic is one roll (M2) | A `castMagic` kind on `RequireCheck` or a new command; sanity suggested through `VitalsSystem`; `occult.json` parser replaces the raw `occultPending` | this chapter, [02](02-rules-packs.md#pack-side-rulings-by-file) |
+| Sanity payers and training (M3) | Present and participating lists on the cast; `missingOccultTraining` refusal with a Handler allowance | this chapter |
+| Death and control (G7, R7) | `KillCharacter` (Handler, not gated), `CharacterDied`, `ControlTransferred`; death screen in `ui_kit` | this chapter, [04](04-session.md#the-episode-loop-gm-canonical-fixed), [07](07-apps.md#rulings-that-shape-screens) |
+| Assistance (G4, G18) | `CheckSystem` assistance with `tooManyHelpers` and one breakdown line per helper; `var` `helperAttribute` replaces `helperSkillBonus` | this chapter, [02](02-rules-packs.md#named-variables-in-pack-formulas-fixed) |
+| Turn (G10) | `CombatSystem` action tracking, `ActionBudgetBonus` | this chapter |
+| Creation profiles (G19) | `CharacterSystem` creation takes a profile; SKALD as a character kind ([11](11-supplemental-features.md#agents-aliases-and-profiles)) | this chapter, [02](02-rules-packs.md#pack-side-rulings-by-file) |
+| Name reveals (N1) | `RevealName`, `NameRevealed`, `KnownAs`; narrator takes a viewer | [04](04-session.md#names-in-the-log-n1) |
+| Flashback (FB1, R8) | `UseFlashback`, `FlashbackUsed` | this chapter |
+| Physical dice (C7) | `ResolveCheck` takes optional `faces`; `EpisodeSettings.allowPhysicalDice` (default `false`) | this chapter (Reserved field), [04](04-session.md#play-modes) |
+| Fumble (G1) | `CheckOutcome.fumble`, narrator line, `ui_kit` label | this chapter |
 
 With the proficiency question ruled, the worked examples in §2 are unblocked as tests ([08-testing.md](08-testing.md#engine)).
 

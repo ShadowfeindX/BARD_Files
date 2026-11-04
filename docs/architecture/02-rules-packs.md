@@ -18,7 +18,7 @@ If a new rule needs a new *kind* of thing, that is an engine change. If it needs
 
 **Format (Fixed, P3).** A pack is a folder of JSON files plus a manifest, not YAML. The Dart SDK reads JSON with no extra dependency and every editor understands it. UI editing of packs is planned, since GMs publish packs too. Ruled by R 2026-10-20 (P3).
 
-**Pack shape: confirmed by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).** The file list below stays; files and fields added by D's other rulings (creation profiles, combat defaults, assistance) are additive. The example pack for D lives in the project library, not in this repository.
+**Pack shape: Fixed, confirmed by D (2026-10-22).** The file list below stays; files and fields added by D's other rulings (creation profiles, combat defaults, assistance) are additive. The example pack for D lives in the project library, not in this repository.
 
 ```
 core/                           pack id
@@ -34,7 +34,8 @@ core/                           pack id
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  occult.json                   magic categories, sanity costs (§8; "cast magic" ruled by D 2026-10-22, details open)
+  combat.json                   Proposed (G10): actions per turn
+  occult.json                   magic categories, sanity costs (§8; "cast magic" is one roll with a Handler-set DC, D 2026-10-22)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
   items/                        one file per item template
@@ -65,7 +66,28 @@ core/                           pack id
 
 ### Skills (Fixed, F3 part 2)
 
-A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). D ruled on 2026-10-22 that "cast magic" is one roll kind with a Handler-set DC ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
+A skill is: `name`, `description`, `category`, `attribute`, `proficiency`. There are five categories; they are organizational only and have no mechanical effect. `skills.json` has no "allowed uses" list (dropped; ruled by R 2026-10-20, F3). D ruled on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22) that "cast magic" is one roll kind with a Handler-set DC.
+
+### Pack-side rulings by file
+
+What D's rulings of 2026-10-22 and 2026-10-29 and R's of 2026-11-03 mean for each pack file. The rulings are Fixed; field names and shapes marked Proposed are not ruled. A value D has not given stays `null` in the pack and the feature stays off (CLAUDE.md §9). The engine side of each ruling is in [01](01-engine.md#rulebook-gaps-and-settled-rulings).
+
+| File | Ruling | Shape |
+|---|---|---|
+| `skills.json` | Mind Shielding stays (WIL); Eldritch Lore (INT) and Vehicle Modification (INT) are added; Insight uses WIS; the paired skills (Alchemy and Advanced Alchemy, Explosive Disposal and Explosives) stay separate; categories come from the book's skill list, never reconstructed (P2) | data only |
+| `occult.json` | The cast attribute is WIL, or the named skill's attribute (M1); `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail (M3); `ritualDefaults` is Handler guidance only (M2); the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is new and `null` until D rules (R-B1) | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed |
+| `difficulty.json` | `checkRules.fumble` is the total, rounded down (G1, K1); `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute (G4, G18); `luckAdvantage` stays pending because flashback replaces it (G2, FB1); the old names "Tough DC 9", "Moderate", "Advanced" and "Extreme 21" are dropped and restated as categories (G13) | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed |
+| `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6 (G5). D will supply the reworked tables | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed |
+| `damage.json`, `threats.json` | Damage dice explode; `min` is a floor on the total damage, and a melee weapon's floor is the greater of its MIN and the STR score (G3, G9). Weapon MIN values stay `null` until D gives them | `meleeFloor`: Proposed |
+| `proficiency.json`, `advancement.json` | Proficiency and advancement dice do not explode (G3) | `explode: false`, data only |
+| `attributes.json`, `proficiency.json` (creation) | Creation limits by character kind: `agent` (also Occult Organization members) and `skald` (G19) | profile names and fields: Proposed |
+| `combat.json` | One Major, one Minor and one reaction per turn by default (G10) | `actionsPerTurn`: Proposed |
+| `tables/` | Random tables are a generic kind (R-B2); the engine ships no rows, the table content is D's | as in the structure above |
+| `npcs/`, `threats.json` | Human adversaries use attributes, skills and `items/` like a player alias; class numbers apply to supernatural classes only (HA1, FD-H1) | note for when G11 is ruled |
+
+Rounding: wherever a pack states a fraction, it states the rounding direction beside it, and the direction favours the player (K1).
+
+Still `null` and not ruled (D, "Later"): armor and damage reduction (G8), enemy defense and attack (G11), advancement purchase limits (G14), currency (Q6). They are listed in [10-waiting-on-d.md](10-waiting-on-d.md).
 
 ### Named variables in pack formulas (Fixed)
 
@@ -142,7 +164,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 ## Episodes pin packs
 
-- An episode records `packRef = (id, version, contentHash)` in its meta when created.
+- The pack version pin lives at the **campaign** (R-A1, 2026-11-03), so characters' numbers do not change between missions; the episode-scoped pack tier stays below it. An episode records `packRef = (id, version, contentHash)` in its meta when created.
 - **Pack updates are manual by default (Fixed).** When a newer pack version exists the GM sees it, with a summary of what changed, and chooses when to apply. Applying records a `PackUpdated(from, to)` event, so the log shows exactly when values changed.
 - **Engine updates are automatic by default (Fixed)** within a major. The GM toggles for both live in episode settings and are stored in episode meta.
 - Because events carry resolved results, a pack update never changes past outcomes.

@@ -33,7 +33,7 @@ request(cmd) ──► EpisodeHost
                    4. rolls: go straight on to steps 5-8 (never gated)
                       consequences: held as a GM-only pending batch (GM review gate)
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
-                         auto-confirm skips the wait when the episode's setting says so
+                         auto-confirm skips the wait when the setting says so (resolved from the mission or campaign setting)
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
                       StoreActor.append(events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
@@ -47,13 +47,32 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - Storing comes before broadcast: an event is never broadcast before it is stored on the GM device.
 - **GM review gate (F2 option A, Fixed; ruled by R 2026-10-20; covers rulebook decision 21).** The gate lives in `EpisodeHost`. Consequence events are held as a GM-only pending batch: nothing is sequenced, stored or broadcast for them yet, and only the GM perspective shows them. The GM confirms the batch or edits values first; an edit is recorded on the event (`overriddenFrom` holds the original value), so the log shows both. Only after confirmation are seq assigned, the events narrated, stored, filtered and broadcast.
 - **Rolls are not gated.** `CheckResolved` is broadcast immediately and the GM never influences dice. Rolled faces are never altered; a GM edit to a consequence value sits beside the original.
-- **Auto-confirm** is a per-episode GM setting. With it on, a pending batch is confirmed without waiting for the GM.
+- **Auto-confirm** is a GM setting, resolved like the other settings ([below](#settings-resolution-r-a1-r-c1)). With it on, a pending batch is confirmed without waiting for the GM.
+- **Death goes through the gate (R7, ruled by R 2026-10-27).** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-gaps-and-settled-rulings)).
 - **Text log and head snapshot (P12, Fixed).** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Periodic full snapshots for fast joins are unchanged.
 - **Rolling autosave and durability (P12, 09-3, Fixed).** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch, then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1; R accepted this.
 - **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). There is no web host (W1, below), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
 - **Authorization** lives here, not in the engine: "only the GM may `RequireCheck`", "a player may only `RequestAction` for an alias they control", "anonymous accounts cannot host". The engine stays about rules; the session is about people.
+
+### Settings resolution (R-A1, R-C1)
+
+Game settings (physical dice allowed, auto-confirm, Handler-facing switches) belong to the mission and can be copied from another mission (D, 2026-10-29, FD-X1). R agreed on 2026-11-03 (R-A1) that the **campaign** owns the base settings and the pack version pin, and that each new mission starts as a copy of the base (or of another mission) and may override it. Proposed resolution: the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
+
+R-C1 (2026-11-03): the auto-confirm setting for requests made between sittings (purchases and contact releases, Q5) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
+
+### Names in the log (N1)
+
+D ruled the name rules on 2026-10-22; how lines are produced (R1 to R5) is R's and open ([10](10-waiting-on-d.md)).
+
+- **Before a reveal (D1).** The log names a character by a short description the Handler types ("the man in the grey coat"); with none, numbered unknowns ("Unknown 1", "Unknown 2").
+- **Reveals (D2, D3, D7).** The Handler can reveal a cover name first and the true name later, and can reveal a name to some agents only. A reveal is not taken back; the Handler can only give a new label from then on.
+- **Agents (D5).** Players' agents know each other's names from the start; the Handler can keep an agent a stranger.
+- **Phone (D6).** An unknown number shows as "Unknown number" until the Handler releases the contact; the Handler can set a label.
+- **Earlier lines (D4).** After a reveal, the lines of the current episode show the new name; archived logs do not change. A revealed name stays known in later episodes unless the Handler sets a new name (D, FD-N1).
+
+Proposed mechanism, not ruled: a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
 
 ### RNG adapter (P5, Fixed)
 
@@ -140,9 +159,9 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | Network-hosted | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore (FS1, FS3) ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online. |
 
-**Web build (W1, Fixed for now; ruled by R 2026-10-20):** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and R ruled that the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. D confirmed it on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)). Native builds can host every mode.
+**Web build (W1, Fixed for now; ruled by R 2026-10-20):** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and R ruled that the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web`. D confirmed it on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22). Native builds can host every mode.
 
-**Physical dice (concern 7).** A per-episode GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). D approved the feature on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)); it is built after the demo, and which level owns the setting follows the campaign/operation/mission/episode ruling (FD-X1).
+**Physical dice (concern 7).** A GM setting, off by default, would allow players to enter faces of physical dice. Without it, entered faces are refused, so the GM never mistakes player-entered values for client rolls. The session only reserves the `source` field on `CheckResolved` (`rng` | `entered`, plus who entered). D approved the feature on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22); it is built after the demo, and the setting is resolved like the others ([above](#settings-resolution-r-a1-r-c1)).
 
 ## Reconnection and GM continuity
 
@@ -159,15 +178,19 @@ Because the GM's log is the single ordered truth, there are no concurrent writer
 
 The backend copy is a mirror, never a second authority. If the backend holds events the GM device does not (for example the GM resumed on a second device and then the first came back online), the first device must adopt the backend log before continuing; it never merges. The exact detection rule (compare last seq + hash of last event) is specified at implementation time.
 
+## Requests between sittings (Q5)
+
+A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override (R-C1, above). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are not ruled ([10](10-waiting-on-d.md)); the default (an assumption; R-C1's default was never ruled) is that purchases are not auto-confirmed, since F2 covers consequence events only.
+
 ## In-game phone
 
 Players can send in-world text messages ("phone") that are forwarded to the GM (Fixed).
 
 - Sending is a command, `SendPhoneMessage(from, to, text)` (names and fields **Proposed**). `from` and `to` are a party: the Handler, an alias, or a GM-run entity (an entity with no owning alias). A player sends as their own alias to the Handler, a GM-run entity or another alias; the Handler sends as themselves or as a GM-run entity, to an alias. The engine checks that the sender matches the command's actor, that both parties exist, and that the text is 1 to 2,000 UTF-16 code units (the relay rules' cap). Whether an account may send at all (anonymous accounts may not, [06](06-accounts-backend.md)) is the session's authorization, not the engine's.
-- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box at mission end is the archive function's job (P17) and waits on Q24; the engine has no such event.
+- The engine records `PhoneMessageSent` with visibility `aliases[sender, recipient-if-alias]`; the session's projection always gives the Handler every event, so the GM sees it too. Messages to a GM-run entity go to the Handler, who answers **as** that entity with `SendPhoneMessage(from: entity, ...)`. Clearing the relay's phone box when the operation ends is a function's job after the archive is written (P17, changed by R 2026-11-03); the engine has no such event. The phone **contact list** belongs to the campaign and the phone box messages to the operation (Q7, R 2026-10-27).
 - Because messages are events, they are part of the log, survive reconnects, and can be referenced by later documents.
 - The companion app's phone screen is just a view over these events for one alias.
-- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box when the operation ends are R's rulings (holding both sides 2026-10-21, P17; clear point changed to operation end 2026-11-03); the operation-end step is not built yet on Q24, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
+- On the RTDB relay, each player has a phone box (`phone/$uid/$push`) holding both the player's and the GM's messages, because a sender cannot list a shared list they only partly own [V-38]. Holding both sides and clearing the box when the operation ends are R's rulings (holding both sides 2026-10-21, P17; clear point changed to operation end 2026-11-03); the operation-end step is not built yet, and the rest of the RTDB model was approved by R 2026-10-21 (P10c); see [06-accounts-backend.md](06-accounts-backend.md#realtime-database-model-live-play).
 
 ## Perspectives
 

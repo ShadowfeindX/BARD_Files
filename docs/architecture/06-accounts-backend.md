@@ -72,10 +72,14 @@ Agent (account)
           └─ transferRequest?     pending move, needs that campaign's GM approval
 Campaign
   ├─ id, name, gmAgentId
-  ├─ members: aliasIds
-  ├─ packRefs
+  ├─ members: player accounts (invited and managed at campaign level, R-A6)
+  ├─ personas[]          Handler personas (R-A4), owned by the campaign
+  ├─ packRefs            the pack version pin (R-A1)
+  ├─ baseSettings        copied into each new mission (R-A1)
   └─ operations[]
 ```
+
+- **Handler personas (R-A4, ruled by R 2026-11-03).** A persona is a character-shaped entity owned by the campaign, not tied to the GM's account. It has the same components as an alias, with stats set by the GM; the GM uses them when a player asks that Handler for help. Inside an operation the roster shows the persona, never the GM account; players see the GM account only when accepting a campaign invite. Moving a persona to another campaign is a copy (Proposed; D said "moved"). The document shape is a later row ([12](12-firestore-collections.md#campaigns-operations-and-episodes)).
 
 Profiles, aliases and campaigns are searchable account data and live in Firestore (FS1). Field-level shapes are in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, awaiting R).
 
@@ -86,7 +90,7 @@ Rules:
   - The **source** campaign is notified; it does not consent.
   - An alias in a **running episode cannot move** until that episode ends.
   - The transfer request is a Firestore document under the destination campaign, approvable only by its GM (Firestore rules).
-- **Anonymous accounts** (Fixed): can join any episode, have exactly one alias, cannot GM, host or create content. Anonymous sign-in works in `firebase_dart` on Windows and Linux [V-21].
+- **Anonymous accounts** (Fixed): can join any episode, have exactly one alias, cannot GM, host or create content. They may browse the free (level-1) library entries like a free account (Q33, D 2026-10-22); they still have no voice, video or messaging. Anonymous sign-in works in `firebase_dart` on Windows and Linux [V-21].
 - **Upgrading an anonymous account** (probe 8.5, Windows and Linux [V-39]). `linkWithCredential` is an `UnimplementedError` stub in `firebase_dart` 1.6.2 [V-39], and signing in with email after anonymous gives a **new** uid [V-21], so neither is used. Proposed upgrade path:
   - Call `updateEmail` then `updatePassword` on the signed-in `firebase_dart` user. This keeps the uid, clears `isAnonymous`, and later email sign-ins return the same uid [V-39].
   - Do **not** call the Identity Toolkit `accounts:update` REST endpoint out of band for this. It also keeps the uid, but it leaves `firebase_dart`'s stored session inconsistent (Linux: `reload()` fails with `user-token-expired`; Windows: `reload()` still reports anonymous) [V-39].
@@ -145,7 +149,7 @@ Ruled by R 2026-10-20 (B5). By default `firebase_dart` 1.6.2 stores the refresh 
 
 ```
 /episodes/$ep/meta                      gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq
-/episodes/$ep/members/$uid              { aliasId, joinedAt }; written by the GM client only
+/episodes/$ep/members/$uid              { aliasId, joinedAt }; written by the GM client only (membership moves to the campaign in a later gated row, R-A6; the rules change goes through the Opus gate)
 /episodes/$ep/requests/$uid/$push       { id, kind, from == $uid, ... }; the member writes own uid only, create-only
 /episodes/$ep/events/$audience/$push    { seq, body }; GM only; create-only; .indexOn seq
 /episodes/$ep/textlog/$audience/$push   { seq, text }; GM only; create-only; .indexOn seq
@@ -223,7 +227,8 @@ Notes on the live tree:
 
 - **Per-audience branches.** RTDB rules grant reads per path, so the GM reads everything, members read `public`, and an alias owner reads only their own branch. GM-only events and text are never stored where a player can read them. This replaces the earlier Firestore per-audience documents (P12).
 - **Head snapshot (P12).** Non-web hosts write the head snapshot to the local store with every batch. It is **mirrored to RTDB on the GM-configurable per-episode interval** ([04-session.md](04-session.md)); events and text go to RTDB every batch.
-- **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38].
+- **Joins (B3, Fixed).** Join requests are answered by the GM client, which writes `members/$uid` under RTDB rules [V-38]. Players are invited and managed at the campaign (R-A6); the Handler picks which characters join which missions.
+- **Retention (R-A3).** Once a mission is marked complete or submitted, all of its session data other than the latest snapshot is removed ([12](12-firestore-collections.md#archives)). Until then each episode's archive and snapshot are kept so the Handler can roll back.
 - **Archiving.** The order is lock, archive, clean-up (R 2026-10-21). The GM client first sets `meta/locked`, which rules check [V-38], so nothing more can be written to the events, textlog, head, requests, phone or signaling branches once the log is frozen (presence stays writable under the lock, ruling 3); then the `archiveEpisode` function (below) copies the frozen log to Firestore; then the clean-up below runs. The lock cannot be undone, so a failed archive write is retried against the locked data; until a retry succeeds the locked episode stays in RTDB with its status unchanged, so nothing is lost; the archive step sets `archived` and the clean-up runs only after the archive write is confirmed. Archived logs are chunked into a Firestore subcollection (FS5). Migrated episodes get a new id; the genesis event lists the archives ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). **Clean-up after archive (Fixed, R 2026-10-21, estimate flag 2 option a):** once the archive write is confirmed, a function deletes the live branches (`events`, `textlog`, `requests`, `head`, `signaling`, `presence`) with admin REST and keeps `meta` and `members` (R 2026-10-21: "Yes, keep members") as the locked stub (`meta` is never deleted, ruling 1). The phone box is not cleared at episode archive: R ruled (2026-11-03) that it clears when the operation ends, so the clear-up step for `phone` moves to the operation-end step (a Proposed row; until it is built the box stays with the locked stub). Admin REST bypasses rules, so the clean-up needs no rule; the checks show `meta`, `members` and `phone` remain, `meta` stays locked, members can still read it [V-50]; `phone` remaining and a player still reading their box are shown by [V-56]. The archive step sets `meta/status` to `archived` with admin REST, after the lock and before the clean-up deletes anything, and the rules then refuse presence writes, so a member's client cannot recreate presence after the clean-up (R 2026-10-21 [V-51]). Only admin REST can set that value: the rules refuse `archived` from any client, the GM included, before or after the lock (R 2026-10-21 [V-53]). An episode that is never archived needs a manual clean-up script, because deployed Dart functions have no scheduled triggers [V-23].
 - **Scale.** RTDB's docs give about 200k simultaneous connections per database and about 1,000 writes per second per database, with multiple databases available on the Blaze plan [V-25]. Index nodes are denormalised so clients never scan large branches. Traffic and cost at an assumed table size are approximated in the project library (`architecture/rtdb-traffic-cost-estimate.md`, P24): about 2,200 writes per 4-hour session (an approximation from an assumed profile, not a measurement), about 0.15 writes per second.
 
@@ -286,7 +291,7 @@ Ruled by R 2026-10-20 (B4). **No App Check enforcement in v1.** Enforcement reje
 
 ## Payments (deferred: concern 6)
 
-Payments are a backend role (Fixed). R deferred the payment design: no provider is decided, and payment and store policy was not researched. The app keeps an `Entitlements` read model fed by claims, and the payment webhook and store-receipt functions stay as placeholders. **Probe 8.8** (provider plus app-store policy) is scheduled when R wants monetization designed, likely with D. Listed in [09-open-decisions.md](09-open-decisions.md#concerns-raised).
+Payments are a backend role (Fixed). R deferred the payment design: no provider is decided, and payment and store policy was not researched. The app keeps an `Entitlements` read model fed by claims, and the payment webhook and store-receipt functions stay as placeholders. **Probe 8.8** (provider plus app-store policy) is scheduled when R wants monetization designed, likely with D. Listed in [09-open-decisions.md](09-open-decisions.md#deferred) and, as concern 6, in [the record](decision-record.md#concerns-raised).
 
 ## Environments (Fixed: P10b)
 

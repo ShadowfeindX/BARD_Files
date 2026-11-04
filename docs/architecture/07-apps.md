@@ -72,7 +72,7 @@ Status: **T1, T7, T8, T9 and the T11 colour format Fixed** (R, 2026-11-04; T9 re
 
 T1 replaced the design review's local-only recommendation (DEC-25 A, DEC-40 A); T2, as read here, brings storage back to the client, now together with custom themes and import and export.
 
-**T2 to T6 (Fixed, 2026-11-04, recorded as T9 in [09](09-open-decisions.md#apps)):**
+**T2 to T6 (Fixed, 2026-11-04, recorded as T9 in 09):**
 
 - **T2:** "these settings are only for the player client", unless the question is where they should be stored to sync across clients. Read here as: the appearance setting and custom themes live on the client. Whether cross-client sync is wanted at all in v1 is still open (T2 in 09).
 - **T3:** "no limits on player theming". There is no cap on the number of custom themes, on name length or on overrides. R also asked for an efficient way to define and store a theme designed from another one: a theme may name a **base** theme and store only the values it overrides ([Derived themes](#derived-themes-base-and-overrides)).
@@ -369,7 +369,18 @@ R ruled a separate package for the theme model (T8). The package name `theme_cor
 
 ### Web build role (W1, Fixed for now; ruled by R 2026-10-20)
 
-The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. D confirmed player-only on 2026-10-22 ([09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)).
+The web build is a lightweight, player-only client that reaches people who have not yet decided to install the app. There is no GM hosting on the web. R noted that GMs on the web would lose control over engine version, pack choice and modifying their own games, features most GMs would want; those live in native builds. Features are gated by a capability set the app reads at startup (for example `canHost`, `canEditPacks`), so a later change is a configuration change, not a restructure. D confirmed player-only on [2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22).
+
+## Rulings that shape screens
+
+Proposed screens that follow rulings; none is built.
+
+- **Death screen (G7, D 2026-10-22).** A character reaching 0 Health flashes a death screen. It is Proposed to show to the player who lost the character and the Handler, with the other players seeing a line in the log ([10](10-waiting-on-d.md)).
+- **Handler effect list (G7, M2).** The Handler picks the DC and the effect from a list of one-click effects built on the engine's consequence events, plus a custom text option. The sanity review tray shows the book's ranges as suggestions (G5).
+- **Cast DC helper (M2).** The Handler types the final DC; a labelled factor list is Proposed.
+- **Roster shows personas (R-A4).** Inside an operation the roster shows the Handler persona, never the GM account.
+- **Personal library (R-A5, ruled in v1 by R 2026-11-03).** A per-account view over archived documents the player wrote or is mentioned in; a read-only index in Firestore pointing at archived items, with no new storage of the content. The document kinds are D's to confirm ([10](10-waiting-on-d.md)).
+- **Name reveals (N1).** The player log renders names from what that viewer knows ([04](04-session.md#names-in-the-log-n1)).
 
 ## The app shell never affects outcomes (Fixed)
 

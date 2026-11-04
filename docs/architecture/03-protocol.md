@@ -53,7 +53,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay. A 
 
 There is no message by which a client sends an *event*. Only the GM produces events (Fixed authority model).
 
-A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and not built yet.
+A request that carries entered dice faces (physical dice) relies on the `source` field of `CheckResolved` (`rng` or `entered`, plus who entered). The field is reserved (Fixed, concern 7); the feature is approved by D ([2026-10-22](decision-record.md#decisions-record-ruled-by-d-2026-10-22)) and not built yet.
 
 ### Message bodies (Proposed)
 
@@ -72,7 +72,7 @@ The table above names what each message carries; `packages/protocol_envelope` fi
 | `presence` | `status`: `online`, `away` or `typing` |
 | `ping` / `pong` | `nonce?` |
 
-Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and Proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
+Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and Proposed `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model-fixed-concepts-proposed-fields)). A reason added by a later minor decodes as `unknown` on older clients.
 
 The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (Proposed).
 

@@ -1,6 +1,6 @@
 # Rules packs: loading and validating
 
-A pack is a folder of JSON files plus `manifest.json` (02 §Pack structure). The engine loads it with `loadPack`; the same code backs the app and the command-line validator, so "valid" means the same everywhere. The pack shape is Provisional, pending D. The provisional pack lives in `packages/content_core/assets/example-core/`.
+A pack is a folder of JSON files plus `manifest.json` (02 §Pack structure). The engine loads it with `loadPack`; the same code backs the app and the command-line validator, so "valid" means the same everywhere. The pack shape (file list and fields) is Fixed, confirmed by D (P1); values D has not given are still `null`. The provisional pack lives in `packages/content_core/assets/example-core/`.
 
 ## Check a pack from the command line
 

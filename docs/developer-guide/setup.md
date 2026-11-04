@@ -35,7 +35,7 @@ cd apps/bard && flutter run -d linux    # or -d windows
 
 ## Workspace layout
 
-The root `pubspec.yaml` lists every member under `workspace:`. Packages follow [00-overview.md](../architecture/00-overview.md#repository-layout):
+The root `pubspec.yaml` lists every member under `workspace:`. Packages follow [00-overview.md](../architecture/00-overview.md#repository-layout-fixed):
 
 - `packages/`: `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, `content_core`, `backend`, `ui_kit`.
 - `apps/`: `bard` (Windows and Linux desktop), `companion` (Android), `functions` (Dart Cloud Functions).
