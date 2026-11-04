@@ -57,7 +57,7 @@ The theme widgets and theme controller over the pure-Dart theme package `theme_c
 
 ## Themes and player appearance settings
 
-Status: **T1, T7, T8 and T9 Fixed** (R, 2026-11-04; T9 records R's rulings on T2 to T6). Every detail below that those rulings do not state is **Proposed**. The items still open for R are T2, T3, T4, T6, T10 and T11 in [09](09-open-decisions.md#open-for-r-themes); T5 and the label wording (T7 e) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-16, DEC-25, DEC-29, DEC-34, DEC-40, VER-14).
+Status: **T1, T7, T8, T9 and the T11 colour format Fixed** (R, 2026-11-04; T9 records R's rulings on T2 to T6). Every detail below that those rulings do not state is **Proposed**. The items still open for R are T2, T3, T4, T6, T10 and the rest of T11 (the `windowEdge` values and the package name) in [09](09-open-decisions.md#open-for-r-themes); T5 and the label wording (T7 e) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-16, DEC-25, DEC-29, DEC-34, DEC-40, VER-14).
 
 ### What R ruled
 
@@ -84,7 +84,7 @@ T1 replaced the design review's local-only recommendation (DEC-25 A, DEC-40 A); 
 
 - (a) The chip text token names `onSuccess`, `onPartial`, `onFailure`, `onWarning`, `onLocked` and `onConfirm` are accepted.
 - (b) The window edge gets its own token, set on every built-in theme and variant ([Window edge](#window-edge-t7-b)). The name `windowEdge` is R's example and is used here.
-- (c) Invalid themes are rejected on import. Whether `#RRGGBB` without transparency is enough is answered below as a Proposed format rule for R's confirmation (T11, [Colour format](#colour-format-t11)).
+- (c) Invalid themes are rejected on import. Whether `#RRGGBB` without transparency is enough is answered below as a Fixed format rule (T11, [Colour format](#colour-format-t11)).
 - (d) The first-launch default follows the OS brightness, as a **System** option in the theme selector ([The player's setting](#the-players-setting)).
 - (e) D confirms the variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label: Pending D, next R and D meeting.
 
@@ -173,7 +173,7 @@ The design has no values for the four new tokens. The initial values above reuse
 
 #### Colour format (T11)
 
-R asked whether `#RRGGBB`, which allows no transparency, matters. **Proposed answer, for R's one-line confirmation:** transparency matters only for overlay-style colours: the scene tint, highlight overlays and, if they ever become tokens, glows, scanlines and window shadows (texture is a separate setting today, §6.5). So:
+R asked whether `#RRGGBB`, which allows no transparency, matters. **Fixed (R accepted the proposal, 2026-11-04):** transparency matters only for overlay-style colours: the scene tint, highlight overlays and, if they ever become tokens, glows, scanlines and window shadows (texture is a separate setting today, §6.5). So:
 
 - Every token accepts `#RRGGBB`.
 - Only tokens marked **alpha-capable** in the token registry also accept `#RRGGBBAA`. In token set 1 these are `sceneTint` and `highlight`. A later token set may mark new overlay tokens (for example a shadow or glow token) the same way.
@@ -356,7 +356,7 @@ R ruled a separate package for the theme model (T8). The package name `theme_cor
 | T6 | Names and values of the new document tokens (`paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact`); document mode as a fixed standard set with a per-view toggle and a remembered preference | R |
 | T7 e | Wording of the variant labels and the System label (and the document mode label): Pending D, next R and D meeting | D |
 | T10 | Document renderer (typst or another solution; no new dependency or tool without approval) and the print default (standard paper set, or black on white as DEC-29 proposes) | R |
-| T11 | One-line confirmation of the colour format (`#RRGGBB` everywhere, `#RRGGBBAA` only for alpha-capable `sceneTint` and `highlight`); accept the `windowEdge` values (Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9`) and the `theme_core` name | R |
+| T11 | Colour format Fixed (R, 2026-11-04): `#RRGGBB` everywhere, `#RRGGBBAA` only for alpha-capable `sceneTint` and `highlight`. Still open: accept the `windowEdge` values (Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9`) and the `theme_core` name | R |
 
 ## Platform rules
 
