@@ -26,6 +26,7 @@ Claims used by rules (set by the roles function only; the claim is the only copy
 | Collection | Document id | Audience | Written by |
 |---|---|---|---|
 | `agents/{uid}` | account uid | owner (private fields) | owner, function at creation |
+| `appearance/{uid}` | account uid | owner only | owner. **Proposed, pending T2**: theme setting and custom themes ([07](07-apps.md#where-it-is-stored)); no rule drafted below yet |
 | `profilesPublic/{badge}` | badge number (never the uid) | anyone (public page) | moderator, after approval of `profilesPending` |
 | `profilesPending/{badge}` | badge number | owner, moderators | owner; deleted on approval |
 | `badgeNumbers/{n}` | 16-digit badge number | function only | function |

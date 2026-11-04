@@ -6,6 +6,8 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 
 ## Decisions record (ruled by R, 2026-10-20)
 
+Later rulings are added to their group with the date in the row (for example P10c 2026-10-21, T1 2026-11-04).
+
 ### Structure and engine
 
 | # | Ruling | Where |
@@ -50,6 +52,7 @@ Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing r
 | 09-1 | State management: `signals_flutter` 7.1.0 (Dart Signals, publisher rodydavis.com) in apps and `ui_kit`, not the umbrella `signals` package [V-29]. | [07](07-apps.md) |
 | 09-2 | Routing: `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical join link `bard://join/<op>?alias=<id>`; https links later where supported. Verified live on Linux and Windows [V-30]; macOS and iOS are not in v1. | [07](07-apps.md) |
 | 09-3 | Persistence: `sembast` 3.9.0 (+ `sembast_web` 2.4.6+1 for web player caches) behind `EventStore`, one database file per operation opened on demand plus a small account/cache database [V-31]. | [04](04-session.md), [07](07-apps.md) |
+| T1 | Themes and appearance, ruled by R 2026-11-04: theme choice is a selectable setting on the player's profile (an account-level setting, not the public profile); the player picks a built-in theme (Phosphor, Manila, Night Desk) and, separately, a drop-down for how it renders (normal, high contrast or a colour-blind mode, "if available", R's words; read as only the variants that theme provides, Proposed); each theme is self-contained, its colour-blind and contrast variants saved with its defaults; players can create custom themes that set any colour the built-ins set, in the UI; players can import and export themes; testing with colour-blind players is still owed (VER-14). Supersedes the design review's local-only recommendation (DEC-25 A, DEC-40 A). T1 is silent on GM forcing (T4). | [07](07-apps.md#themes-and-player-appearance-settings) |
 
 ### Backend
 
@@ -90,6 +93,20 @@ R wants D's approval on these before they are designed in full. The proposals ar
 | W1 web hosting | Whether web hosting returns later, for onboarding new users. | Web is player-only for now. |
 | Concern 7 physical dice | GM and remote players entering real dice faces on their own clients, behind a per-operation GM setting (off by default; without it entered faces are refused). | `source` field reserved on `CheckResolved`. |
 
+## Open for R (themes)
+
+Proposed in [07](07-apps.md#themes-and-player-appearance-settings), not ruled. Nothing built depends on them.
+
+| Item | What is undecided | Proposed | Owner |
+|---|---|---|---|
+| T2 storage | Where a full account's setting and custom themes sync; conflict rule; a synced colour-blind variant may reveal a vision condition, outside 11's real-personal-data list and consent scope. | Owner-only `appearance/{uid}` document, separate from `agents/{uid}` (whose `keys().hasOnly` whitelist stays); newer `updatedAt` wins; tier 0 local only; variant stored as a neutral rendering label (alternatives: variant local-only, or amend 11). | R |
+| T3 limits | Custom-theme count, import file size, name length. | 20 themes, 32 KiB, 40 characters. | R |
+| T4 GM forcing | Whether the GM can ever force a theme or variant, for example as a DEC-07 intrusion with player opt-out (DEC-16). | No override (T1 is silent); DEC-07 stays unruled. | R, D for the game effect |
+| T5 sharing | Community sharing or a public gallery (would go through moderation, [11](11-supplemental-features.md#library-and-public-content)). | None in v1; themes are personal files. | R and D |
+| T6 paper tokens | Whether custom themes may change `paper`, `paperInk`, `paperAlert`. | Editable, as T1 point 4 reads. | R, D for the fiction |
+| T7 details | `on…` chip token names; Manila's outer-edge rule colour as a token; reject (not clamp) bad colours; first-launch default per DEC-25 A; variant label wording; reading "if available" as only the variants a theme provides. | As in 07. | R; D on wording |
+| T8 theme code placement | 00 describes `ui_kit` as Flutter widgets and theme only; the theme codec, validator and colour math are pure Dart. | Amend 00 and keep them as Flutter-free files in `ui_kit` (alternative: a separate Flutter-free package, as F4). | R |
+
 ## Held
 
 | Item | Waits on |
@@ -107,6 +124,7 @@ R wants D's approval on these before they are designed in full. The proposals ar
 - 8.4 claim pickup on Windows (Linux done [V-42]).
 - RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).
 - Opening an existing plaintext `firebase_auth` box with the cipher (the B5 migration step) [V-34][V-44].
+- **VER-14 (themes, T1; defined in the project library's design review, recorded here as the repo's entry):** the built-in theme variants (the 12 sets in the library's `design/colorblind-palettes.md`) and the confirm, Warning and Locked colours are tested with real colour-blind players (at least protan, deutan and tritan viewers and one low-vision viewer) on the target displays. Testers to be chosen by R and D; values are revised if the test disagrees with the simulation.
 - Deep links on Wayland, Flatpak, Snap and packaged builds [V-30]. macOS and iOS are not in v1 (R, 2026-10-20), so their checks are dropped.
 
 ## Concerns raised
