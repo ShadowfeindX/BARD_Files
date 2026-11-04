@@ -35,7 +35,7 @@ request(cmd) ──► EpisodeHost
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
                          auto-confirm skips the wait when the episode's setting says so
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
-                      StoreActor.append (planned) (events + text lines + head snapshot of next)
+                      store append (as built: EpisodeHost calls EventStore.append; StoreActor planned) (events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
                    6. state = next
                    7. for each participant: filter by visibility → send `events`
@@ -115,8 +115,9 @@ abstract interface class EventStore {
   Future<void> saveRngDrawCount(String episodeId, int drawCount);     // draws made without stored events
   Future<int> rngDrawCount(String episodeId);
   // Planned (periodic full snapshots; 10 §5), not in event_store.dart today:
-  Future<void> putSnapshot(EpisodeId ep, Snapshot snapshot);
-  Future<Snapshot?> latestSnapshot(EpisodeId ep);
+  // Snapshot is the protocol wire type (protocol_envelope), not HeadSnapshot.
+  Future<void> putSnapshot(String episodeId, Snapshot snapshot);
+  Future<Snapshot?> latestSnapshot(String episodeId);
 }
 
 /// One narrated log line. Text is rendered per perspective at play
@@ -162,7 +163,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
 | P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
 | Network-hosted (planned) | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
-| Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online. |
+| Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online (planned; 10 §5 'Offline account cache and session outbox'). |
 
 **Web build:** the web build is player-only: no GM hosting. A browser cannot run a socket server, because `dart:io` is not available on the web [V-12], and the web build is a lightweight client for people who have not installed the app yet, without full parity with native builds. Web player caches use `sembast_web` (planned). Native builds can host every mode.
 

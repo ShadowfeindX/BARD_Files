@@ -9,7 +9,7 @@
 
 ## Platform and stack
 
-The platform, structure and stack the application is built on. Decisions and their reasons are in [decision-record.md](decision-record.md); items that wait on D are in [10-waiting-on-d.md](10-waiting-on-d.md).
+The platform and stack chosen for the application; planned parts are labelled ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)). Decisions and their reasons are in [decision-record.md](decision-record.md); items that wait on D are in [10-waiting-on-d.md](10-waiting-on-d.md).
 
 | Area | Choice |
 |---|---|
@@ -25,11 +25,11 @@ The platform, structure and stack the application is built on. Decisions and the
 | Updates | Engine updates apply to episodes automatically by default; pack updates apply manually by default. GMs get a toggle for each. |
 | Cross-major | Migrator only. Each engine major knows only its own schema. A separate migrator transforms an episode's state and pack from N to N+1, run by the GM, who reviews the result. No frozen prior engine, no old web build. Old event logs are frozen, not converted, with a plain-text log kept beside them; the GM explicitly confirms the unrecoverable loss. |
 | Accounts | Agent (player account) with many aliases; each alias locked to one campaign at a time (moving needs the destination GM's approval; the source campaign is notified; an alias in a running episode cannot move until it ends). Anonymous accounts can join any episode, have exactly one alias, cannot GM, host or create content. Badges are an optional scannable login (planned; not built, 10 §5). |
-| Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). |
+| Backend | Firebase first, with the console as the admin tool for D and auditors. Backend role only: accounts, session persistence/relay, rules pack distribution, info dissemination, payments. Stack: `firebase_dart` client (FlutterFire only where needed), Realtime Database for **live play only** and Firestore for **data at rest** (archive, library, pack index, searchable account data), Cloud Storage for pack files, Hosting, HTTPS-only Dart Cloud Functions (experimental). No separate Cloud Run service. See [06-accounts-backend.md](06-accounts-backend.md#stack). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Content | GMs create NPCs, items, skills, techniques. D publishes default content (cloud-hosted). The public library shows only verified items. Typst document templating comes later (open: [T10](09-open-decisions.md#t10)). |
 | State management | `signals_flutter` 7.1.0 (publisher rodydavis.com), in the apps and `ui_kit` only; not the umbrella `signals`. Engine, protocol, session and migrator stay free of it ([V-29]). |
 | Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<op>?alias=<id>`; verified live on Linux and Windows ([V-30]). |
-| Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). |
+| Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). (planned; 10 §5 'Backend adapters and the sembast EventStore') |
 | Randomness | Pub package `xrandom` 0.7.2, class `Xoshiro128pp` (never the `Xrandom`/`Drandom`/`Qrandom` aliases), pinned exactly, used in `session` behind the engine's `Rng` interface ([V-28]). See [01-engine.md](01-engine.md#rng). |
 | Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not yet on the approved list (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
 | Immersion | In-game phone messaging forwarded to the GM; per-perspective (player vs GM) panels. |

@@ -86,7 +86,7 @@ Built today: CharacterSystem, CheckSystem, ConditionSystem, EpisodeSystem, Messa
 | `EpisodeSystem` | the episode's lifecycle: starting it and its settings |
 | `CharacterSystem` | creation steps (§3), attribute/skill allocation rules; advancement purchases (§9) are planned |
 | `CheckSystem` | action requests, check requirements, resolution (§2, §5); opposed checks and assistance are planned (`check_system.dart`). There is no outcome override of a resolved roll (see [Commands and events](#commands-and-events)); consequence edits belong to the review gate |
-| `VitalsSystem` | Health and Sanity changes as built; damage dice, DR, healing, death and sanity bands are planned (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (see [Rulebook values](#rulebook-values-the-engine-uses), item 11); no critical-injury triggers |
+| `VitalsSystem` | Health and Sanity changes as built; damage dice, DR, healing, death, sanity bands and sanity recovery are planned (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (see [Rulebook values](#rulebook-values-the-engine-uses), item 11); no critical-injury triggers |
 | `ConditionSystem` | applying and clearing conditions and afflictions (§4); ticking and durations, and disorders, are planned (`condition_system.dart`) |
 | `CombatSystem` | initiative, rounds, turn order, action economy (one major, one minor, one reaction by default), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
@@ -134,11 +134,11 @@ The engine is designed to implement these kinds of mechanics from the rulebook; 
 | Partial success | within X of the DC (§2, §4) | X |
 | Fumble (planned) | total ≤ fraction of DC, rounded down (§2) | fraction |
 | Opposed check (planned) | both sides roll, higher wins, ties to GM (§5, §7) | — |
-| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (planned; built form: `1d6 + var(helperSkillBonus)`, see the variable table below) | gate DC, cap, bonus expression |
+| Assistance (planned) | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (planned; built form: `1d6 + var(helperSkillBonus)`, see the variable table below) | gate DC, cap, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
 | Damage with DR (planned) | category → dice and minimum (§6); MIN is a floor on the total; DR subtracts first (§7) | damage table, DR formula |
 | Sanity check bands (planned) | resist roll against the DC for the current Sanity band; outcome band → full/half/none/extra loss (§4) | bands, losses |
-| Range bands | band → penalty, weapon-category restrictions (§7) | bands, penalties |
+| Range bands (planned; bands parsed from ranges.json, penalties not applied) | band → penalty, weapon-category restrictions (§7) | bands, penalties |
 
 A **dice expression** is engine vocabulary: a small data structure (not a string parsed at runtime) such as `Dice(count: 1, sides: 6, explode: true)`, `Const(3)`, `Sum([...])`, `KeepHighest(pool, n)`, `Var(key)`. Packs write these in data form; the engine evaluates them with the RNG and returns both the value and the breakdown.
 

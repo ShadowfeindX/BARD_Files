@@ -110,7 +110,7 @@ Rules:
 
 Admin, moderator and payment tier are **custom claims** on the Auth token, set by the roles Cloud Function (planned, 10 §5) with `firebase_admin_sdk` (which supports `setCustomUserClaims`) [V-24]. Rules read them from `auth.token` [V-9]: shown for Firestore rules [V-43], not yet tested in RTDB rules. In probe 8.4 a forced `getIdToken(true)` showed a new claim about 37 s after polling started (including a manual step), and so did `reload()`; the plain `getIdToken()` never did within the 4-minute window [V-42] (Linux only; Windows not run).
 
-Design (Proposed, open: [06-O3](09-open-decisions.md#06-o3-claim-pickup-after-a-role-change)): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid`; the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. Whether a client that never gets the notice picks up the claim when its token next refreshes on expiry is **untested**: V-45 shows the token refresh, not claims, and in V-42 the plain `getIdToken()` did not show the claim while the old token was still valid.
+Design (Proposed, open: [06-O3](09-open-decisions.md#06-o3-claim-pickup-after-a-role-change)): when the roles function changes a claim, it also writes an inbox notice to `/inbox/$uid` (planned, 10 §5); the client that receives it calls `getIdToken(true)` and reloads its `Entitlements` read model. Whether a client that never gets the notice picks up the claim when its token next refreshes on expiry is **untested**: V-45 shows the token refresh, not claims, and in V-42 the plain `getIdToken()` did not show the claim while the old token was still valid.
 
 ## Badges
 
@@ -123,7 +123,7 @@ A badge is a printable/scannable code on a physical agent badge that signs an ag
 - **Deploy checklist:** grant **Service Account Token Creator** (`roles/iam.serviceAccountTokenCreator`) to the function's runtime service account on itself; without it `createCustomToken` fails with `iam.serviceAccounts.signBlob` denied [V-33].
 - **Packages (no package is added before R approves it; Proposed, open: [S-8](09-open-decisions.md#s-8-badge-packages)):** printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows/Linux beta, or USB 2D keyboard-wedge scanners). Each is proposed with its purpose and alternatives when badges are scheduled.
 - Badges are optional, per agent, listed and revocable from account settings.
-- Offline: a badge cannot create a new sign-in without the backend. An agent already signed in on that device keeps working from the local cache.
+- Offline: a badge cannot create a new sign-in without the backend. An agent already signed in on that device keeps working from the local cache (planned; 10 §5 'Offline account cache and session outbox').
 
 ## Offline accounts
 
@@ -280,7 +280,7 @@ Probe evidence is in [V-33]. The planned function dependencies are `firebase_adm
 
 ## App Check
 
-There is **no App Check enforcement in v1**. Enforcement rejects every request without a valid App Check token [V-37], and there is no App Check for Linux or `firebase_dart` [U], so enforcing would lock out desktop. Protection in v1 comes from Auth plus RTDB and Firestore rules. App Check runs **monitor-only** on mobile and web (`firebase_app_check` 0.5.0 lists Windows, but official docs do not [V-26][U]). Enforcement is revisited if abuse appears.
+There is **no App Check enforcement in v1**. Enforcement rejects every request without a valid App Check token [V-37], and there is no App Check for Linux or `firebase_dart` [U], so enforcing would lock out desktop. Protection in v1 comes from Auth plus RTDB and Firestore rules. App Check runs **monitor-only** (planned) on mobile and web (`firebase_app_check` 0.5.0 lists Windows, but official docs do not [V-26][U]). Enforcement is revisited if abuse appears.
 
 ## Payments
 
