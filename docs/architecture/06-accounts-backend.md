@@ -13,7 +13,7 @@ The stack follows the backend-split investigation (project library: `architectur
 | Client SDK | `firebase_dart` 1.6.2 (Auth, Realtime Database, Storage) as the adapter wherever it runs. Auth and RTDB probed [V-21]; Storage **not yet probed** | FlutterFire where `firebase_dart` cannot run (web), including `cloud_firestore` for Firestore on web |
 | Live game data | **Firebase Realtime Database (RTDB)**: relay, active episode events, requests, members, phone, signaling, presence, head while active, inbox | Live play only |
 | Data at rest | **Cloud Firestore**, Standard edition: archived episodes, library, pack index, searchable account data | Desktop access through a hand-written REST client |
-| Files | Cloud Storage for Firebase (rules pack files) | Uploads by D through the console. Client Storage access through `firebase_dart` is unproven |
+| Files | Cloud Storage for Firebase (rules pack files) | Uploads by D through the console. Client Storage access through `firebase_dart` is unproven ([still unproven](09-open-decisions.md#still-unproven)) |
 | Server code | **HTTPS-only Dart Cloud Functions** (experimental) [V-23] | Function list under [Cloud Functions](#cloud-functions) |
 | Hosting | Firebase Hosting (web build) | — |
 | Cloud Run | No separate service planned | Dart functions themselves deploy to Cloud Run [V-33] |
@@ -55,7 +55,7 @@ Follow-up probe [V-43]: a query that needs a composite index returns 400 `FAILED
 
 **Document sizing.** Archived event and text logs are chunked into a subcollection (one document per N batches), never one document per episode, to stay under the 1 MiB document cap [V-7]. A function wrote and read back a chunk of about 920 KiB (900 items) through `firebase_admin_sdk` [V-33].
 
-**Firestore collections** (collection names, document shapes, rules, indexes) are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)). RTDB rules are tested in the Emulator Suite. The Firestore rules are drafted in chapter 12 (Proposed) and have not been run yet; they are tested in the Emulator Suite too.
+**Firestore collections** (collection names, document shapes, rules, indexes) are drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)). RTDB rules are tested in the Emulator Suite. The Firestore rules have not been run, and their tests are still to be written (Emulator Suite).
 
 ## Account model
 
@@ -121,7 +121,7 @@ A badge is a printable/scannable code on a physical agent badge that signs an ag
 - **Payload:** only the badge id and a 256-bit secret (about 70 ASCII characters). The secret is stored **hashed**; the badge is revocable and never carries a password.
 - **Evidence:** a malformed custom token is rejected with `invalid-custom-token` [V-21]. A token minted in a deployed function (`createCustomToken`, no key file) signed in via `firebase_dart` on Linux once the runtime service account held Service Account Token Creator [V-33]. A real custom token (minted with `gcloud iam service-accounts sign-jwt`) signed in on **Windows and Linux** [V-41]. The badge function and the flow end to end are not built yet.
 - **Deploy checklist:** grant **Service Account Token Creator** (`roles/iam.serviceAccountTokenCreator`) to the function's runtime service account on itself; without it `createCustomToken` fails with `iam.serviceAccounts.signBlob` denied [V-33].
-- **Packages (none added yet):** printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows/Linux beta, or USB 2D keyboard-wedge scanners). Each is proposed with its purpose and alternatives when badges are scheduled.
+- **Packages (none added yet; Proposed, open: [S-8](09-open-decisions.md#s-8-badge-packages)):** printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows/Linux beta, or USB 2D keyboard-wedge scanners). Each is proposed with its purpose and alternatives when badges are scheduled.
 - Badges are optional, per agent, listed and revocable from account settings.
 - Offline: a badge cannot create a new sign-in without the backend. An agent already signed in on that device keeps working from the local cache.
 
@@ -142,12 +142,12 @@ By default `firebase_dart` 1.6.2 stores the refresh token and email in plaintext
 - **Guard 1, key access and migration.** Reading or creating the key never fails silently: a wrong or missing key makes Hive truncate the box and sign the user out, on Linux and Windows alike [V-34][V-44], so a key failure is surfaced, not swallowed. **Key loss means no session** [V-44]. Requirement: the app shows that the user must sign in again and does not treat it as an error loop. A plaintext-to-encrypted migration step handles boxes written before encryption: it reads the plaintext box before any encrypted open, then rewrites it encrypted. Opening an existing plaintext box with the cipher was not probed, so the migration is tested before release.
 - **Guard 2, locked keyring.** On Linux a locked keyring with no prompter blocks the libsecret call forever and freezes the event loop [V-34], so key access runs under a timeout guard and reports instead of hanging. A missing Secret Service gives a clean error [V-34]. Windows showed no hang [V-44]; the guard stays on every platform.
 - **Dependency:** `hive` 2.2.3 is a direct dependency of `backend`, **pinned exactly**. It must be the same `hive` package `firebase_dart` uses (`hive` ^2.0.0, not `hive_ce`) [V-35].
-- **Known accepted risk:** `firebase_dart` depends on `hive`, which has had no release since 2.2.3 (2022-06-30) [V-35], and on `firebaseapis` 0.2.0, whose repository was archived on 2026-03-24 (per the backend investigation, project library `architecture/firebase-desktop-deep-dive.md`).
+- **Known risk:** `firebase_dart` depends on `hive`, which has had no release since 2.2.3 (2022-06-30) [V-35], and on `firebaseapis` 0.2.0, whose repository was archived on 2026-03-24 (per the backend investigation, project library `architecture/firebase-desktop-deep-dive.md`).
 - Not tested: KWallet (no Secret Service bridge).
 
 ## Realtime Database model (live play)
 
-The design comes from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]; the review sheet is in the project library (`architecture/rtdb-draft-review.md`). The rules file is in the repository at `firebase/database.rules.json`. Its emulator checks are in `firebase/rtdb_rules_test/` ([08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the post-archive clean-up [V-50], the presence, `meta` validation and anonymous-member rules [V-51] and the follow-up checks [V-52] (see [Rules behavior](#rules-behavior)). The live tree is `/episodes/$ep` (with `/presence/$ep`); the suite passes 200 of 200 on these paths [V-56]. RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
+The design comes from probe 8.6, whose rules pass 116 of 116 checks in the Emulator Suite [V-38]. The rules file is in the repository at `firebase/database.rules.json`. Its emulator checks are in `firebase/rtdb_rules_test/` ([08-testing.md](08-testing.md#backend); how to run them: `firebase/README.md`). They pass 200 of 200 in the Emulator Suite, including the post-archive clean-up [V-50], the presence, `meta` validation and anonymous-member rules [V-51] and the follow-up checks [V-52] (see [Rules behavior](#rules-behavior)). The live tree is `/episodes/$ep` (with `/presence/$ep`); the suite passes 200 of 200 on these paths [V-56]. RTDB keeps **live play only**; everything at rest is in Firestore (collections drafted in [12-firestore-collections.md](12-firestore-collections.md), Proposed, open: [S-7](09-open-decisions.md#s-7-firestore-collections)).
 
 ```
 /episodes/$ep/meta                      gm uid, campaignId, engine version, packRef, status (required string), locked (boolean; once set, never removed), lastSeq

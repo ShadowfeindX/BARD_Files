@@ -57,18 +57,18 @@ The theme widgets and theme controller over the pure-Dart theme package `theme_c
 
 ## Themes and player appearance settings
 
-Details marked **Proposed** are not final. Each carries the id of its open item: [T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t3), [T4](09-open-decisions.md#t4), [T6](09-open-decisions.md#t6), [T10](09-open-decisions.md#t10) and [T11](09-open-decisions.md#t11) in [09](09-open-decisions.md#open-for-r-themes); [T5](09-open-decisions.md#t5) and [T7 e](09-open-decisions.md#t7) (the label wording) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-29, DEC-34, VER-14).
+Everything in this section that "What the theme system provides" does not state is **Proposed**: [T3](09-open-decisions.md#t3) (theme document and fields, token sets and version map, resolving a theme, fallback, value lookup, chain checks, derived themes, custom-theme safeguards, import and export, export flattened by default); [T4](09-open-decisions.md#t4) (outdated themes, effect safety, effect tokens); [T6](09-open-decisions.md#t6) (documents); [T11](09-open-decisions.md#t11) (`windowEdge`, the package name). Each Proposed detail carries the id of its open item: [T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t3), [T4](09-open-decisions.md#t4), [T6](09-open-decisions.md#t6), [T10](09-open-decisions.md#t10) and [T11](09-open-decisions.md#t11) in [09](09-open-decisions.md#open-for-r-themes); [T5](09-open-decisions.md#t5) and [T7 e](09-open-decisions.md#t7) (the label wording) are [Pending D](09-open-decisions.md#pending-d). Nothing here is built: `ui_kit` still ships the placeholder `BardTheme`. Visual source material is in the project library, cited by name and not copied: `design/synthesis-government-terminal.md` (§6.0 themes, §6.1 tokens, §6.6 accessibility, §7.6 shell states, §10 Forms and filing, §12 shell gating, pattern rows P15, P33, P34 and P49), `design/colorblind-palettes.md` (the 12 computed sets and the method) and `design/review-list-for-R.md` (DEC-07, DEC-29, DEC-34, VER-14).
 
 ### What the theme system provides
 
 1. Theme choice is a selectable setting of the player. It is not a field of the public in-world profile ([11](11-supplemental-features.md#agents-aliases-and-profiles)), and it is stored on the client ([Where it is stored](#where-it-is-stored)).
-2. The player picks one of the built-in themes (**Phosphor**, **Manila**, **Night Desk**) and, separately, how it renders from a drop-down: normal, high contrast, or a colour-blind mode. The drop-down lists only the variants the chosen theme provides (Proposed, open: [T3](09-open-decisions.md#open-for-r-themes)).
+2. The player picks one of the built-in themes (**Phosphor**, **Manila**, **Night Desk**) and, separately, how it renders from a drop-down: normal, high contrast, or a colour-blind mode. The drop-down lists only the variants the chosen theme provides (Proposed, open: [T3](09-open-decisions.md#t3)).
 3. Each theme is self-contained: its colour-blind and contrast variants are saved together with its defaults.
 4. A player can create a custom theme and set, in the UI, any colour the built-in themes set.
 5. Players can import and export themes. In v1 they share themes only outside the app, as exported files (open: [T5](09-open-decisions.md#t5)).
-6. There are no limits on player theming: no cap on the number of custom themes, on name length or on overrides. A theme may name a **base** theme and store only the values it overrides ([Derived themes](#derived-themes-base-and-overrides); Proposed, open: [T3](09-open-decisions.md#open-for-r-themes)).
-7. The Handler cannot force a change from one theme to another, and since a variant is part of a theme, cannot force a variant either (the variant part is Proposed, open: [T4](09-open-decisions.md#open-for-r-themes)). The Handler can force certain screen colours, highlights or effects that other game features describe (capability lock cards, synthesis §12, revision 4, with [DEC-34 and GAP-33](09-open-decisions.md#dec-34-and-gap-33-capability-lock-cards) undecided; intrusion cues, [DEC-07](09-open-decisions.md#dec-07-intrusion-cues) undecided). The colours for those are part of every palette ([Effect and highlight tokens](#effect-and-highlight-tokens)). A theme that lacks a colour a newer feature needs is completed from a built-in ([Outdated themes](#outdated-themes); Proposed, open: [T4](09-open-decisions.md#open-for-r-themes)). Whether and how intrusions happen is not decided here.
-8. All documents will eventually be rendered by an in-house pipeline (typst or another solution), so documents may be affected by theme. Document colours are tokens in every palette and custom themes may change them. A document mode switch shows the standard, fixed scheme ([Documents and document mode](#documents-and-document-mode)).
+6. There are no limits on player theming: no cap on the number of custom themes, on name length or on overrides. A theme may name a **base** theme and store only the values it overrides. The design for this is under [Derived themes](#derived-themes-base-and-overrides-proposed-open-t3) (Proposed, open: [T3](09-open-decisions.md#t3)).
+7. The Handler cannot force a change from one theme to another, and since a variant is part of a theme, cannot force a variant either (the variant part is Proposed, open: [T4](09-open-decisions.md#t4)). The Handler can force certain screen colours, highlights or effects that other game features describe (capability lock cards, synthesis §12, revision 4, with [DEC-34 and GAP-33](09-open-decisions.md#dec-34-and-gap-33-capability-lock-cards) undecided; intrusion cues, [DEC-07](09-open-decisions.md#dec-07-intrusion-cues) undecided). The colours for those are part of every palette ([Effect and highlight tokens](#effect-and-highlight-tokens)). A theme that lacks a colour a newer feature needs is completed from a built-in ([Outdated themes](#outdated-themes-proposed-open-t4); Proposed, open: [T4](09-open-decisions.md#t4)). Whether and how intrusions happen is not decided here.
+8. All documents will eventually be rendered by an in-house pipeline (typst or another solution), so documents may be affected by theme. Document colours are tokens in every palette and custom themes may change them. A document mode switch shows the standard, fixed scheme ([Documents and document mode](#documents-and-document-mode-proposed-open-t6)).
 9. The chip text tokens are named `onSuccess`, `onPartial`, `onFailure`, `onWarning`, `onLocked` and `onConfirm`. The window edge has its own token, `windowEdge`, set on every built-in theme and variant ([Window edge](#window-edge)). Invalid themes are rejected on import; the colour format is in [Colour format](#colour-format).
 10. The first-launch default follows the OS brightness, as a **System** option in the theme selector ([The player's setting](#the-players-setting)). The variant labels are Normal, High contrast, Red-green safe and Blue-yellow safe; the label wording is open ([T7 e](09-open-decisions.md#t7)).
 11. The theme model is a separate package, so that it can grow after v1 (theme distribution, per-campaign theme settings, custom icons, images, animations) ([Layering](#layering)).
@@ -76,7 +76,7 @@ Details marked **Proposed** are not final. Each carries the id of its open item:
 
 Whether the Handler console follows the same appearance setting as the player experience is open ([T2](09-open-decisions.md#t2)).
 
-### Theme document
+### Theme document (Proposed, open: T3)
 
 A theme is one plain JSON-shaped document. Built-in, custom and imported themes use the same shape and the same validator. A theme is either **full** (it stores complete token maps in `variants`) or **derived** (it names a `base` and stores sparse `overrides`).
 
@@ -84,10 +84,10 @@ A theme is one plain JSON-shaped document. Built-in, custom and imported themes 
 |---|---|---|
 | `format` | `"bard-theme"` | Marks the file type |
 | `schemaVersion` | int | `1` for this design. The document shape. Bumped only by a code change, with a migration of stored themes |
-| `tokenSet` | int | The token set the theme was made for ([Token sets](#token-sets)). Required in every theme |
+| `tokenSet` | int | The token set the theme was made for ([Token sets](#token-sets-proposed-open-t3)). Required in every theme |
 | `id` | string | Built-ins: `phosphor`, `manila`, `night-desk`; `system` is also reserved (the selector option, never a document). Custom: a random UUID generated locally, so a file can name it as a base on another client |
 | `name` | string | Not empty after trimming; no length cap. Long names are shortened with an ellipsis in lists, shown in full in the editor, always as plain text |
-| `copiedFrom` | string, optional | The theme a full theme was duplicated from. Used only to find the fallback built-in ([Fallback built-in](#fallback-built-in)) |
+| `copiedFrom` | string, optional | The theme a full theme was duplicated from. Used only to find the fallback built-in ([Fallback built-in](#fallback-built-in-proposed-open-t3)) |
 | `brightness` | `"dark"` \| `"light"` | Hint for the Flutter brightness and platform chrome, and the last resort for the fallback built-in. Phosphor and Night Desk dark, Manila light (§6.0) |
 | `variants` | object, full themes only | Keys from `normal`, `highContrast`, `redGreenSafe`, `blueYellowSafe`. `normal` is required. Each value holds every token of the theme's `tokenSet`. The keys present are the variants the theme provides |
 | `base` | object, derived themes only | `{ "id": <base theme id>, "tokenSet": <the base's tokenSet when this theme was derived or last saved> }`. Names a built-in or custom theme ("a named or default theme") |
@@ -95,7 +95,7 @@ A theme is one plain JSON-shaped document. Built-in, custom and imported themes 
 
 A document has either `variants` or both `base` and `overrides`, never both forms.
 
-**Self-contained.** Built-in and full themes store every variant's complete map in one document. A derived theme is self-contained in the sense that all its variants are stored together in one document; its base reference is resolved locally on each client. Export writes a flattened, fully self-contained file by default ([Import and export](#import-and-export)).
+**Self-contained.** Built-in and full themes store every variant's complete map in one document. A derived theme is self-contained in the sense that all its variants are stored together in one document; its base reference is resolved locally on each client. Export writes a flattened, fully self-contained file by default ([Import and export](#import-and-export-proposed-open-t3)).
 
 **Size (estimate, not measured).** A full four-variant theme holds about 4 KiB of token entries (42 tokens of about 25 bytes, times four variants) plus a few hundred bytes of structure. A derived theme that changes three colours in two variants is a few hundred bytes. Nothing is synced, so this matters for local storage and file sharing, not for a server document cap.
 
@@ -165,18 +165,18 @@ The design has no values for the four new tokens. The initial values above reuse
 - Contrast checks for an alpha-capable token use the colour composited over the surface it is drawn on.
 - Flatten and export write each value in the format it was stored in; built-ins keep their exact values.
 
-### Token sets
+### Token sets (Proposed, open: T3)
 
 - **Token set 1** is the 42 tokens above. There is no token set 0.
 - Each later set only adds tokens. The token registry in the theme package lists every token with the set that introduced it, whether it is alpha-capable, and the app version that first shipped that set. The registry is the version map the notices below use ("added in version *X*").
-- A full theme declares the `tokenSet` it was made for and must contain every token of that set in each variant; validation rejects one that does not. Tokens introduced after its set are allowed to be missing and are filled ([Outdated themes](#outdated-themes)).
+- A full theme declares the `tokenSet` it was made for and must contain every token of that set in each variant; validation rejects one that does not. Tokens introduced after its set are allowed to be missing and are filled ([Outdated themes](#outdated-themes-proposed-open-t4)).
 - A derived theme's `overrides` may hold any token known to the build, whatever its `tokenSet`.
 
-### Resolving a theme
+### Resolving a theme (Proposed, open: T3)
 
 The resolver turns (theme, variant) into a complete 42-token map. It runs on load, after every edit and after any theme it depends on changes. Widgets only ever see the resolved map.
 
-#### Fallback built-in
+#### Fallback built-in (Proposed, open: T3)
 
 Every theme has one **fallback built-in**, used for lookup step 3, outdated fills, effect-safety substitution and the editor's own chrome:
 
@@ -186,7 +186,7 @@ Every theme has one **fallback built-in**, used for lookup step 3, outdated fill
 
 So a theme derived from or duplicated from Phosphor falls back to Phosphor, keeping §6.1's rule that `anomaly` differs from Phosphor's green text.
 
-#### Value lookup
+#### Value lookup (Proposed, open: T3)
 
 For each token in the chosen variant `v`:
 
@@ -197,13 +197,13 @@ For each token in the chosen variant `v`:
 
 Step 4 always has every token, so the map is always complete.
 
-#### Chain checks
+#### Chain checks (Proposed, open: T3)
 
-- **Cycle:** the resolver follows base ids from the theme being resolved and stops at the first id it has already visited. Every theme on the loop is flagged "Base themes loop" and resolves as if its base were missing (no link inside the loop is followed). The editor refuses to save a base choice that would create a cycle, and an import that would create one is checked ([Import and export](#import-and-export)).
-- **Depth:** a technical safeguard against corrupt data, not a theming limit: a chain longer than the ceiling in [Technical safeguards](#technical-safeguards) resolves as if its base were missing and is flagged.
+- **Cycle:** the resolver follows base ids from the theme being resolved and stops at the first id it has already visited. Every theme on the loop is flagged "Base themes loop" and resolves as if its base were missing (no link inside the loop is followed). The editor refuses to save a base choice that would create a cycle, and an import that would create one is checked ([Import and export](#import-and-export-proposed-open-t3)).
+- **Depth:** a technical safeguard against corrupt data, not a theming limit: a chain longer than the ceiling in [Technical safeguards](#technical-safeguards-proposed-open-t3) resolves as if its base were missing and is flagged.
 - **Base not installed:** tokens fall through to steps 3 and 4 and the player is told: "Base theme *name or id* is not installed on this device; built-in default colours are used". The overrides are kept; installing the base later (importing it with the same id) restores the intended look. The theme list and editor offer **Flatten** to keep the current look as a full theme. The variant drop-down lists the variants the resolved theme can fully produce after fallback (the keys in `overrides` plus the fallback built-in's variants), each flagged "base missing".
 
-#### Outdated themes
+#### Outdated themes (Proposed, open: T4)
 
 A custom, imported or older derived theme can lack a token that a newer Handler or UI feature needs.
 
@@ -213,7 +213,7 @@ A custom, imported or older derived theme can lack a token that a newer Handler 
 - **Add missing colours:** one click copies the fallback values of the still-missing tokens into the custom theme for editing: into each variant of a full theme (raising its `tokenSet`), or as overrides of a derived theme for those tokens only. Values the base chain supplies are never copied, so a derived theme keeps following its base. If the missing tokens belong to a custom base, the notice points to that base.
 - Built-ins never lack tokens.
 
-#### Effect-safety rule
+#### Effect-safety rule (Proposed, open: T4)
 
 Some pairs carry meaning the player must always be able to read. After lookup, these pairs are contrast-checked against the resolved surface they sit on:
 
@@ -226,9 +226,9 @@ Some pairs carry meaning the player must always be able to read. After lookup, t
 | Scene tint | `ink` on `desk` with `sceneTint` composited | 4.5:1 |
 | Documents | `paperInk`, `paperInkMuted`, `paperAlert`, `paperStamp` on `paper`; `paperRule` on `paper` | 4.5:1 text, 3:1 rules |
 
-**These minimums are mandatory for these elements only.** If a pair fails, the element that draws it (that lock card, that chip, that document view) uses the fallback built-in's value for the foreground, same variant, else `normal`. If the pair still fails because the surface itself is custom, that element also draws its own surface from the fallback built-in. The token keeps the player's value everywhere else: the substitution happens only inside the effect element or document, never in the theme. A forced effect or a document is therefore never invisible or unreadable, whatever the custom theme. Substitutions are listed in the editor's advisory summary. Everywhere else, the same thresholds are **advisories** only ([Custom themes](#custom-themes)): the player is told and can still save.
+**These minimums are mandatory for these elements only.** If a pair fails, the element that draws it (that lock card, that chip, that document view) uses the fallback built-in's value for the foreground, same variant, else `normal`. If the pair still fails because the surface itself is custom, that element also draws its own surface from the fallback built-in. The token keeps the player's value everywhere else: the substitution happens only inside the effect element or document, never in the theme. A forced effect or a document is therefore never invisible or unreadable, whatever the custom theme. Substitutions are listed in the editor's advisory summary. Everywhere else, the same thresholds are **advisories** only ([Custom themes](#custom-themes-proposed-open-t3)): the player is told and can still save.
 
-### Derived themes (base and overrides)
+### Derived themes (base and overrides) (Proposed, open: T3)
 
 - **Create:** "New theme from…" offers **Duplicate** (a full copy of every variant, `copiedFrom` set) or **Derive** (a derived theme with the source as `base` and empty overrides). Built-ins are read-only and can be the base of any theme.
 - **Inherited and overridden values:** the editor shows each token, per variant, as *inherited* (with the theme it comes from, for example "from Night Desk", in `inkMuted` with the word INHERITED) or *overridden* (with the word OVERRIDDEN and a per-value **Reset to inherited**, which removes the override key). A variant can be reset as a whole. Filled-from-default tokens (base missing or outdated theme) show "default" and the reason.
@@ -246,8 +246,8 @@ The setting is `{ themeId, variant, documentMode, updatedAt }`.
 Resolution, in order:
 
 1. If `themeId` is `system`, take Night Desk or Manila from the current OS brightness. Otherwise find `themeId` among the built-ins and the client's custom themes. If it is missing (deleted, or failed validation on load), render System and say so on the settings screen. The stored setting is not overwritten, so a later import can restore it.
-2. If the theme provides `variant` (its own variants, or for a derived theme the variants of its base chain plus the keys in `overrides`; with a missing base, see [Chain checks](#chain-checks)), use it. Otherwise render `normal`, and the drop-down shows the note "*Variant* is not available in this theme; using Normal". The stored `variant` is kept, so a Red-green safe choice comes back when the player returns to a theme that has it.
-3. Resolve the tokens as in [Resolving a theme](#resolving-a-theme), so widgets never see a missing token.
+2. If the theme provides `variant` (its own variants, or for a derived theme the variants of its base chain plus the keys in `overrides`; with a missing base, see [Chain checks](#chain-checks-proposed-open-t3)), use it. Otherwise render `normal`, and the drop-down shows the note "*Variant* is not available in this theme; using Normal". The stored `variant` is kept, so a Red-green safe choice comes back when the player returns to a theme that has it.
+3. Resolve the tokens as in [Resolving a theme](#resolving-a-theme-proposed-open-t3), so widgets never see a missing token.
 
 ### Where it is stored
 
@@ -255,36 +255,36 @@ Resolution, in order:
 - **Cross-client sync (open: [T2](09-open-decisions.md#t2)):** whether it is wanted at all in v1. Proposed: local storage per client plus export and import in v1, optional sync later. If sync is added: a separate owner-only document (`appearance/{uid}`, deferred in [12](12-firestore-collections.md#collections-at-a-glance)), never `agents/{uid}`, whose `keys().hasOnly` whitelist stays; a derived theme would sync together with its custom bases.
 - **Privacy, kept for the case that sync is added:** a synced colour-blind variant could reveal a real person's vision condition, which is outside [11](11-supplemental-features.md#real-personal-data)'s real-personal-data list and its consent scope. If sync is added, the variant is stored as a neutral rendering label (`variant`) with no health framing anywhere in the data or the UI, owner-only, never public, never indexed, never visible to the GM and never used for anything but rendering (the variant could instead stay local-only, or 11 could be amended). With storage on the client only, nothing leaves the device.
 
-### Custom themes
+### Custom themes (Proposed, open: T3)
 
-- **Create** by duplicating or deriving from a built-in or another custom theme ([Derived themes](#derived-themes-base-and-overrides)).
+- **Create** by duplicating or deriving from a built-in or another custom theme ([Derived themes](#derived-themes-base-and-overrides-proposed-open-t3)).
 - **Edit** every token in every variant the custom theme provides, including the window edge, document and effect tokens. The player can remove variants other than `normal`. Input is hex entry with a swatch (with an alpha field only for alpha-capable tokens), plus the source theme's own colours as quick picks. A colour-picker package would need approval (CLAUDE.md §6).
 - **Live preview:** a pane renders a sample window with its edge, a record table, all six chips with glyphs and words, a lock card, a highlighted field, an intrusion ground and a scene tint sample, a paper document (in the theme and in document mode), line status, marks, supervisor and anomaly, using the resolved map being edited. Nothing changes outside the pane until Save.
 - **Advisories, never blocking.** The editor runs the study's checks, with the same methods and thresholds: WCAG 2.x contrast (4.5:1 for text, 3:1 for large text, UI parts and a chip against `window`), and CIEDE2000 differences after the Machado et al. (2009) severity 1.0 simulation in linear RGB (result chips 15 apart in normal, protan, deutan and tritan vision; 18 from chrome fills, `anomaly` and `supervisor` in normal vision only, rule d; `confirm` and Warning and Locked 15 from the result chips). Achromatopsia is checked only in `highContrast`. Each failing pair shows a warning next to the token and in a summary, together with any effect-safety substitutions. The player can still save and apply.
-- **Reset cannot be lost.** The appearance settings and the editor draw their own chrome in the custom theme's fallback built-in ([Fallback built-in](#fallback-built-in)); only the preview pane uses the custom colours. Applying a custom theme asks for confirmation and reverts after 15 seconds without an answer. "Reset to System" (which selects System, the first-launch default) stays on the settings screen and in the app menu, reachable by keyboard. A bad custom theme therefore cannot hide the way back.
+- **Reset cannot be lost.** The appearance settings and the editor draw their own chrome in the custom theme's fallback built-in ([Fallback built-in](#fallback-built-in-proposed-open-t3)); only the preview pane uses the custom colours. Applying a custom theme asks for confirmation and reverts after 15 seconds without an answer. "Reset to System" (which selects System, the first-launch default) stays on the settings screen and in the app menu, reachable by keyboard. A bad custom theme therefore cannot hide the way back.
 
-### Documents and document mode
+### Documents and document mode (Proposed, open: T6)
 
 - **Documents follow the theme.** Bureau forms, handouts and other paper documents (§10 Forms and filing) render with the document tokens of the resolved theme. In the built-ins these are the same in every theme and variant (§6.1: paper is a fiction object), so the built-ins look as the design shows; custom themes may change them. The four document tokens `paperInkMuted`, `paperRule`, `paperStamp` and `paperRedact` are Proposed (open: [T6](09-open-decisions.md#t6)) and cover what the forms need beyond §6.1: `paperInkMuted` (margin text such as the vertical "Form Approved." line, time stamps), `paperRule` (fill lines, table rules and the header rules), `paperStamp` (stamps and the classification line, single ink colour) and `paperRedact` (redaction bars on paper). Proposed built-in values, from §6.1 ladder steps whose contrast on beige tint 45 is already computed there: `paperInkMuted` `#5F5348` (5.57:1), `paperRule` `#7E6E5F` (3.66:1), `paperStamp` `#A8382B` (as `paperAlert`, 4.81:1), `paperRedact` `#050505` (Manila's `redact`). The seal keeps its own colours in every theme and mode (§6.7); it is artwork, not tokens.
 - **Document mode (Proposed, open: [T6](09-open-decisions.md#t6)).** Every view that displays a document has a **Document mode** toggle (a checkbox or button in its title bar; label wording open: [T7 e](09-open-decisions.md#t7)), in every theme and variant. It switches that document to the **standard paper set**: the built-in document token values above, fixed, not themeable, not stored in any theme document and not affected by the effect-safety rule because it already passes. Chip outlines on paper stay `paperInk`. The toggle acts per view; the setting's `documentMode` is the remembered preference applied when a document opens (default off). Changing the toggle in a view does not change the preference unless the player ticks "Remember for all documents".
-- **Print and export defaults (Proposed).** Printing or exporting a document always uses the standard paper set, never the custom theme. The design review's DEC-29 proposes black on white for print by default with the paper tint as an option; which one is the default is open ([T10](09-open-decisions.md#t10)).
+- **Print and export defaults (Proposed).** Printing or exporting a document always uses the standard paper set, never the custom theme (open: [T10](09-open-decisions.md#t10)). The design review's DEC-29 proposes black on white for print by default with the paper tint as an option; which one is the default is open ([T10](09-open-decisions.md#t10)).
 - **Renderer (open: [T10](09-open-decisions.md#t10)).** Documents will eventually be rendered by an in-house pipeline (typst or another solution). The choice of renderer is open: any new dependency or tool needs approval first (CLAUDE.md §6). The synthesis §10 Forms and filing (§10.6 Print and export) has the related ideas. Until then document views are Flutter widgets drawn from the tokens.
 
-### Import and export
+### Import and export (Proposed, open: T3)
 
 - **Export** writes one theme as a JSON file in the schema above. **By default the file is flattened**: every variant the theme provides with all 42 values resolved, no `base`, the build's current `tokenSet`, so the file stands alone on any client. The option **Export as overrides only** writes `base` and `overrides` as stored; the file then needs its base installed on the receiving client, and the export dialog says so. Built-ins can be exported too, as a starting point. The web player uses a browser download. Native builds use a save dialog. The file-dialog package (picker and save) is not chosen here; it needs approval before implementation (CLAUDE.md §6).
-- **Import** reads a file through a file picker (on the web, the browser's). Invalid themes are rejected. It validates the file in this order, and it reports every problem at once with its JSON path, as the pack loader does:
-  1. Size at most the parser safeguard ([Technical safeguards](#technical-safeguards)) before parsing; must be valid JSON.
+- **Import** reads a file through a file picker (on the web, the browser's). Invalid themes are rejected. It validates the file in this order (Proposed, open: [T3](09-open-decisions.md#t3)), and it reports every problem at once with its JSON path, as the pack loader does:
+  1. Size at most the parser safeguard ([Technical safeguards](#technical-safeguards-proposed-open-t3)) before parsing; must be valid JSON.
   2. `format` is `bard-theme`; `schemaVersion` and `tokenSet` (and `base.tokenSet`) are versions this build knows. A newer one is rejected with "made by a newer version; update the app".
   3. Only the fields above are allowed. Unknown fields, unknown variant keys and unknown tokens are errors. Exactly one form: `variants` (with `normal`, every variant holding every token of the file's `tokenSet`) or `base` plus `overrides` (any subset of known tokens; `base.id` a non-empty string).
   4. Every colour matches `#RRGGBB`, or `#RRGGBBAA` for an alpha-capable token (any case; stored upper case). Anything else is rejected, never clamped or guessed, so a file never shows colours other than the ones it contains.
   5. `name` is trimmed, control and bidirectional-override characters are removed, it must not be empty, and it is always displayed as plain text, never as markup or a link.
-- **After validation (not errors):** a derived file whose base is not installed is imported and flagged as in [Chain checks](#chain-checks), with **Flatten** offered. A full theme on an older `tokenSet` is imported and flagged as in [Outdated themes](#outdated-themes), with **Add missing colours** offered. The advisory checks run on the imported theme.
+- **After validation (not errors):** a derived file whose base is not installed is imported and flagged as in [Chain checks](#chain-checks-proposed-open-t3), with **Flatten** offered. A full theme on an older `tokenSet` is imported and flagged as in [Outdated themes](#outdated-themes-proposed-open-t4), with **Add missing colours** offered. The advisory checks run on the imported theme.
 - **Ids:** an import keeps the file's id when no theme on this client has it, so overrides-only files from the same author still find their base. If the id is taken by a custom theme, the player chooses **Replace** (updates it in place; its derived themes follow) or **Keep both** (new id; the name gets a suffix, " (2)"). Before a Replace, the cycle check runs on the incoming document's base chain against the installed themes; if replacing would create a loop, Replace is refused with the loop named, and Keep both or Flatten is offered. A built-in id is never replaced: the import gets a new id.
 - **Data only.** The schema has no field for a URL, script, asset path, image or font, and unknown fields are rejected, so importing never fetches or runs anything.
 - **Sharing:** players share themes outside the app, as exported files. No in-app gallery, upload or moderation queue in v1 (Proposed, open: [T5](09-open-decisions.md#t5)), so no public content is involved ([11](11-supplemental-features.md#library-and-public-content)).
 
-### Technical safeguards
+### Technical safeguards (Proposed, open: T3)
 
 There are no limits on player theming. These safeguards are not theming limits: they only stop corrupt or hostile data from hanging the parser or the resolver. Both values are Proposed (open: [T3](09-open-decisions.md#t3)).
 
@@ -305,7 +305,7 @@ The theme model is a separate package so that it can grow after v1 without touch
 - **Apps:** an `AppearanceRepository` in `data/repositories` over the local store only (no backend gateway in v1), built in `composition.dart`, using `theme_core`'s codec to store and load theme documents. View models read and write through it (layering above; CLAUDE.md §8). The companion app uses the same pieces.
 - **Dependency rules:** [00](00-overview.md#dependency-rules) gains `theme_core ──► (Dart SDK only)`, and `ui_kit` and the apps may import it. When the package is built, the pub workspace member list and the layer table in `tool/lib/dependency_rules.dart` (checked by `tool/bin/check_dependency_rules.dart`) are updated in the same change.
 - **Extension room (not designed):** theme distribution, per-campaign theme settings, and custom icons, images and animations are possible additions after v1. None of them is designed here; the separate package gives them a place.
-- **Engine, protocol and session are untouched.** Appearance is presentation only: it is never a command or event, never in the event log or text log, and never sent to other participants. Handler-forced effects (lock cards, highlights, intrusion cues) come from their own features' events, designed with those features; they only name effect tokens and never carry a colour or a theme. Theme settings are never a gateable shell capability for the GM (synthesis §12.7, Proposed there).
+- **Engine, protocol and session are untouched.** Appearance is presentation only: it is never a command or event, never in the event log or text log, and never sent to other participants. Handler-forced effects (lock cards, highlights, intrusion cues) come from their own features' events, designed with those features; they only name effect tokens and never carry a colour or a theme. Theme settings are proposed never to be a gateable shell capability for the GM (Proposed, open: [S-9](09-open-decisions.md#s-9-gateable-shell-capabilities)).
 - **Web player:** the web player gets the whole feature (settings, custom themes, derived themes, document mode, import and export). Nothing here is hosting, so no capability gate applies.
 
 ### Accessibility, and what is not guaranteed

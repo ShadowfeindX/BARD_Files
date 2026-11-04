@@ -34,7 +34,7 @@ core/                           pack id
   damage.json                   damage categories (§6)
   vehicles.json                 performance and durability categories (§6)
   ranges.json                   range bands and penalties (§7)
-  combat.json                   Proposed (open: API-1 (09-open-decisions.md#api-1-engine-and-pack-api-shapes)): actions per turn
+  combat.json                   Proposed (open: API-1): actions per turn
   occult.json                   magic categories, sanity costs (§8; "cast magic" is one roll with a Handler-set DC)
   advancement.json              XP costs (§9)
   threats.json                  threat classes (§10)
@@ -74,7 +74,7 @@ What the game rules mean for each pack file. Field names and shapes marked Propo
 
 | File | Content | Shape |
 |---|---|---|
-| `skills.json` | Mind Shielding stays (WIL); Eldritch Lore (INT) and Vehicle Modification (INT) are added; Insight uses WIS; the paired skills (Alchemy and Advanced Alchemy, Explosive Disposal and Explosives) stay separate; categories come from the book's skill list, never reconstructed | data only |
+| `skills.json` | Currently holds Mind Shielding (WIL) and Insight (attribute not yet set); planned pack changes: Eldritch Lore (INT) and Vehicle Modification (INT) added, Insight on WIS; paired skills (Alchemy and Advanced Alchemy, Explosive Disposal and Explosives) are separate entries; categories come from the book's skill list, never reconstructed | data only |
 | `occult.json` | The cast attribute is WIL, or the named skill's attribute; `sanityCheckOn` defaults to success and `sanityPayers` is present on success, participants on fail; `ritualDefaults` is Handler guidance only; the `artifact` key holds the book's rule (+1d6, +2 Sanity per category above D) and `focusItem` is `null` until its reduction is given (open: [FE-M5](10-waiting-on-d.md#fe-m5)) | `chosenAttribute: "skill"` with `fallback: "WIL"`, `sanityPayers`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `difficulty.json` | `checkRules.fumble` is the total, rounded down; `assistance.cap` is the roll attribute's score plus 1 and `assistance.bonus` is the helper's own score in that attribute; `luckAdvantage` stays pending and unused (flashback covers its role); difficulties are stated as categories only | `basis: "total"`, `rounding: "down"`, `{"type": "attributePlus", "plus": 1}`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
 | `sanity_events.json`, `disorders.json` | Ranges are suggestions the Handler may override; the resist DC follows the Sanity band (20, 40, 60, 80, 100% for Cat-S to Cat-D); half loss rounds down; fumbled resist costs the full loss plus 1; a failed disorder check rolls 1d6. The reworked tables are open ([FD-S3](10-waiting-on-d.md#fd-s3)) | `pick: "gm"`, `resistDc.bands`, `halfRounding`, `fumbleExtra`, `rollDie`: Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes) |
@@ -87,7 +87,7 @@ What the game rules mean for each pack file. Field names and shapes marked Propo
 
 Rounding: wherever a pack states a fraction, it states the rounding direction beside it, and the direction favours the player.
 
-Still `null`: armor and damage reduction, enemy defense and attack, advancement purchase limits, currency. They are marked Later ([10 §3](10-waiting-on-d.md#3-marked-later-by-d)).
+Still `null`: armor and damage reduction, enemy defense and attack, advancement purchase limits, currency. They are marked Later: armor and damage reduction ([G8](10-waiting-on-d.md#g8)), enemy defense and attack ([G11](10-waiting-on-d.md#g11)), advancement purchase limits ([G14](10-waiting-on-d.md#g14)), currency ([Q6](10-waiting-on-d.md#q6)).
 
 ### Named variables in pack formulas
 
@@ -102,7 +102,7 @@ It is a named number supplied by the engine at evaluation time. Placements:
 | Placement | Expression |
 |---|---|
 | Advancement: attribute purchase XP, in `advancement.json` | 10 × `var(newScore)` |
-| Assistance bonus, in `difficulty.json` | the helper's attribute score (key name Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) |
+| Assistance bonus, in `difficulty.json` | as built: `1d6 + var(helperSkillBonus)`. Planned: the helper's attribute score (key name `helperAttribute`, Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) |
 
 The node itself is defined in [01-engine.md](01-engine.md); no other placement exists until R approves one.
 
@@ -195,4 +195,4 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 ## Documents (Typst, later)
 
-Document templating with Typst comes later: documents stored as text and rebuilt on clients as PDFs. No strict templates now. The architecture leaves a seam: a `DocumentSource` (text + data bindings) stored as pack or campaign content, and a `DocumentRenderer` interface in the app layer. No engine involvement. Choosing how Typst is invoked on each platform is future work for R (open: [T10](09-open-decisions.md#t10) in [09-open-decisions.md](09-open-decisions.md#open-for-r-themes)).
+Document templating with Typst comes later: documents stored as text and rebuilt on clients as PDFs. No strict templates now. The architecture leaves a seam: a `DocumentSource` (text + data bindings) stored as pack or campaign content, and a `DocumentRenderer` interface in the app layer. No engine involvement. Choosing how Typst is invoked on each platform is future work for R (open: [T10](09-open-decisions.md#t10)).

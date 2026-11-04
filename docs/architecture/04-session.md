@@ -72,11 +72,11 @@ How lines are produced is open ([N1-R1](10-waiting-on-d.md#n1-r1), [N1-R2](10-wa
 - **Phone.** An unknown number shows as "Unknown number" until the Handler releases the contact; the Handler can set a label.
 - **Earlier lines.** After a reveal, the lines of the current episode show the new name; archived logs do not change. A revealed name stays known in later episodes unless the Handler sets a new name.
 
-Proposed mechanism (open: [N1-R2](10-waiting-on-d.md#n1-r2)): a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
+Proposed mechanism (open: [N1-R2](10-waiting-on-d.md#n1-r2), [N1-R5](10-waiting-on-d.md#n1-r5), [R6](10-waiting-on-d.md#r6)): a Handler command `RevealName`, an event `NameRevealed` and a component `KnownAs` in `GmSystem`; the narrator takes a viewer and resolves every name through one function; the host regenerates the current episode's stored text on a reveal or at episode end, and leaves archived text untouched. Reveals are not consequence events and are not gated. Verification test: for every perspective, the host's stored variant for each `seq` equals what a participant on that perspective narrates from its own feed.
 
 ### RNG adapter
 
-The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web. The vectors are in `packages/session/test/xoshiro_rng_test.dart`, and CI runs them on the VM and, with `dart test -p node` in `packages/session`, on Node.js. The version is pinned exactly, and known-seed test vectors are kept for native and web.
+The engine defines the `Rng` interface and stays SDK-only. The session package holds the adapter over `xrandom` 0.7.2, using `Xoshiro128pp` by class name (never the `Xrandom`/`Drandom`/`Qrandom` aliases) [V-28]. Its README marks `Xoshiro128pp` as working on JS; our own known-seed vectors must show the same sequence on native and web. The vectors are in `packages/session/test/xoshiro_rng_test.dart`, and CI runs them on the VM and, with `dart test -p node` in `packages/session`, on Node.js.
 
 Participants:
 
@@ -180,7 +180,7 @@ The backend copy is a mirror, never a second authority. If the backend holds eve
 
 ## Requests between sittings
 
-A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override ([above](#settings-resolution)). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are open (Q5, [10](10-waiting-on-d.md#4-open-for-r)); the working assumption is that purchases are not auto-confirmed, since the GM review gate covers consequence events only.
+A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override ([above](#settings-resolution)). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are open ([Q5](10-waiting-on-d.md#q5)); the working assumption is that purchases are not auto-confirmed, since the GM review gate covers consequence events only.
 
 ## In-game phone
 

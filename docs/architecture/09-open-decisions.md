@@ -103,9 +103,21 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Options:** none beyond these candidates; each goes to R with its purpose and alternatives when its transport is scheduled (build order: in-process, LAN, Realtime Database relay, P2P).
 - **Owner:** R. **Described in:** [04](04-session.md#play-modes), [00](00-overview.md#platform-and-stack).
 
+### S-8 Badge packages
+
+- **Undecided:** the packages for badge printing and scanning: printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows and Linux beta, or USB 2D keyboard-wedge scanners). None is on the approved list (CLAUDE.md section 6).
+- **Options:** the candidates above; each goes to R with its purpose and alternatives when badges are scheduled.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#badges), [00](00-overview.md#dependency-rules).
+
+### S-9 Gateable shell capabilities
+
+- **Undecided:** which shell capabilities the Handler may gate. The library synthesis (section 12.7) proposes that theme, texture, motion and text-size settings are never gateable and that a lock card uses no flashing or motion beyond the standard window transition; the rest of capability gating is undecided (see DEC-34 and GAP-33 below).
+- **Options:** one proposal, as written in the synthesis; appearance settings are not gateable.
+- **Owner:** R. **Described in:** [07](07-apps.md#layering).
+
 ### API-1 Engine and pack API shapes
 
-- **Undecided:** the names, fields and file shapes of the proposals marked "Proposed, open: API-1" in [01](01-engine.md) and [02](02-rules-packs.md): the engine's public API surface, the proposed pack-file fields and keys, the rounding fields, the `assistance`, `sanity_events`, `disorders`, `combat` and creation-profile shapes, the new commands and events, and the library provenance field.
+- **Undecided:** the names, fields and file shapes of the proposals marked "Proposed, open: API-1" in [01](01-engine.md) and [02](02-rules-packs.md): the engine's public API surface, the proposed pack-file fields and keys, the rounding fields, the `assistance`, `sanity_events`, `disorders`, `combat` and creation-profile shapes, the new commands and events, the library provenance field, whether a command-line validator exists ([02](02-rules-packs.md)) and the `packages/engine/schema/` documentation folder ([01](01-engine.md)).
 - **Options:** one proposal per item, as written in the chapters. The behaviour is design; only names and shapes are open.
 - **Owner:** R, at implementation. **Described in:** [01](01-engine.md), [02](02-rules-packs.md).
 

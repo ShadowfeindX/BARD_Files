@@ -16,7 +16,7 @@ The platform, structure and stack the application is built on. Decisions and the
 | Stack | Flutter / Dart only. |
 | Targets | v1: **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now. |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
-| Repository | Pub workspace monorepo, `packages/` plus `apps/`. Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` and a theme-model package, proposed name `theme_core` (open: [T11](09-open-decisions.md#open-for-r-themes); not built), shared by the main app and the companion app; the functions app depends only on `protocol_envelope`. |
+| Repository | Pub workspace monorepo, `packages/` plus `apps/`. Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` and a theme-model package, proposed name `theme_core` (open: [T11](09-open-decisions.md#t11); not built), shared by the main app and the companion app; the functions app depends only on `protocol_envelope`. |
 | Engine purity | The engine has no Flutter, Firebase or UI imports, and no wire-format concerns: the envelope and message types live in `protocol_envelope`, engine codecs in `protocol`. |
 | Authority | No server authority and no anti-cheat. Every client runs its own engine. In an episode the GM's client is canonical: players send requests, the GM engine resolves them and broadcasts events. |
 | Hosting | "Network-hosted" means the backend relays live play (Realtime Database) and keeps finished episodes at rest (Firestore). P2P, LAN, in-person and offline play must all work. A signed-in account works offline from a local cache. |
@@ -31,7 +31,7 @@ The platform, structure and stack the application is built on. Decisions and the
 | Routing | `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical link `bard://join/<op>?alias=<id>`; verified live on Linux and Windows ([V-30]). |
 | Persistence | `sembast` 3.9.0 (`sembast_web` 2.4.6+1 for web player caches): one database file per episode, opened on demand, plus a small account/cache database. Commit-marker write protocol; no power-loss protection in v1 ([V-31]). |
 | Randomness | Pub package `xrandom` 0.7.2, class `Xoshiro128pp` (never the `Xrandom`/`Drandom`/`Qrandom` aliases), pinned exactly, used in `session` behind the engine's `Rng` interface ([V-28]). See [01-engine.md](01-engine.md#rng). |
-| Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
+| Transports | Build order: in-process, LAN, RTDB relay, P2P. Their packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not yet on the approved list (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled. |
 | Immersion | In-game phone messaging forwarded to the GM; per-perspective (player vs GM) panels. |
 
 ## Still open
@@ -84,7 +84,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   migrator/                   pure Dart. Major N → N+1 transforms on serialized data.
   content_core/               D's default rules pack as data under assets/.
   backend/                    Flutter + Firebase adapters behind session/app interfaces.
-  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11 (09-open-decisions.md#t11); not built).
+  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11; not built).
   ui_kit/                     Shared widgets, theme widgets and controller, perspective panels.
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
@@ -93,7 +93,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 /docs/                        developer guide, this spec
 ```
 
-`protocol_envelope` keeps wire-format concerns out of the engine and lets the functions app speak the protocol without the engine. A separate pure-Dart theme package (proposed name `theme_core`, open: [T11](09-open-decisions.md#open-for-r-themes)) lets the theme model grow after v1 without touching `ui_kit` ([07](07-apps.md#layering)); it is not built yet. The pack contents of `content_core` follow the shape in [02-rules-packs.md](02-rules-packs.md).
+`protocol_envelope` keeps wire-format concerns out of the engine and lets the functions app speak the protocol without the engine. A separate pure-Dart theme package (proposed name `theme_core`, open: [T11](09-open-decisions.md#t11)) lets the theme model grow after v1 without touching `ui_kit` ([07](07-apps.md#layering)); it is not built yet. The pack contents of `content_core` follow the shape in [02-rules-packs.md](02-rules-packs.md).
 
 ## Dependency rules
 
@@ -110,13 +110,13 @@ protocol_envelope         ──► (Dart SDK only)
 engine                    ──► (Dart SDK only)
 migrator                  ──► (Dart SDK only)     (works on serialized JSON, never imports engine)
 content_core              ──► (none; data only)
-theme_core                ──► (Dart SDK only)     (name open: T11 (09-open-decisions.md#t11); built-in themes as JSON assets)
+theme_core                ──► (Dart SDK only)     (name open: T11; built-in themes as JSON assets)
 
 dev_dependencies exception:
 migrator (tests only)     ──► engine              (current major only; see 05-migrator.md)
 ```
 
-\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are the approved packages for `apps/functions` (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the backend stack. The other third-party packages above are used at the versions in the Platform and stack table and in the verification register ([V-28] to [V-36]); each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
+\* `firebase_admin_sdk` 0.5.6 and `firebase_functions` 0.8.0 are the packages `apps/functions` uses (CLAUDE.md §6). `firebase_admin_sdk` covers Auth, Messaging, Storage, App Check, Firestore, Functions and Security Rules, but **not** Realtime Database [V-24]. `firebase_dart` is part of the backend stack. The other third-party packages above are used at the versions in the Platform and stack table and in the verification register ([V-28] to [V-36]); each version is re-verified on pub.dev just before it enters a pubspec, and `xrandom`, `sembast` and `hive` are pinned exactly. `sembast` (with `sembast_web`) is used by the store implementations; which package holds them is set in [04-session.md](04-session.md) and [07-apps.md](07-apps.md).
 
 `apps/functions` mints badge sign-ins, sets role claims, writes archived episodes to Firestore (`archiveEpisode`), sends push and helps publish packs; the payment webhook and store receipts are placeholders until payments are designed. Functions reach RTDB through their own REST calls with the runtime default credential, one runtime service account per function group. It does not relay (Realtime Database is the relay for live play), validate packs or adjudicate anything: packs are validated by the engine on the publishing device before upload and again on every device that loads them ([02-rules-packs.md](02-rules-packs.md#loading-and-validation)).
 
@@ -128,7 +128,7 @@ Why these rules:
 - **theme_core never imports Flutter** so the theme model, validator and colour math are testable in plain Dart and can serve later additions (theme distribution, per-campaign settings) without a widget layer. When it is built, the pub workspace members and the layer table in `tool/lib/dependency_rules.dart` are updated in the same change.
 - **session never imports Flutter** so the same episode loop runs in the apps, a CLI, and tests. Platform-specific transports and stores are injected.
 
-New pub dependencies in any package go to R first (CLAUDE.md §6). Not yet approved, and going to R when their feature is scheduled (transport packages: [S-6](09-open-decisions.md#s-6-transport-packages)): `web_socket_channel`, `bonsoir`, `flutter_webrtc`, `barcode`, `mobile_scanner`, `flutter_zxing`.
+New pub dependencies in any package go to R first (CLAUDE.md §6). Not yet on the approved list, and going to R when their feature is scheduled: the transport packages (open: [S-6](09-open-decisions.md#s-6-transport-packages)) `web_socket_channel`, `bonsoir`, `flutter_webrtc`, and the badge packages (open: [S-8](09-open-decisions.md#s-8-badge-packages)) `barcode`, `mobile_scanner`, `flutter_zxing`.
 
 ## Layering inside the Flutter apps
 
