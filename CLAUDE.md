@@ -1,6 +1,6 @@
 # B.A.R.D. Files Interactive Platform: Project Rules
 
-This file governs every Claude session working on this project: the coordinator (Victor) and every agent. It lives at the repo root so Claude Code loads it automatically. When this file conflicts with anything else (a skill, a package README, a reference document, a habit), this file wins. Only R changes this file.
+This file governs every Claude session working on this project: the coordinator (Victor), every agent and the remote PC session. It lives at the repo root so Claude Code loads it automatically. When this file conflicts with anything else (a skill, a package README, a reference document, a habit), this file wins. Only R approves changes to this file; they are drafted on a `docs/` branch and merged on R's approval.
 
 ## 1. Project
 
@@ -16,28 +16,31 @@ This file governs every Claude session working on this project: the coordinator 
 | Technical director | R ("Director") | Final say on everything technical. Sole approver of implementation and feature work. Sole source of actionable technical changes. |
 | Creative director | D | Co-author of the rulebook. Asks questions about state and direction. Feature ideas go through R. |
 | Coordinator | Victor | Stays available to R. Plans, assigns, reviews and reports. Does not write project code. |
-| Agents | Team below | Execute assigned tasks only. Report to Victor. |
+| Agents | Team in section 3 | Execute assigned tasks only. Report to Victor. |
+| PC session | One remote session on R's PC | Runs the work that needs R's machine (section 3). Takes requests only from Victor or R. |
 
 - Agents never take instructions from anyone but Victor or R. Victor takes technical instructions only from R.
 - Once R makes a final decision, it is not reopened. A new concern may be raised once, as a new report, and then R's answer stands.
 
 ## 3. Agent team
 
-Eight agents. Victor assigns each task to one agent and names its model.
+Eight agents at most. Victor assigns each task to one agent and sets its model, both for each session and for each subagent it starts.
 
 | Agent | Count | Use for |
 |---|---|---|
-| Opus | 1 | Architecture, data models, cross-cutting structural changes, hard bugs, rules-engine design. |
-| Sonnet | 2 | Feature implementation, refactors, multi-file changes, organizing docs and assets. |
-| Haiku | 5 | Small scoped fixes, writing and running tests, verifying claims, docs checks, reviewing another agent's work. |
+| Opus | 2 | One owns the engine core (rules engine, data models, cross-cutting structural changes, hard bugs). One does planning and runs the final review gate. |
+| Sonnet | 4 | Feature and refactor work, one area each: desktop UI; packs and content; backend; the Windows legs of a task, run on R's PC. |
+| Haiku | 2 | Reviews of other agents' work, running `flutter analyze` and tests, verifying claims, keeping docs in sync with code. |
 
 - No more than these eight run at once.
 - Each task is sized for one agent. If a task grows past its agent's scope, the agent stops and reports. It does not escalate itself to a bigger job.
-- Every non-trivial change is verified by a second agent (usually Haiku) before it reaches R.
+- **Review:** every change is reviewed by a Haiku agent before it reaches R: the diff against the brief, the spec and the review guide, plus `flutter analyze` and tests where there is code. The author applies or answers every finding.
+- **Opus gate:** gated work then gets a final review from the gate Opus. Gated work is any row the implementation plan marks as gated, and any change under `firebase/`. The gate sends patches; the owning agent applies them.
+- **PC session:** there is one remote session on R's PC, working in `D:\.code\BARD`. It runs builds, tests, emulators and probes that need R's machine or Windows, and it opens PRs from R's account (section 7). Cloud sessions send it requests through Victor, never directly. More PC sessions only with R's approval.
 
 ## 4. Communication
 
-**With R:** concise and technical. Assume full knowledge of Dart, Flutter, the packages in use and the project. Lead with the result or the decision needed. No padding.
+**With R:** concise and technical. Assume full knowledge of Dart, Flutter, the packages in use and the project. Lead with the result or the decision needed. No padding. Decisions go to R in one merged post, with context and a recommendation.
 
 **With D:** descriptive and exploratory. Explain what is being built, why, and how it maps to the game, in plain language. Go deeper if D asks, and be briefer if D says so. D's questions are answered, never turned into tasks. Feature requests from D are noted for R.
 
@@ -58,14 +61,19 @@ An escalation report states: what was attempted, the exact error or conflict, wh
 
 ## 6. Environment and scope
 
-**Working directory:** `C:\GAMES\BARD` on R's machine. All project files, code and artifacts are created here and nowhere else.
+**Locations on R's machine:**
+- `D:\.code\BARD`: the code repository. All project code is created and changed here.
+- `F:\My Drive\BARD_Workspace`: the project workspace. The library, designs, moodboards, backups, and files for R and D to edit or review go here. Restore instructions are in its `backup-restore\` folder, never in the repository.
+- `C:\GAMES\BARD` is retired. Nothing new goes there.
 
 **Reference folders (read-only):**
 - `F:\My Drive\BARD`: the rulebook (rough text version and several PDF iterations)
 - `E:\My Drive\BARD`: context and references for project design
-- `D:\.code\bard`, `D:\.code\_bard`, `D:\.code\bard-web`: older projects
+- `D:\.code\_bard`, `D:\.code\bard-web`: older projects
 
-Reference files may be **copied** into `C:\GAMES\BARD` and edited there. Originals are never modified, moved or deleted. Copies go under a clear path, `reference/`, with the source path noted in that folder's README.
+Reference files may be **copied** into the workspace (`F:\My Drive\BARD_Workspace`) and edited there, never into the repository. Originals are never modified, moved or deleted. Copies go under a clear path, `reference/`, with the source path noted in that folder's README.
+
+**Secrets and test data:** credentials are never stored, copied or committed; R supplies them when a task needs them. The test Firebase project's ID never appears in committed files.
 
 **Terminal:** Git Bash for every command. PowerShell is never used, on this or any machine, including the PowerShell tool.
 
@@ -82,18 +90,25 @@ No other external tool, MCP, service or package source is used unless R names it
 ## 7. Source control
 
 - **Remote:** `github.com/ShadowfeindX/BARD_Files`.
-- **Branches:** `main` is protected by convention. Agents work on task branches named `<type>/<short-name>` (e.g. `feat/npc-editor`, `fix/dice-rounding`, `docs/rules`).
+- **Branches:** `main` is protected by convention. Work never goes straight to `main`. Each task gets a branch named `<prefix>/<descriptive-name>`, never a random worktree or session name:
+  - `feature/`: adds or changes a major feature or UI element (e.g. `feature/dice-roller`).
+  - `refactor/`: changes the organization of files or code without changing behavior.
+  - `bugfix/`: fixes a bug, or a mismatch between the design and the code.
+  - `docs/`: spec and documentation, and the default for work that fits nothing else.
+  - `probe/`: throwaway verification code. Never merged.
 - **Commits:** small and focused. Message format: `type(scope): summary` (feat, fix, refactor, test, docs, chore).
-- **Merging:** only R (or Victor with R's explicit permission) merges to `main`. Agents open PRs and stop there.
-- **Never:** force-push to `main`, rewrite shared history, commit secrets, or commit generated build output.
+- **Pull requests:** R requests every PR, and it is opened from R's account through the PC session. The body is the change itself as a changelog (sections: major items, Changes, Bug Fixes, Known/Open Issues), with a short "why" only for a large change. No attribution of any kind: no tool footers, session links or co-author lines.
+- **Merging:** only R (or Victor with R's explicit permission) merges to `main`. Agents hand their branch over for a PR and stop there.
+- **Releases:** a release combines the PR descriptions since the previous release into one description and is tagged with its version number.
+- **Never:** force-push to `main`, force-push a branch already handed to R without Victor's OK, rewrite shared history, commit secrets, or commit generated build output.
 
 ## 8. Engineering standards
 
 - **Architecture:** layered (UI → logic → data), following the Flutter architecture skill. Game rules live in a pure-Dart domain layer with no Flutter imports, so they are testable and reusable by both GM and player apps.
-- **State management, routing, networking/sync and persistence:** decided by R before first implementation. Agents do not choose these.
+- **Decided stack:** state management, routing, persistence, networking/sync and the backend are fixed by R and listed in `docs/architecture/00-overview.md` (Fixed decisions). Agents do not change them; a proposed change goes to R.
 - **Style:** `dart format` clean. `flutter analyze` with zero warnings, using the project's `analysis_options.yaml`. Effective Dart naming and documentation (`///` on public APIs).
-- **Tests:** domain logic has unit tests. Widgets with behavior have widget tests. A task is not done until `flutter analyze` and `flutter test` pass.
-- **Platforms:** to be set by R.
+- **Tests:** domain logic has unit tests. Widgets with behavior have widget tests. A task is not done until `bash tool/check_all.sh` passes (format, pack check, analyze, dependency rules, pins and tests).
+- **Platforms (v1):** Windows and Linux desktop. The web build is player-only. The companion app is Android. No macOS or iOS in v1.
 
 ## 9. Game content
 
@@ -111,15 +126,15 @@ No other external tool, MCP, service or package source is used unless R names it
 ## 11. Task lifecycle
 
 1. **Request:** R gives Victor a technical change.
-2. **Plan:** Victor breaks it into tasks, picks an agent per task, and, for anything structural, confirms the plan with R first.
+2. **Plan:** Victor breaks it into tasks, picks an agent and model per task, and, for anything structural, confirms the plan with R first.
 3. **Brief:** each agent gets a self-contained brief with the goal, files in scope, constraints from this file, and its definition of done.
-4. **Execute:** the agent works on its own branch in `C:\GAMES\BARD`.
-5. **Verify:** a second agent checks the work (analysis, tests, review against the brief).
-6. **Report:** Victor reports to R with the result, PR link and verification evidence.
+4. **Execute:** the agent works on its own branch (section 7). Work that needs R's machine goes to the PC session through Victor.
+5. **Review:** a Haiku agent reviews the work (analysis, tests, review against the brief). Gated work then passes the Opus gate (section 3).
+6. **Report:** Victor reports to R with the result and the review evidence, and the PC session opens the PR.
 7. **Approve:** R reviews and merges, or sends changes back.
 
 ## 12. Open decisions for R
 
-- Code style and design
-- State management, routing, persistence and networking/sync approach
-- Target platforms
+- UI style and design (in review).
+- Transport packages for LAN and P2P play: each goes to R when its transport is scheduled.
+- The full list of open and pending-D items is in `docs/architecture/09-open-decisions.md`.

@@ -66,7 +66,7 @@ Suggestion: the GM invites and removes players for the whole campaign. The Handl
 
 ## Part 2: Focus items and artifacts
 
-Thank you for clearing this up. We had read the book's rules in "Casting & Rituals" as being about focus items. The book says: a focus item gives +1d6 to the roll and adds +2 Sanity cost per category above D. You say that rule is really about **artifacts**, and that a **focus item** is something different: a personal item that grounds the agent and reduces sanity cost.
+Thank you for clearing this up. We had read the book's rules in Section 8 ("Magic, Rituals, and the Occult"), under "Casting & Rituals" and "Ritual Magic (Advanced Occult)" (the line labelled "Focus Items:"), as being about focus items. The book says: a focus item gives +1d6 to the roll and adds +2 Sanity cost per category above D. You say that rule is really about **artifacts**, and that a **focus item** is something different: a personal item that grounds the agent and reduces sanity cost.
 
 **[FE-M5] Focus items: how much do they reduce sanity cost, and for which actions?** You wrote that a focus item reduces the sanity cost of "certain actions".
 No suggestion. Which actions (only casting? any sanity loss?) and by how much?
@@ -79,7 +79,7 @@ Suggestion: the Handler approves a focus item when the player proposes it (a fav
 - [ ] Later
 - Notes:
 
-**[FE-M7] Artifacts: do they keep the book's rule?** In the book, an artifact (the book calls it a focus item) adds +1d6 and costs +2 Sanity per category above D.
+**[FE-M7] Artifacts: do they keep the book's rule?** In the book's Section 8 ("Casting & Rituals"), an artifact (the book calls it a focus item) adds +1d6 and costs +2 Sanity per category above D.
 Suggestion: keep it as written. The Handler sets the artifact's category.
 - [ ] Agree
 - [ ] Change: ______
@@ -123,14 +123,14 @@ Suggestion: no numbers. The Handler switches on "may cast anyway" for that cast.
 
 ### Sanity and death
 
-**[FD-S2] One roll per sanity event.** The book's section on sanity and disorders uses a fixed Willpower check at DC 10 when Sanity drops low. You changed the difficulty to depend on how much Sanity is left (20/40/60/80/100%).
+**[FD-S2] One roll per sanity event.** The book's Section 4 ("Vitality - Health and Sanity"), under "Sanity" and "Long-Term Disorder System", uses a fixed Willpower check at DC 10 when Sanity drops low. You changed the difficulty to depend on how much Sanity is left (20/40/60/80/100%).
 Suggestion: one Willpower roll, against the difficulty for the current band, when the Handler calls for it after a loss. It replaces the DC 10 check. Failing it rolls 1d6 on the disorder table.
 - [ ] Agree
 - [ ] Change: ______
 - [ ] Later
 - Notes:
 
-**[FD-D1] Death and injury.** You said a character at 0 Health dies. If your current book has an incapacitated state or an injury check at 0 Health, are both gone?
+**[FD-D1] Death and injury.** You said a character at 0 Health dies. The book's Section 4 has a part called "Incapacitation & Critical Injury" (with "When to Roll for a Critical Injury", "Status Effects", "Afflictions" and "Permanent Damage and Scars"). Are the incapacitated state and the critical injury check both gone, or do some of these parts stay?
 Suggestion: yes. 0 Health is death, with no incapacitated state and no injury check.
 - [ ] Agree
 - [ ] Change: ______
@@ -167,7 +167,7 @@ Suggestion: yes, as a recorded Handler action. Players cannot.
 
 ### Helping, combat, damage
 
-**[FD-A1] Helping another character.** The book's section on helping (assistance) says a helper must first pass an easy check (Cat-D) before they can help. You changed the bonus: each helper adds their own flat attribute score, and the number of helpers is the roller's score in that attribute plus 1. Must the helper still pass the easy check first? May someone with no training in the skill help?
+**[FD-A1] Helping another character.** The book's rules on helping (assistance; we could not confirm the exact heading) say a helper must first pass an easy check (Cat-D) before they can help. You changed the bonus: each helper adds their own flat attribute score, and the number of helpers is the roller's score in that attribute plus 1. Must the helper still pass the easy check first? May someone with no training in the skill help?
 Suggestion: yes to the easy check, as in the book. Untrained characters may help.
 - [ ] Agree
 - [ ] Change: ______
@@ -181,7 +181,7 @@ Suggestion: the helper's own score in the same attribute the roll uses. The numb
 - [ ] Later
 - Notes:
 
-**[FD-C1] Aim, Dodge and Parry.** The book's combat section says shots beyond 500 feet need Aim, but does not describe it, and the heading for Dodge says "Ranged or Melee" while the text only mentions ranged attacks.
+**[FD-C1] Aim, Dodge and Parry.** The book's Section 7 ("Combat Protocols and Hazards") says shots beyond 500 feet ("Extreme Range", under "Movement and Range") need Aim, but does not describe it. Under "Actions in Combat", "Reaction Types", the heading "1. Dodge (Ranged or Melee)" says both, while the text only mentions ranged attacks.
 Suggestion: Aim is a Minor action that gives +1 on the shot (and is required beyond 500 feet). Dodge works against any attack. Parry works only against melee attacks.
 - [ ] Agree
 - [ ] Change: ______
@@ -255,7 +255,7 @@ Suggestion: the Handler accepts or refuses the reason before the bonus applies.
 - [ ] Later
 - Notes:
 
-**[FD-F5] What happens to the Luck dice and to disadvantage?** The book says Luck can "grant advantage" (extra dice equal to the Luck score, keep the best total), and it uses disadvantage without defining it.
+**[FD-F5] What happens to the Luck dice and to disadvantage?** The book (Section 2, "Modifiers & Situational Adjustments", the paragraph labelled "Luck Advantage:") says Luck can "grant advantage" (extra dice equal to the Luck score, keep the best total), and it uses disadvantage without defining it.
 Suggestion: both go away. The Handler uses ordinary labelled modifiers for penalties.
 - [ ] Agree
 - [ ] Change: ______

@@ -2,7 +2,7 @@
 
 This document has two parts. **Part 1** is the list of things only you can decide or write, so the build can continue. **Part 2** is discussion notes for the ideas you raised at the end of the last meeting: automated online play, damage reduction, and currencies. Part 2 is a set of options to react to, not proposals we have decided on. Nothing here is a rule.
 
-Where a rule comes from the book, the section is named. We could not look up the exact heading for every section from here, so some are given as a topic (for example "the section on helping another character"); tell us if one is hard to find.
+Where a rule comes from the book, the section is named. Where the book has no heading of its own for a rule (for example death, flashback or weapons), the section that contains it is named instead; tell us if one is hard to find.
 
 ---
 
@@ -15,15 +15,15 @@ Each item says what we need and why it matters. They are roughly in the order we
 Why: the sanity cost of casting depends on this, and we had the two ideas mixed up.
 
 - Write down how a **focus item** (a personal item that grounds an agent) reduces sanity cost: which actions it applies to, and how much it reduces.
-- Confirm how an **artifact** works. The book's section "Casting & Rituals" gives it +1d6 on the roll and +2 Sanity cost per category above D. Say if anything about that should change.
+- Confirm how an **artifact** works. The book's Section 8 ("Casting & Rituals") gives it +1d6 on the roll and +2 Sanity cost per category above D. Say if anything about that should change.
 - Design what happens when a focus item and an artifact are used together and the roll fails. You said any failure is catastrophic and the mechanics need work. One idea from R: the player rolls a die and the result is looked up on a table of outcomes. That needs a table of outcomes written by you (the table might have six to twenty entries, from "something minor goes wrong" to "the artifact takes over").
 
 ### 2. Reworked sanity tables
 
 Why: you said sanity loss for events and for disorders gets reworked. Until your new tables arrive the app shows the book's current ranges as suggestions only.
 
-- The sanity loss table (the section on sanity loss in the book, with entries like "2-3 points").
-- The disorder table (the book's section on disorders and the table numbered 1 to 6). Say whether the table stays at six entries.
+- The sanity loss table (Section 4, "Sanity Loss & Recovery", with entries like "2-3 points").
+- The disorder table (Section 4, "Long-Term Disorder System", the table numbered 1 to 6). Say whether the table stays at six entries.
 - Which events call for a resist roll, and who decides.
 
 ### 3. Armor and damage reduction (marked Later)
@@ -36,7 +36,7 @@ Why: the Handler needs numbers to run a fight with a class-based enemy. You said
 
 ### 5. Advancement purchases (marked Later)
 
-Why: the book's advancement section lists "single use" purchases (Tough Hide, Formidable, Unshakeable) without saying once per character or once per purchase, and "Request Artifact Clearance (Limited)" has no explanation.
+Why: the book's Section 9 ("Agent Advancement and Best Practices", "Agent Advancement Rules") lists "single use" purchases (Tough Hide, Formidable, Unshakeable) without saying once per character or once per purchase, and "Request Artifact Clearance (Limited)" has no explanation.
 
 ### 6. Currency (marked Later)
 
@@ -55,7 +55,7 @@ Why: you asked for flashback to replace advantage and disadvantage. We need the 
 
 Why: you set the rule for the lowest damage (MIN). The numbers themselves are needed.
 
-- The MIN value for each weapon category in the book's weapon table.
+- The MIN value for each weapon category in the weapons damage chart at the end of Section 6 ("Equipment and Armor"), which has no title of its own.
 - Any weapons you want listed individually.
 
 ### 9. Character creation details
@@ -122,7 +122,7 @@ The idea: play The B.A.R.D. Files without a live Handler, alone or with other pl
 
 ### B. Damage reduction for players and enemies
 
-**What the book has now.** The Core Rulebook's damage reduction is a flat number: Endurance plus a modifier, and the character sheet agrees. The book says armor "stats are largely narrative", so armor has no numbers yet. The older books used rolled reduction (1d6 + Endurance + armor, rolled every time you were hit), with light armor at 1-2, medium at 3-4 and heavy at 5 and above. The book's enemy tables give each enemy class a damage reduction number.
+**What the book has now.** The Core Rulebook's damage reduction (Section 7, "Damage and Defense Protocols", "Damage Reduction (DR)") is a flat number: Endurance plus a modifier, and the character sheet agrees. The book says armor "stats are largely narrative", so armor has no numbers yet. The older books used rolled reduction (1d6 + Endurance + armor, rolled every time you were hit), with light armor at 1-2, medium at 3-4 and heavy at 5 and above. The book's enemy tables give each enemy class a damage reduction number.
 
 **Options for players.**
 1. **Flat reduction with armor values** (the idea from the earlier sheet): damage reduction = Endurance + the armor's flat value. Simple, fast at the table.
@@ -138,7 +138,7 @@ The idea: play The B.A.R.D. Files without a live Handler, alone or with other pl
 
 ### C. Currency
 
-**What we have.** You marked currency "Later". The provisional plan was one currency defined in the content pack: its name, prices, starting funds and income.
+**What we have.** The Core Rulebook says nothing at all about currency. You marked currency "Later". The provisional plan was one currency defined in the content pack: its name, prices, starting funds and income.
 
 **R's idea:** more than one currency, to handle mundane and supernatural transactions.
 
