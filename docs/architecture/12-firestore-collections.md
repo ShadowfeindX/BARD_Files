@@ -26,7 +26,7 @@ Claims used by rules (set by the roles function only; the claim is the only copy
 | Collection | Document id | Audience | Written by |
 |---|---|---|---|
 | `agents/{uid}` | account uid | owner (private fields) | owner, function at creation |
-| `appearance/{uid}` | account uid | owner only | owner. **Proposed, pending T2**: theme setting and custom themes ([07](07-apps.md#where-it-is-stored)); no rule drafted below yet |
+| `appearance/{uid}` | account uid | owner only | owner. **Deferred, pending T2**: R ruled the appearance settings "only for the player client" (T9, 2026-11-04), read as client-side storage; this document exists only if R wants cross-client sync ([07](07-apps.md#where-it-is-stored-t2-client-side)). Not in v1 unless R says so; no rule drafted below |
 | `profilesPublic/{badge}` | badge number (never the uid) | anyone (public page) | moderator, after approval of `profilesPending` |
 | `profilesPending/{badge}` | badge number | owner, moderators | owner; deleted on approval |
 | `badgeNumbers/{n}` | 16-digit badge number | function only | function |
