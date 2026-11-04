@@ -20,3 +20,7 @@ database-debug.log
 
 # Generated rules-pack assets (built by tool/build_pack.sh)
 packages/content_core/assets/generated/
+
+# Local probe files that contain the test project ID (CLAUDE.md §6)
+/run-fs3-iam.sh
+/probes/b5-windows-run/
