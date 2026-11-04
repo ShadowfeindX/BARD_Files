@@ -43,11 +43,11 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Options:** one proposal: players do nothing and see the notice in the log.
 - **Owner:** R. **Described in:** [05](05-migrator.md#gm-workflow).
 
-### O-08-1 Continuous integration job list
+### O-08-1 Pack-validation job
 
-- **Undecided:** the CI job list: format, analyze, tests, dependency-rule check (including the transitive check), pack validation and the pinned-package check.
-- **Options:** one proposal, as written in the chapter.
-- **Owner:** R. **Described in:** [08](08-testing.md#continuous-integration-proposed).
+- **Undecided:** whether the example pack gets its own CI job. CI is built ([08](08-testing.md#continuous-integration)); pack validation currently runs inside the engine's tests (the pack loader loads the example pack), and there is no separate `content_core` validation step.
+- **Options:** keep validation in the engine tests; or add a job that loads and validates every pack folder in `content_core`.
+- **Owner:** R. **Described in:** [08](08-testing.md#continuous-integration).
 
 ### 06-O1 Firestore REST client token handling
 
@@ -117,7 +117,7 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 
 ### API-1 Engine and pack API shapes
 
-- **Undecided:** the names, fields and file shapes of the proposals marked "Proposed, open: API-1" in [01](01-engine.md) and [02](02-rules-packs.md): the engine's public API surface, the proposed pack-file fields and keys, the rounding fields, the `assistance`, `sanity_events`, `disorders`, `combat` and creation-profile shapes, the new commands and events, the library provenance field, whether a command-line validator exists ([02](02-rules-packs.md)) and the `packages/engine/schema/` documentation folder ([01](01-engine.md)).
+- **Undecided:** the names, fields and file shapes of the proposals marked "Proposed, open: API-1" in [01](01-engine.md) and [02](02-rules-packs.md): the engine's public API surface, the proposed pack-file fields and keys, the rounding fields, the `assistance`, `sanity_events`, `disorders`, `combat` and creation-profile shapes, the new commands and events, the library provenance field, the JSON form of the implemented `condition` node (`{"type":"compare","op":<lt|le|eq|ne|ge|gt>,"left":<formula>,"right":<formula>}`, six operators, no combinators),  whether a command-line validator exists ([02](02-rules-packs.md)) and the `packages/engine/schema/` documentation folder ([01](01-engine.md)).
 - **Options:** one proposal per item, as written in the chapters. The behaviour is design; only names and shapes are open.
 - **Owner:** R, at implementation. **Described in:** [01](01-engine.md), [02](02-rules-packs.md).
 
@@ -140,6 +140,7 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 - **No web target.** `apps/bard` has `linux/` and `windows/` folders but no `web/`, so the player-only web build in the v1 platforms does not exist yet.
 - **No Chrome widget tests.** CI runs the `engine` and `session` tests on Node.js as well as the VM. Nothing runs on Chrome, so `ui_kit` and `apps/bard` widget tests are unproven on the web.
 - **`check_all.sh` fails in a checkout with untracked Dart files.** Its `dart format .` step covers the whole folder, including untracked ones such as local probes. A clean clone passes on its first run (checked on Windows, 2026-11-04).
+- <a id="ui-style"></a>**UI style review.** The dossier look is not implemented and the UI style is in review, pending D's feedback (CLAUDE.md §12). `BardTheme` is a placeholder until then ([ui-kit notes](../ui-kit.md)).
 - **Session gaps.** `docs/developer-guide/session.md` lists the known gaps in the session layer.
 
 ## Held

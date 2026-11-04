@@ -57,9 +57,9 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 | Rules pack | `bash tool/build_pack.sh` then `bash tool/build_pack.sh --check` | the generated pack (`packages/content_core/assets/generated/`, git-ignored) is missing, stale or has extra files |
 | Tests | `bash tool/test_all.sh` | any package test fails |
 
-Pack validation of `content_core` ([08-testing.md](../architecture/08-testing.md#continuous-integration-proposed), step 5) joins this list when the pack loader lands.
+Pack validation of `content_core` is not a separate step: the engine's pack loader tests load the example pack as part of the Tests step (open: [O-08-1](../architecture/09-open-decisions.md#o-08-1-pack-validation-job)).
 
-The CI workflow is `.github/workflows/ci.yml`. It is **Proposed** in 08 and approved as a setup decision (implementation plan, decision 5).
+The CI workflow is `.github/workflows/ci.yml`, described in [08-testing.md](../architecture/08-testing.md#continuous-integration).
 
 ## Adding or changing a dependency
 

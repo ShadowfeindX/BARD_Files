@@ -6,7 +6,7 @@ The session package is the runtime layer: it owns live episodes, talks to transp
 
 An actor here is a plain Dart object with a private mailbox (a queue) that handles one message at a time. Nothing else touches its state. This gives the ordering guarantees the event log needs without locks.
 
-Actors are **not** isolates: they are single-threaded mailbox objects. Isolates are not supported on Flutter web [V-13], are too heavy for this job, and the work per message is small. If UI lag appears, it is solved another way, not by moving actors to isolates.
+Actors are **not** isolates: they are single-threaded mailbox objects. Isolates are not supported on Flutter web [V-13], are too heavy for this job, and the work per message is small.
 
 | Actor | Lives on | Owns |
 |---|---|---|
@@ -58,7 +58,7 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 
 ### Settings resolution
 
-Game settings (physical dice allowed, Handler-facing switches) have a base at the **campaign** (D to confirm: [FE-L2](10-waiting-on-d.md#fe-l2)), which also owns the pack version pin. Each new mission starts as a copy of the base (or of another mission) and may override it. The resolved value is the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
+Game settings (physical dice allowed, Handler-facing switches) have a base at the **campaign** (open: [FE-L2](10-waiting-on-d.md#fe-l2)), which also owns the pack version pin. Each new mission starts as a copy of the base (or of another mission) and may override it. The resolved value is the mission's override, else the campaign base; the host reads the resolved values when it opens an episode and keeps them in the episode's `EpisodeSettings` ([01](01-engine.md#commands-and-events)). Join links, the roster and listings stay at the campaign ([12](12-firestore-collections.md#campaigns-operations-and-episodes)). The pack pin stays at the campaign because characters carry across missions and a different pin per mission could change their numbers.
 
 The consequence auto-confirm is not one of these: it stays a per-episode setting. The auto-confirm setting for requests made between sittings (purchases and contact releases, see [Requests between sittings](#requests-between-sittings)) has its default at the campaign and can be set per mission. These features are available only once an alias has been added to a mission and is connected to an active GM host.
 
@@ -147,7 +147,7 @@ Authorization uses the identity verified at `hello` (`IdentityVerifier`), never 
 
 All modes run the same loop; they differ only in which `Transport` and whether a `RelayActor` is attached.
 
-**Transport build order:** in-process, LAN, Realtime Database relay, P2P. The packages for LAN and P2P (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled.
+**Transport build order:** in-process, LAN, Realtime Database relay, P2P. The packages for LAN and P2P (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not added before R approves them (open: [S-6](09-open-decisions.md#s-6-transport-packages)); each goes to R when its transport is scheduled.
 
 | Mode | Transport | Backend | Notes |
 |---|---|---|---|

@@ -105,7 +105,6 @@ From `D-notes-before-next-meeting.md`, Part 1. The pack value stays `null` until
 |---|---|---|---|
 | <a id="n1-r1"></a>N1-R1 | How log lines are produced (decision 15) | (3) Hybrid: clients narrate their live log from their own feed; the host stores per-audience text narrated from that audience's knowledge | session row: `_narrate` once per audience; participant narrator; 04 Names in the log; 03 `textlog` unchanged |
 | <a id="n1-r2"></a>N1-R2 | Name rule | Explicit reveal plus fallback: `RevealName`, `NameRevealed`, `KnownAs` | engine row in `GmSystem`; narrator `nameFor(state, entity, viewer)`; `projectFor` case; codecs and `KnownAs` migration fixture; 01 |
-| <a id="n1-r3"></a>N1-R3 | Keep the per-batch `textlog` relay (P12) | Keep (R's earlier ruling stands unless changed) | none if kept; else 06 `textlog` branch |
 | <a id="n1-r4"></a>N1-R4 | Fix per-audience narration now, before D's wording | Now, with a placeholder fallback | session row |
 | <a id="n1-r5"></a>N1-R5 | Reveals through the review gate | Not gated (a reveal is not a consequence event) | none |
 | <a id="r6"></a>R6 | D4 needs the current episode's stored text re-narrated | Regenerate on a reveal or at episode end; archives untouched | session row; 04; 05 text-log paragraph |
@@ -128,6 +127,8 @@ Ruled, not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Campaign-level members and rules (R-A6): RTDB `members` move to the campaign; the rules change goes through the Opus gate.
 - Operation-end phone box clear (R-C2): a function clears the box after the archive.
 - Snapshot pruning (R-A3): after a mission is complete or submitted, remove all session data except the latest snapshot.
+- Apply the settled rulings to the example pack and engine (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; the explode flags in `damage.json`, `proficiency.json` and `advancement.json` (today `null`); `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Insight on WIS; Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
+- Rename the `occult.json` block `ritualDefaults.focusItem` to `artifact`, with a new `focusItem` left `null` (see [01](01-engine.md#planned-code-changes)).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
 The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).
