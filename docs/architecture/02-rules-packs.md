@@ -175,9 +175,9 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 
 | Tier | Who creates | Where it lives | Shown in public library |
 |---|---|---|---|
-| Core | D (official) | cloud-hosted, bundled copy in apps | yes |
+| Core | D (official) | cloud-hosted, bundled copy in apps (cloud/account parts planned; see 06) | yes |
 | Library | any GM, submitted for review | cloud-hosted | only once verified |
-| Campaign / private | a GM | the GM's account (and local cache) | no |
+| Campaign / private | a GM | the GM's account (and local cache) (cloud/account parts planned; see 06) | no |
 | Episode-scoped | a GM, for one episode | pinned to that episode | no |
 
 - The **episode-scoped tier** sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and its use is logged like any other pack change.

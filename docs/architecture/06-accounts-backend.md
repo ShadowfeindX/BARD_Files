@@ -280,7 +280,7 @@ Probe evidence is in [V-33]. The planned function dependencies are `firebase_adm
 
 ## App Check
 
-There is **no App Check enforcement in v1**. Enforcement rejects every request without a valid App Check token [V-37], and there is no App Check for Linux or `firebase_dart` [U], so enforcing would lock out desktop. Protection in v1 comes from Auth plus RTDB and Firestore rules. App Check runs **monitor-only** (planned) on mobile and web (`firebase_app_check` 0.5.0 lists Windows, but official docs do not [V-26][U]). Enforcement is revisited if abuse appears.
+There is **no App Check enforcement in v1**. Enforcement rejects every request without a valid App Check token [V-37], and there is no App Check for Linux or `firebase_dart` [U], so enforcing would lock out desktop. Protection in v1 comes from Auth plus RTDB and Firestore rules. App Check runs **monitor-only** (planned; 10 §5 'App Check monitor-only') on mobile and web (`firebase_app_check` 0.5.0 lists Windows, but official docs do not [V-26][U]). Enforcement is revisited if abuse appears.
 
 ## Payments
 

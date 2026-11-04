@@ -142,6 +142,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Session actors: `StoreActor`, `RelayActor` and `SessionDirectory` (built today: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor`; see [04](04-session.md)).
 - Capability gate (`canHost`, `canEditPacks`) in the apps, and the sembast persistence the apps use (see [07](07-apps.md)).
 - Cloud Functions: badge login, roles, push, `archiveEpisode`, clean-up and the pack publishing helper (none exist yet; see [06](06-accounts-backend.md)).
+- App Check monitor-only on mobile and web (B4): `firebase_app_check` setup, no enforcement (see [06](06-accounts-backend.md#app-check)).
 - Library and pack index: Firestore library, verification, Cloud Storage pack distribution and the offline pack cache (see [02](02-rules-packs.md#distribution), [06](06-accounts-backend.md)).
 - Entitlements read model (see [06](06-accounts-backend.md)).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).

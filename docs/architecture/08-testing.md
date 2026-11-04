@@ -17,7 +17,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 
 - Round-trip encode/decode for every message, command and event.
 - **Fixture files** per protocol and engine version (`test/fixtures/`): old encoded messages must keep decoding within the same major.
-- Version-negotiation table tests (every `refused` reason).
+- Planned: version-negotiation table tests (every `refused` reason); some refusals are covered in `packages/session/test/episode_host_test.dart`.
 
 ## Session
 
