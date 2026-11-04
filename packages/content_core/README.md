@@ -7,7 +7,7 @@ D's default rules pack, as data under `assets/`. No logic and no dependencies (`
 It is a copy of the `example-core` sample pack from the project library (source: `packs/example-core/` in the project library; its own `README.md` is kept beside it as the guided tour for D). **D's pack replaces it** once D approves the pack shape (P3, pending D); the file list, field names and values may all change then. No values were invented. The only edit to the copy is renaming the four `*Placeholder` annotation keys to start with `_` (R's ruling, below).
 
 - A value of `null` means **pending D** (see the gaps in the library's `rulebook/rulebook-gaps.md`). The pack loader (`feature/pack-loader`, not on this branch yet) reports each one as a warning, not an error; the feature that needs the value stays off and the UI labels it as pending.
-- `example-operation` (the operation-tier sample) is not part of this package.
+- The library's second sample, `packs/example-operation/` (an episode-tier pack: one Handler's per-episode content), is not part of this package.
 
 ## Annotations and the shipped pack
 
