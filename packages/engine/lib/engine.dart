@@ -48,7 +48,7 @@ export 'src/read_models/phone_threads.dart';
 export 'src/read_models/derived_stats.dart';
 export 'src/rng.dart';
 export 'src/state/component_stores.dart';
-export 'src/state/operation_state.dart';
+export 'src/state/episode_state.dart';
 export 'src/state/pending_state.dart';
 export 'src/systems/messaging_system.dart';
 export 'src/version.dart';

@@ -6,7 +6,7 @@ import '../components/components.dart';
 import '../expr/evaluate.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 
 /// Derived-stat keys the engine itself reads. Proposed engine vocabulary:
 /// a pack that names its Health and Sanity formulas differently gets no
@@ -71,7 +71,7 @@ final class DerivedStats {
   /// A stat whose formula cannot be evaluated for the entity (a missing
   /// score, a division by zero) is left out. Empty when the entity has no
   /// attributes.
-  Map<String, num> of(OperationState state, EntityId entity) {
+  Map<String, num> of(EpisodeState state, EntityId entity) {
     final scores = state.stores.get(Attributes.componentType, entity)?.scores;
     if (scores == null) return const {};
     final attributes = scores.asMap();
@@ -90,13 +90,13 @@ final class DerivedStats {
   }
 
   /// One derived stat of [entity], or `null` when it cannot be computed.
-  num? value(OperationState state, EntityId entity, String key) =>
+  num? value(EpisodeState state, EntityId entity, String key) =>
       of(state, entity)[key];
 
   /// [entity]'s Health and Sanity, or `null` when the pack has no
   /// [DerivedKeys.health] or [DerivedKeys.sanity] stat or the entity cannot
   /// compute them.
-  VitalsView? vitals(OperationState state, EntityId entity) {
+  VitalsView? vitals(EpisodeState state, EntityId entity) {
     final stats = of(state, entity);
     final maxHealth = stats[DerivedKeys.health];
     final maxSanity = stats[DerivedKeys.sanity];

@@ -14,10 +14,10 @@ final class Principal {
   /// The account profile.
   final String agentId;
 
-  /// The alias this agent plays in the operation; null for the GM.
+  /// The alias this agent plays in the episode; null for the GM.
   final String? aliasId;
 
-  /// Whether this is the operation's GM.
+  /// Whether this is the episode's GM.
   final bool isGm;
 
   /// Whether the agent is an anonymous guest (clearance 0).
@@ -55,7 +55,7 @@ final class RosterAdmission implements Admission {
   /// Bans [agentId].
   void ban(String agentId) => _banned.add(agentId);
 
-  /// Marks [aliasId] as locked to another campaign or operation.
+  /// Marks [aliasId] as locked to another campaign or episode.
   void lockAlias(String aliasId) => _lockedAliases.add(aliasId);
 
   @override

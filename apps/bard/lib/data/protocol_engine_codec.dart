@@ -24,13 +24,13 @@ class ProtocolEngineCodec implements EngineCodec {
   Event decodeEvent(JsonMap json) => codec.decodeEvent(json);
 
   @override
-  JsonMap encodeState(OperationState state) => {
+  JsonMap encodeState(EpisodeState state) => {
     'started': state.started,
     'entities': state.stores.entities.length,
   };
 
   @override
-  OperationState decodeState(JsonMap json) => throw UnsupportedError(
+  EpisodeState decodeState(JsonMap json) => throw UnsupportedError(
     'State snapshots are not decoded yet; the host replays events.',
   );
 }

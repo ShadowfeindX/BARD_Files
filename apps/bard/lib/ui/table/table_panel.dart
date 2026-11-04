@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
-import '../../data/services/operation_service.dart';
+import '../../data/services/episode_service.dart';
 import '../shared/log_entry_tile.dart';
 
 /// The public table panel; it can sit on a second display.
@@ -11,7 +11,7 @@ class TablePanel extends StatelessWidget {
   const TablePanel({super.key, required this.service});
 
   /// Source of the public log.
-  final OperationService service;
+  final EpisodeService service;
 
   @override
   Widget build(BuildContext context) {

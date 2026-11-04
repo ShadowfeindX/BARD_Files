@@ -2,16 +2,16 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import 'package:bard/data/models.dart';
-import 'package:bard/data/services/operation_service.dart';
+import 'package:bard/data/services/episode_service.dart';
 
 /// In-memory stand-in for the session, for widget tests of the UI alone. It follows the same visibility shape as the engine (rolls public,
 /// consequences held for review, GM notes private) but applies no game rules
 /// of its own beyond a fixed fixture: scripted dice, exploding primary die and
 /// a subset of the example pack's DC table and its partial band.
-class FakeOperationService implements OperationService {
+class FakeEpisodeService implements EpisodeService {
   /// Creates the fake with two agents. [dice] is the scripted die sequence;
   /// it repeats when exhausted.
-  FakeOperationService({this.dice = const [6, 3, 4, 2, 5, 1]}) {
+  FakeEpisodeService({this.dice = const [6, 3, 4, 2, 5, 1]}) {
     _agents.value = const [
       AgentSheet(
         id: 'vale',

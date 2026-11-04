@@ -4,6 +4,11 @@ import 'package:protocol_envelope/protocol_envelope.dart';
 import 'json_read.dart';
 import 'shared_codec.dart';
 
+// The v1 wire names predate the Operation-to-Episode rename:
+// [StartEpisode] is still `startOperation` with an `operationId` field on
+// the wire. Stored logs are frozen per engine major (05 §Why the
+// migrator never imports the engine), so the wire names change only
+// in a major bump, through the migrator.
 const _commandTypes = {
   'startOperation',
   'createAgent',
@@ -26,9 +31,9 @@ const _commandTypes = {
 /// written, no code generation (P6).
 JsonMap encodeCommand(Command command) {
   final body = switch (command) {
-    StartOperation(:final operationId, :final settings) => (
+    StartEpisode(:final episodeId, :final settings) => (
       'startOperation',
-      {'operationId': operationId, 'settings': encodeSettings(settings)},
+      {'operationId': episodeId, 'settings': encodeSettings(settings)},
     ),
     CreateAgent(
       :final name,
@@ -168,8 +173,8 @@ Command decodeCommand(Object? json) {
   return guarded('command', () {
     switch (type) {
       case 'startOperation':
-        return StartOperation(
-          operationId: map.string('operationId'),
+        return StartEpisode(
+          episodeId: map.string('operationId'),
           settings: decodeSettings(map.object('settings')),
           actor: actor,
         );

@@ -9,7 +9,7 @@ import '../expr/expr.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
 import '../rng.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../state/pending_state.dart';
 import '../visibility.dart';
 
@@ -17,7 +17,7 @@ import '../visibility.dart';
 ///
 /// The engine records who acts but does not check that an alias owns the
 /// entity it acts for: authorization is the session's job (04 §The
-/// operation loop).
+/// episode loop).
 ///
 /// A check totals `primary die + attribute + proficiency dice + modifiers`
 /// and compares it with the DC: at or above is a success, short by no more
@@ -36,7 +36,7 @@ final class CheckSystem {
 
   /// Decides a [CheckCommand].
   Decision decide(
-    OperationState state,
+    EpisodeState state,
     CheckCommand command,
     Rng rng,
     IdSource ids,
@@ -48,7 +48,7 @@ final class CheckSystem {
   };
 
   /// Applies a [CheckEvent].
-  OperationState evolve(OperationState state, CheckEvent event) {
+  EpisodeState evolve(EpisodeState state, CheckEvent event) {
     final pending = state.pending;
     return switch (event) {
       ActionRequested() => state.copyWith(
@@ -87,7 +87,7 @@ final class CheckSystem {
     };
   }
 
-  Decision _request(OperationState state, RequestAction command, IdSource ids) {
+  Decision _request(EpisodeState state, RequestAction command, IdSource ids) {
     if (!state.stores.has(Identity.componentType, command.entity)) {
       return _unknownEntity(command.entity);
     }
@@ -116,7 +116,7 @@ final class CheckSystem {
     ]);
   }
 
-  Decision _decline(OperationState state, DeclineRequest command) {
+  Decision _decline(EpisodeState state, DeclineRequest command) {
     final request = state.pending.requests[command.request];
     if (request == null) return _unknownRequest(command.request);
     return Accepted([
@@ -130,7 +130,7 @@ final class CheckSystem {
   }
 
   Decision _require(
-    OperationState state,
+    EpisodeState state,
     RequireCheck command,
     Rng rng,
     IdSource ids,
@@ -167,11 +167,7 @@ final class CheckSystem {
     ]);
   }
 
-  Decision _resolveCommand(
-    OperationState state,
-    ResolveCheck command,
-    Rng rng,
-  ) {
+  Decision _resolveCommand(EpisodeState state, ResolveCheck command, Rng rng) {
     final pending = state.pending.checks[command.check];
     if (pending == null) {
       return Rejected(
@@ -201,7 +197,7 @@ final class CheckSystem {
   }
 
   /// Builds the check's spec, or returns why it cannot be built.
-  _Checked<CheckSpec> _spec(OperationState state, RequireCheck command) {
+  _Checked<CheckSpec> _spec(EpisodeState state, RequireCheck command) {
     if (pack.checkRules == null) {
       return const _Invalid(
         Rejection(RejectionCode.unavailable, 'The pack has no check rules.'),
@@ -295,7 +291,7 @@ final class CheckSystem {
   }
 
   /// Checks everything a roll needs, without drawing.
-  _Checked<_Roll> _prepareRoll(OperationState state, CheckSpec spec, Rng rng) {
+  _Checked<_Roll> _prepareRoll(EpisodeState state, CheckSpec spec, Rng rng) {
     // The RNG may be ahead of the state: draws used by a consequence batch
     // still held for review, or recorded by the host before a crash, are
     // never handed out again. Behind would reuse dice, so it is refused.
@@ -304,7 +300,7 @@ final class CheckSystem {
       return _Invalid(
         Rejection(
           RejectionCode.rngOutOfSync,
-          'The RNG is at draw ${rng.drawCount}, behind the operation at '
+          'The RNG is at draw ${rng.drawCount}, behind the episode at '
           'draw $expected.',
         ),
       );

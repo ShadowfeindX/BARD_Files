@@ -100,22 +100,22 @@ enum FeedResult {
   gap,
 }
 
-/// A recipient's view of the operation: a non-canonical engine fed with
+/// A recipient's view of the episode: a non-canonical engine fed with
 /// entries (04 §Participants). Used by remote participants and by the host's
 /// own perspective views.
 final class PerspectiveFeed {
   /// Creates an empty feed.
-  PerspectiveFeed(this.engine) : _state = const OperationState.initial();
+  PerspectiveFeed(this.engine) : _state = const EpisodeState.initial();
 
   /// The engine that folds full entries.
   final Engine engine;
 
-  OperationState _state;
+  EpisodeState _state;
   int _lastSeq = 0;
   final List<int> _opaque = [];
 
   /// The state built from what this recipient may see.
-  OperationState get state => _state;
+  EpisodeState get state => _state;
 
   /// The last `seq` applied, whether or not its content was readable.
   int get lastSeq => _lastSeq;

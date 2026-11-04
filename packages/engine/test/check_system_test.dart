@@ -350,7 +350,7 @@ void main() {
     test('auto-resolve rolls at once', () {
       final table = Table(
         faces: [2, 2],
-        settings: const OperationSettings(autoResolveChecks: true),
+        settings: const EpisodeSettings(autoResolveChecks: true),
       );
       final events = table.run(firearms());
       expect(events.map((e) => e.runtimeType), [CheckRequired, CheckResolved]);
@@ -400,7 +400,7 @@ void main() {
       expect(ranges, [DrawRange(0, 3), DrawRange(3, 5), DrawRange(5, 9)]);
       // Replaying the log reaches the same count without any RNG.
       final replayed = table.engine.replay(
-        const OperationState.initial(),
+        const EpisodeState.initial(),
         table.log,
       );
       expect(replayed.rng.drawCount, 9);

@@ -4,7 +4,7 @@ import '../components/components.dart';
 import '../decision.dart';
 import '../events/events.dart';
 import '../ids.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 
 /// Health and Sanity losses (rulebook §4, §7).
 ///
@@ -17,7 +17,7 @@ final class VitalsSystem {
   const VitalsSystem();
 
   /// Decides a [VitalsCommand].
-  Decision decide(OperationState state, VitalsCommand command) =>
+  Decision decide(EpisodeState state, VitalsCommand command) =>
       switch (command) {
         ApplyDamage() =>
           _check(state, command.entity, command.amount) ??
@@ -44,7 +44,7 @@ final class VitalsSystem {
       };
 
   /// Applies a [VitalsEvent].
-  OperationState evolve(OperationState state, VitalsEvent event) {
+  EpisodeState evolve(EpisodeState state, VitalsEvent event) {
     final (entity, update) = switch (event) {
       DamageApplied(:final entity, :final amount) => (
         entity,
@@ -60,10 +60,10 @@ final class VitalsSystem {
     );
   }
 
-  Vitals _vitals(OperationState state, EntityId entity) =>
+  Vitals _vitals(EpisodeState state, EntityId entity) =>
       state.stores.get(Vitals.componentType, entity) ?? const Vitals();
 
-  Rejected? _check(OperationState state, EntityId entity, int amount) {
+  Rejected? _check(EpisodeState state, EntityId entity, int amount) {
     if (!state.stores.has(Attributes.componentType, entity)) {
       return Rejected(
         Rejection(

@@ -3,7 +3,7 @@ import 'dart:convert';
 import '../../expr/evaluate.dart' show normalizeNumber;
 import 'sha256.dart';
 
-/// Computes a pack's content hash: what an operation pins (02 §Manifest).
+/// Computes a pack's content hash: what an episode pins (02 §Manifest).
 ///
 /// [files] maps each pack-relative path to its decoded JSON. The hash covers
 /// every file in path order, each written in a canonical form (object keys

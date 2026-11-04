@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../data/services/operation_service.dart';
+import '../../data/services/episode_service.dart';
 import '../console/console_view.dart';
 import '../console/console_view_model.dart';
 import '../dossier/dossier_view.dart';
@@ -16,17 +16,17 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.service,
     required this.console,
-    required this.onNewOperation,
+    required this.onNewEpisode,
   });
 
-  /// The running operation.
-  final OperationService service;
+  /// The running episode.
+  final EpisodeService service;
 
   /// GM console state.
   final ConsoleViewModel console;
 
-  /// Replaces the operation with a fresh, empty one.
-  final VoidCallback onNewOperation;
+  /// Replaces the episode with a fresh, empty one.
+  final VoidCallback onNewEpisode;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -39,9 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New operation'),
+        title: const Text('New episode'),
         content: const Text(
-          'This closes the current operation and starts an empty one.',
+          'This closes the current episode and starts an empty one.',
         ),
         actions: [
           TextButton(
@@ -49,14 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            key: const ValueKey('new-operation-confirm'),
+            key: const ValueKey('new-episode-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Start new'),
           ),
         ],
       ),
     );
-    if (ok ?? false) widget.onNewOperation();
+    if (ok ?? false) widget.onNewEpisode();
   }
 
   @override
@@ -72,10 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('B.A.R.D. Files'),
             actions: [
               TextButton.icon(
-                key: const ValueKey('new-operation'),
+                key: const ValueKey('new-episode'),
                 onPressed: _confirmNew,
                 icon: const Icon(Icons.add),
-                label: const Text('New operation'),
+                label: const Text('New episode'),
               ),
               if (selected != null)
                 DropdownButton<String>(

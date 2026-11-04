@@ -3,7 +3,7 @@ import 'dart:math' show Random;
 import 'package:engine/engine.dart';
 import 'package:xrandom/xrandom.dart' show Xoshiro128pp;
 
-/// The 128-bit seed of an operation's RNG: four 32-bit words, not all zero.
+/// The 128-bit seed of an episode's RNG: four 32-bit words, not all zero.
 ///
 /// GM-only data: it never leaves the GM's device (01 §RNG).
 final class RngSeed {
@@ -89,7 +89,7 @@ final class RngSeed {
 final class XoshiroRng implements Rng {
   /// Creates an RNG from [seed] that has already made [drawCount] draws.
   ///
-  /// Reopening an operation passes the draw count from its state, and the
+  /// Reopening an episode passes the draw count from its state, and the
   /// generator is advanced to that point, so the next roll is the one that
   /// would have followed.
   XoshiroRng(RngSeed seed, {int drawCount = 0})

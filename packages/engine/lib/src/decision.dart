@@ -45,13 +45,13 @@ final class Rejected extends Decision {
 
 /// Machine-readable reason for a rejection. Proposed.
 enum RejectionCode {
-  /// The operation has not started yet.
+  /// The episode has not started yet.
   notStarted,
 
-  /// The operation has already started.
+  /// The episode has already started.
   alreadyStarted,
 
-  /// The engine is bound to a different pack than the operation pinned.
+  /// The engine is bound to a different pack than the episode pinned.
   packMismatch,
 
   /// A key does not exist in the pack (attribute, skill, tier, ...).
@@ -63,7 +63,7 @@ enum RejectionCode {
   /// The command names an entity that does not exist.
   unknownEntity,
 
-  /// The alias already plays an agent in this operation.
+  /// The alias already plays an agent in this episode.
   aliasTaken,
 
   /// A pack expression could not be evaluated.

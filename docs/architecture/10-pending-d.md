@@ -197,14 +197,14 @@ The `difficulty.json` `checkRules` block sits there as a proposal (`_shapeNote`)
 ### C7. Physical dice (concern 7)
 
 **Ruled (D, 2026-10-22): Agree.** Approved for the game, built after the demo; typed-in faces are never re-rolled or changed.
-**Apply:** option A edits (01, 04, 03; `ResolveCheck` faces; `OperationSettings.allowPhysicalDice`, default `false`; GM entry UI; `ui_kit` marking). R schedules the row. Which unit owns the setting (campaign, operation, mission or session) follows X0 (FD-X1).
+**Apply:** option A edits (01, 04, 03; `ResolveCheck` faces; `EpisodeSettings.allowPhysicalDice`, default `false`; GM entry UI; `ui_kit` marking). R schedules the row. Which unit owns the setting (campaign, operation, mission or session) follows X0 (FD-X1).
 
 **Decides:** D. **Source:** 09 concern 7.
 **Today:** `CheckResolved` carries `source` (`rng` | `entered`) and `enteredBy` (`engine/events/check_events.dart`); only `rng` is produced.
 
 | Option | Spec | Code |
 |---|---|---|
-| **A. Approve** | 01 §Commands and events: entered faces; 04 §Play modes; 03 §Message bodies (faces on the request); 09 concern 7 | Row 5 follow-up: `ResolveCheck` takes optional `faces`, validated against the dice the check would roll, refused unless the operation allows it; `OperationSettings` (`engine/state/operation_state.dart`) gains `allowPhysicalDice` (default `false`) and its codec (`protocol/lib/src/shared_codec.dart`); player request carries faces (row 7); GM setting and entry UI (row 8 follow-up); `ui_kit` dice breakdown marks entered faces |
+| **A. Approve** | 01 §Commands and events: entered faces; 04 §Play modes; 03 §Message bodies (faces on the request); 09 concern 7 | Row 5 follow-up: `ResolveCheck` takes optional `faces`, validated against the dice the check would roll, refused unless the operation allows it; `EpisodeSettings` (`engine/state/episode_state.dart`) gains `allowPhysicalDice` (default `false`) and its codec (`protocol/lib/src/shared_codec.dart`); player request carries faces (row 7); GM setting and entry UI (row 8 follow-up); `ui_kit` dice breakdown marks entered faces |
 | B. Keep out of v1 | 09 concern 7: "out of v1"; field stays reserved | none |
 
 The design as R specified it: a per-operation GM setting, off by default and agreed with the players; entered faces are recorded with `source: entered` and who entered them. Proposed, not ruled: entered faces, like app rolls, are never re-rolled or altered (F2).
@@ -288,7 +288,7 @@ Values D has not given. The engine can represent each variant; agents never choo
 - **e.** Fumbling the resist roll: full loss plus 1; the Handler describes the complication. **f.** A failed disorder check rolls 1d6 on the disorder table.
 **Apply:** `sanity_events.json` ranges become suggestions (`pick: "gm"`), Proposed `resistDc.bands` (20 to S, 40 to A, 60 to B, 80 to C, 100 to D: an assumption, FD-S1), Proposed `halfRounding: "down"`, `fumbleExtra: 1`; `disorders.json` `rollDie: {"type":"dice","count":1,"sides":6}`; 01 §Systems `VitalsSystem` and `ConditionSystem` rows; no automatic sanity roll in the engine. D will supply the reworked tables (FD-S3); until then the book's ranges stay as suggestions.
 
-**Today:** the GM enters every sanity amount through `VitalsSystem`, and the session holds it for review (F2, `session/lib/src/operation_host.dart`). `sanity_events.json` has ranges with placeholders; `disorders.json` `rollDie` is `null` (a pending value in the source too).
+**Today:** the GM enters every sanity amount through `VitalsSystem`, and the session holds it for review (F2, `session/lib/src/episode_host.dart`). `sanity_events.json` has ranges with placeholders; `disorders.json` `rollDie` is `null` (a pending value in the source too).
 
 | Part | Assumption | Other options | Code | Pack |
 |---|---|---|---|---|
@@ -452,7 +452,7 @@ This **supersedes** R's 2026-10-20 terms ("operation = the whole campaign") in 1
 
 | Option | Spec | Code | Firebase |
 |---|---|---|---|
-| **A. One log per operation, stored in mission segments** | Glossary rename (README, 11 §Terminology "rename pending"); 01 §Commands and events: `MissionStarted` / `MissionCompleted`; 04 §Interfaces the session depends on: one sembast file per mission segment (amends 09-3); 05 §What gets migrated; 06 §Realtime Database model (prune `events`/`textlog` per segment; `phone`/`requests` pruning rule); 06 §Cloud Functions: `archiveMission` (amends P14); 12 §Archives and `missions.eventRange` (unit = segment) | `OperationSystem` (`engine/systems/operation_system.dart`) gains mission events (row 1 follow-up); `EventStore` segment files (row 12); host starts a segment from the head snapshot (row 7 follow-up); codecs (row 6) | `firebase/database.rules.json` segment pruning; emulator checks; `archiveMission` function |
+| **A. One log per operation, stored in mission segments** | Glossary rename (README, 11 §Terminology "rename pending"); 01 §Commands and events: `MissionStarted` / `MissionCompleted`; 04 §Interfaces the session depends on: one sembast file per mission segment (amends 09-3); 05 §What gets migrated; 06 §Realtime Database model (prune `events`/`textlog` per segment; `phone`/`requests` pruning rule); 06 §Cloud Functions: `archiveMission` (amends P14); 12 §Archives and `missions.eventRange` (unit = segment) | `EpisodeSystem` (`engine/systems/episode_system.dart`) gains mission events (row 1 follow-up); `EventStore` segment files (row 12); host starts a segment from the head snapshot (row 7 follow-up); codecs (row 6) | `firebase/database.rules.json` segment pruning; emulator checks; `archiveMission` function |
 | B. One log per mission, carry-over copied | Glossary shift; new "carry-over" section in 05 or 04; 12 `missions` | carry-over step between logs (new row); between-mission activity has no log | per-mission tree |
 | C. One unsegmented log per operation | Glossary rename only | none now; log growth unbounded | none |
 
@@ -469,7 +469,7 @@ Also decided by this card:
 
 **Not ruled: R asked what "requests" means (2026-10-27).** Answer: requests a player makes outside a live session. The ones in the supplemental plan are a store purchase (a wallet and storefront item, item 4) and a contact release (asking the Handler to hand over an NPC's details), plus anything similar later. They wait for the Handler to approve, because the Handler may not be online when they are made.
 
-**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`. **Today:** nothing built. **Assumption:** under A, purchases and contact releases queue as ordinary requests under the operation until the Handler's client is online; purchases do not auto-confirm (auto-confirm would extend F2, which covers consequence events only). **Changes:** 04 §Offline and sync semantics; 06 RTDB `requests` (already exists); if auto-confirm is chosen, F2 amendment in 01 and 04 and an `OperationSettings` flag.
+**Decides:** R. Needs X0. **Source:** `supplemental-x0-pending.md`. **Today:** nothing built. **Assumption:** under A, purchases and contact releases queue as ordinary requests under the operation until the Handler's client is online; purchases do not auto-confirm (auto-confirm would extend F2, which covers consequence events only). **Changes:** 04 §Offline and sync semantics; 06 RTDB `requests` (already exists); if auto-confirm is chosen, F2 amendment in 01 and 04 and an `EpisodeSettings` flag.
 
 ### Q7. Messages between sessions
 
@@ -515,13 +515,13 @@ Also decided by this card:
 **Apply:** the D4 row below changes to "re-render the live session's lines with what the viewer knows now"; archived sessions keep their text as archived; A4.4 "Earlier lines" in the library write-up changes accordingly (it said no retroactive change). Technical consequence for R (R6): the host's stored text for the current session is regenerated on a reveal or at session end. Revealed names carry forward as state (FD-N1).
 
 **Decides:** D (D1-D7), R (R1-R5, decision 15). **Source:** library `architecture/narrator-lines-and-name-reveals.md`; `rulebook-gaps.md` N1; `r-questions-4-11-13-15.md` §15.
-**Today:** the host narrates every event once with the full state and copies the player line into `public` and each `alias:<id>` (`session/lib/src/operation_host.dart`, `_narrate`); names come from `Identity.name` or the raw id (`engine/narrator/narrator.dart`, `_name`, `_aliases`, `_party`; the `AgentCreated` line reads `event.name`). So a player's stored line can name a GM-only NPC or another player's agent.
+**Today:** the host narrates every event once with the full state and copies the player line into `public` and each `alias:<id>` (`session/lib/src/episode_host.dart`, `_narrate`); names come from `Identity.name` or the raw id (`engine/narrator/narrator.dart`, `_name`, `_aliases`, `_party`; the `AgentCreated` line reads `event.name`). So a player's stored line can name a GM-only NPC or another player's agent.
 
 **R's side:**
 
 | # | Question | Assumption | Changes |
 |---|---|---|---|
-| R1 | How lines are produced | (3) Hybrid: clients narrate their live log from their own feed; the host stores per-audience text narrated from that audience's knowledge | Row 7 follow-up: `_narrate` calls the narrator once per audience; participant-side narrator; row 8 follow-up: player and table views narrate the perspective feed instead of `store.readText`, `_breakdown` names from the viewer; 04 §The operation loop, §Perspectives; 03 `textlog` unchanged |
+| R1 | How lines are produced | (3) Hybrid: clients narrate their live log from their own feed; the host stores per-audience text narrated from that audience's knowledge | Row 7 follow-up: `_narrate` calls the narrator once per audience; participant-side narrator; row 8 follow-up: player and table views narrate the perspective feed instead of `store.readText`, `_breakdown` names from the viewer; 04 §The episode loop, §Perspectives; 03 `textlog` unchanged |
 | R2 | Name rule | (a) explicit reveal + fallback, with `RevealName` / `NameRevealed` / `KnownAs` | Row 1 follow-up: command, event, component in `GmSystem` (new system file); narrator takes a `Viewer` and one `nameFor(state, entity, viewer)`; `projectFor` case for multi-alias reveals (`session/lib/src/perspective.dart`); codecs (row 6); migration fixture for `KnownAs`; 01 §Components, §Commands and events |
 | R3 | Keep per-batch `textlog` relay (P12 amendment)? | Raised once; R's ruling (keep) stands unless R changes it | (a) keep: none; (b) drop: 06 §Realtime Database model `textlog` branch, row 15 |
 | R4 | Fix per-audience narration now, before D rules | Now | Row 7 follow-up, with a placeholder fallback swapped when D1 is ruled |
@@ -591,8 +591,8 @@ D's answers leave these for R. Defaults are assumptions, not rulings.
 | N1-R3 | Per-batch `textlog` relay | Keep (existing ruling) | none |
 | N1-R4 | Fix per-audience narration before D's wording | Now | row 7 follow-up |
 | N1-R5 | Reveals through the review gate | Not gated | none |
-| R6 | D4 needs re-narration of the current session's stored text | Regenerate on a reveal or at session end; archived sessions untouched | row 7 follow-up; 04 §The operation loop; 05 text-log paragraph |
-| R7 | **Ruled (R, 2026-10-27): correct.** Death at 0 Health goes through the review gate | Part of the confirmed damage batch, so the Handler can edit the damage before death; Handler `KillCharacter` is not gated | 01 §Commands and events; 04 §The operation loop (F2) |
+| R6 | D4 needs re-narration of the current session's stored text | Regenerate on a reveal or at session end; archived sessions untouched | row 7 follow-up; 04 §The episode loop; 05 text-log paragraph |
+| R7 | **Ruled (R, 2026-10-27): correct.** Death at 0 Health goes through the review gate | Part of the confirmed damage batch, so the Handler can edit the damage before death; Handler `KillCharacter` is not gated | 01 §Commands and events; 04 §The episode loop (F2) |
 | R8 | **Ruled (R, 2026-10-27): correct, use the suggestion.** Flashback against F2 | Additive logged event beside the roll; faces untouched | 01, 03 |
 | R9 | Which of D's rulings unblock builds | Unblocked now (data and small engine changes): G1, G3, G13, P2, M1, G9. Waiting on D's follow-ups: M2 and M3 roll details, G4, G5, G7, G10, G19, FB1. Waiting on R-X0: everything touching mission or session records, Q33 rules | R sequences the rows |
 

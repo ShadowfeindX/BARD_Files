@@ -4,7 +4,7 @@
 /// is what keeps engine state an immutable value (00 §Cross-cutting
 /// principles).
 ///
-/// It is copy-on-write: [put] and [remove] copy the entries. Operation state
+/// It is copy-on-write: [put] and [remove] copy the entries. Episode state
 /// holds tens or hundreds of entities, where a copy is cheap. If profiling
 /// ever shows this matters, a structurally shared map can replace the inside
 /// of this class without changing its API (01 §State keeps that choice

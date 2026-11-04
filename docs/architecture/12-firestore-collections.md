@@ -1,8 +1,6 @@
 # 12. Firestore collections (P10c, Firestore part)
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
-
-Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the Firestore `operations/{opId}` collection and its subcollections are left unrenamed here. That node mixes live-game data (members, archived missions) with handler-level data (invites, public listings), so R ruled on 2026-11-03 to split it, with a new `episodes/{episodeId}` node for the live-game data (see "Split of the `operations` node"); the RTDB live tree keeps the path `operations/$op` (the rules file is unchanged; renaming it is a gated row) in [06](06-accounts-backend.md#realtime-database-model-live-play). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
+Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the tree is Campaign > Operation > Mission > Episode. The old `operations/{opId}` node is split into campaign, operation and episode records (see "Campaign, operation, mission and episode records"); the RTDB live tree is `/episodes/$ep` ([06](06-accounts-backend.md#realtime-database-model-live-play)). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
 
 This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chose Firestore for data at rest and a hand-written REST client on desktop). It names the collections, the document shapes, the security rules and the composite indexes. Account fields come from [11](11-supplemental-features.md). Archive layout follows [05](05-migrator.md). Anything that depends on the unresolved event-log unit (X0) is held and listed at the end.
 
@@ -12,7 +10,7 @@ This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chos
 |---|---|---|
 | Rules read whole documents; a field cannot be hidden from a reader who may read the document. | Anything with a different audience is a separate document. | [V-48] |
 | At most 10 `get`/`exists` per request. | Rules use claims first and at most three lookups per path. | [V-7] |
-| 1 MiB document cap. | Archives are chunked at about 800 to 900 KiB. | [V-33] |
+| 1 MiB document cap. | Archives are chunked at about 800 to 900 KiB. | [V-7] |
 | Page size can be capped in rules with `request.query.limit`. | Every `list` rule below calls `pageOk()`. | [V-49] |
 | Desktop has no live listeners; REST with `getIdToken()` on every request. | Collections are read by query or by id, never by subscription. Freshness comes from refetch. | [V-47] |
 | `FAILED_PRECONDITION` means a missing composite index. | Every query the app runs is in the index list below. | [V-43] |
@@ -34,21 +32,24 @@ Claims used by rules (set by the roles function only; the claim is the only copy
 | `badgeNumbers/{n}` | 16-digit badge number | function only | function |
 | `signInCodes/{code}` | single-use code | function only | function |
 | `aliases/{uid}/items/{aliasId}` | generated id; `anon` for tier 0 | owner | owner |
-| `operations/{opId}` | operation id | GM, members | GM |
-| `operations/{opId}/members/{uid}` | account uid | the member (own entry), GM | GM (see canonical copy) |
-| `operations/{opId}/invites/{token}` | invite token | GM | GM |
-| `operations/{opId}/joinRequests/{uid}` | requester uid | GM only | requester (public operations) or the invite function; GM updates |
+| `campaigns/{campaignId}` | campaign id | campaign members, GM | GM |
+| `campaigns/{campaignId}/members/{uid}` | account uid | the member (own entry), GM | GM |
+| `campaigns/{campaignId}/invites/{token}` | invite token | GM | GM |
+| `campaigns/{campaignId}/joinRequests/{uid}` | requester uid | GM only | requester (public campaigns) or the invite function; GM updates |
+| `campaigns/{campaignId}/transfers/{id}` | generated id | GM (destination), requester | alias owner creates; GM decides |
 | `tierLevels/{tier}` | tier number | signed-in | console only |
-| `operations/{opId}/transfers/{id}` | generated id | GM (destination), requester | alias owner creates; GM decides |
-| `operations/{opId}/missions/{missionId}` | mission id | members | function (archive) |
-| `archives/{opId}/chunks/{n}` | chunk number | members, per audience | function only |
-| `archiveIndex/{opId}` | operation id | members | function |
+| `operations/{opId}` | operation id | campaign members, GM | GM |
+| `operations/{opId}/missions/{missionId}` | mission id | campaign members, GM | GM; function (summary) |
+| `episodes/{episodeId}` | episode id (same as the RTDB key) | episode members, GM | GM; function (archive) |
+| `episodes/{episodeId}/members/{uid}` | account uid | the member (own entry), GM | GM (see canonical copy) |
+| `archives/{episodeId}/chunks/{n}` | chunk number | episode members, per audience | function only |
+| `archiveIndex/{episodeId}` | episode id | episode members | function |
 | `libraryPending/{id}` | content id | owner, moderators | owner; moderator (revocation) |
 | `libraryPublic/{id}` | content id | summary levels per tier | moderator |
 | `libraryData/{id}` | content id | data levels per tier | moderator |
 | `packIndex/{packId}` | pack id | signed-in (public packs), owner | pack owner; moderator for public |
-| `listingsPublic/{opId}` | operation id | signed-in full accounts | moderator, after approval |
-| `listingsPending/{opId}` | operation id | GM, moderators | GM |
+| `listingsPublic/{campaignId}` | campaign id | signed-in full accounts | moderator, after approval |
+| `listingsPending/{campaignId}` | campaign id | GM, moderators | GM |
 
 Names follow the library's "pending then public" model ([11](11-supplemental-features.md)). Pending and public are separate collections, not a status field, so that a public query never has to filter out unapproved content and a rule cannot be fooled by a status edit.
 
@@ -127,29 +128,34 @@ Public content is moderator-approved first, so an edit goes to `profilesPending/
 
 The alias sheet and play state (inventory, skills, contacts) are engine components, not fields of this document; they live in the GM's store during play and in the archive afterwards ([05](05-migrator.md)). Carrying a character's state between missions waits on Q24 and X0.
 
-## Split of the `operations` node (R, 2026-11-03)
+## Campaign, operation, mission and episode records (R, 2026-11-03)
 
-R ruled that a **new Firestore node** holds the live-game data, kept behind its own rules, instead of mixing it with handler-level data. Proposed layout (the rules draft below is **not yet rewritten** for it; that is a gated row):
+The tree is Campaign > Operation > Mission > Episode ([11](11-supplemental-features.md#terminology-ruled-rename-pending)). R ruled on 2026-11-03 that live-game data gets its **own Firestore node**, `episodes/{episodeId}`, kept behind its own rules instead of mixed with handler-level data. R-A1 and R-A6 put pack pins, base settings, join links, invites, listings and the player roster at the **campaign**, so the old `operations/{opId}` document can no longer own them. Each level is a top-level collection that names its parents by id:
 
 | Node | Holds | Read by | Written by |
 |---|---|---|---|
-| `episodes/{episodeId}` | live-game record: `operationId`, `missionId`, `gmUid`, `memberUids`, `engineMajor`, `status`, `createdAt`, `updatedAt`; subcollection `members/{uid}` (the searchable copy of RTDB `members`) | members of that episode, GM | GM (create and edit while a handler); archive function sets `archived` |
-| `archives/{episodeId}/chunks/{n}` and `archiveIndex/{episodeId}` | the archived log and its index (keyed by episode, as the spec's live unit) | members of the episode, per audience | function only |
-| `operations/{opId}` (arc and handler level) | `name`, `gmUid`, `visibility`, `virtual`, `packPins`, and the subcollections `invites`, `joinRequests`, `transfers`, `missions` (summaries), plus listings | GM, and members for what they need | GM, functions |
+| `campaigns/{campaignId}` | `name`, `gmUid`, `memberUids`, `packPins`, `settings` (base), `visibility`, `virtual`, `status`; subcollections `members`, `invites`, `joinRequests`, `transfers` | campaign members, GM | GM while a handler; functions |
+| `operations/{opId}` | story arc: `campaignId`, `gmUid`, `name`, `status`, `order`; subcollection `missions` | campaign members, GM | GM while a handler |
+| `operations/{opId}/missions/{missionId}` | `title`, `status`, `aliasIds` (who takes part, R-A6), `settings` (per-mission overrides, R-A1, R-C1), then `summary` and timestamps | campaign members, GM | GM while a handler; archive function writes the summary fields |
+| `episodes/{episodeId}` | live-game record: `campaignId`, `operationId`, `missionId`, `gmUid`, `memberUids`, `engineMajor`, `status`; subcollection `members/{uid}` (the searchable copy of RTDB `members`) | members of that episode, GM | GM while a handler; archive function sets `archived` |
+| `archiveIndex/{episodeId}`, `archives/{episodeId}/chunks/{n}` | the archived log of one episode and its index | members of the episode, per audience | function only |
+| `listingsPending/{campaignId}`, `listingsPublic/{campaignId}` | public listing of a campaign that takes join requests | GM and moderators; signed-in full accounts | GM; moderator |
 
-Notes: pack pins and join links sit at the campaign (R-A1, R-A6); where the campaign document lives is a follow-on question for the rename row. Existing paths in the rest of this chapter still say `operations/{opId}`; read them as the operation record above, and read archive and member paths as the episode node, until the rules draft is rewritten. RTDB path names stay as the verified rules file spells them.
+What moves out of the old `operations/{opId}` document: `memberUids`, `packPins`, `visibility` and `virtual` go to the campaign; `engineMajor` and the episode's `memberUids` go to the episode; the `members`, `invites`, `joinRequests` and `transfers` subcollections go to the campaign (members also get a per-episode copy under the episode); `missions` stays under the operation; listings are keyed by campaign. The campaign document lives at top-level `campaigns/{campaignId}` (R, 2026-11-03, question 9 below).
 
-## Operations
+RTDB stays the canonical store during play (06): the live tree is `/episodes/$ep`, and its `members` move to the campaign in a later gated row (R-A6). The phone box lives in the episode's RTDB tree and clears when the operation ends (R, 2026-11-03), so it is not part of the episode archive clean-up. After a mission is marked complete or submitted, everything but the latest snapshot is removed (R-A3); that pruning step is a later row.
 
-### `operations/{opId}`
+## Campaigns, operations and episodes
+
+### `campaigns/{campaignId}`
 
 ```json
 {
   "name": "string",
   "gmUid": "string",
   "memberUids": ["uid"],
-  "engineMajor": 1,
   "packPins": [{ "packId": "string", "version": "string" }],
+  "settings": { },
   "status": "open | archived",
   "visibility": "private | public",
   "virtual": false,
@@ -158,41 +164,70 @@ Notes: pack pins and join links sit at the campaign (R-A1, R-A6); where the camp
 }
 ```
 
-- `memberUids` is a denormalised copy of the member documents. It exists so that "operations I am in" is one indexed query and so rules can test membership with `request.auth.uid in resource.data.memberUids` without a `get` (saves a read against the 10-lookup cap).
-- `memberUids` always contains `gmUid` (rule: the GM cannot drop out), so the GM keeps read access to missions and archives. It is also shown to every member, which is acceptable inside an operation (11 keeps the uid out of *public* payloads only). Provisional caps: `memberUids` at most 20, `packPins` at most 5.
-- Only the GM creates and edits the document, and only while a handler (`tier() >= 4`); a lapsed handler keeps read and archive access only. `gmUid` cannot change after creation. `status` becomes `archived` only through the archive function (admin SDK); rules refuse a client write of `archived`, matching the RTDB ruling (06). `virtual` means played online (11). Handler tier (4) is required to create an operation; lapsed handlers keep read and archive access only ([11](11-supplemental-features.md)).
+- `memberUids` is a denormalised copy of the campaign's member documents, so "campaigns I am in" is one indexed query and rules test membership without a `get` against the 10-lookup cap. It always contains `gmUid` (the GM cannot drop out). It is shown to every member, which is acceptable inside a campaign (11 keeps the uid out of *public* payloads only). Provisional caps: `memberUids` at most 20, `packPins` at most 5.
+- `packPins` is the campaign's pack version pin (R-A1: one pin for the whole campaign, so characters' numbers do not change between missions). `settings` holds the base settings each new mission copies; the auto-confirm default lives here (R-C1). Its keys are the engine's settings vocabulary and are not whitelisted by rules `[U]`.
+- Only the GM creates and edits the document, and only while a handler (`tier() >= 4`); a lapsed handler keeps read and archive access only ([11](11-supplemental-features.md)). `gmUid` cannot change after creation. `status` becomes `archived` only through a function (admin SDK); rules refuse a client write of `archived`, matching the RTDB ruling (06). `virtual` means played online (11).
 - Writing `memberUids` is allowed to the GM only; joins go through the GM (invite or request approval), never a self-add.
+- The Handler persona (R-A4) is campaign-owned; its document shape is a later row and is not drafted here.
 
-### `operations/{opId}/members/{uid}`
+### `campaigns/{campaignId}/members/{uid}`
 
-`{ aliasId, joinedAt }`. **Canonical copy:** RTDB `members` is canonical during play and survives archive and clean-up as the locked stub (R, 06). This Firestore document and `memberUids` are the searchable copy: the GM client writes both in one batch (the rule checks `getAfter` that `memberUids` contains the member), and the archive function reconciles them from RTDB. Written by the GM only, while a handler. There is no `role` field; `gmUid` says who the GM is. A member reads **only their own entry** and cannot list; the GM reads all (06 RTDB table).
+`{ joinedAt }`. A player account in the campaign roster (R-A6). Which of the player's aliases take part in which mission is `missions/{missionId}.aliasIds`, not this document. The GM client writes this document and `memberUids` in one batch. The `getAfter` check is one-way: a member document needs a `memberUids` entry, but a `memberUids` entry without a member document is not refused `[U]`. A member reads only their own entry and cannot list; the GM reads all. `[U]` Whether the roster also records which aliases a player brought into the campaign waits on the RTDB `members` row (R-A6).
 
-### `operations/{opId}/invites/{token}`
+### `campaigns/{campaignId}/invites/{token}`
 
-`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link `bard://join/<opId>?invite=<token>`. Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private operation accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
+`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link. The link names the campaign, so the canonical link becomes `bard://join/<campaignId>?invite=<token>` (09-2 said `<op>`; the route change belongs to the campaign-members row). Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private campaign accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
 
-### `operations/{opId}/joinRequests/{uid}`
+### `campaigns/{campaignId}/joinRequests/{uid}`
 
-Join request from a non-member (11). Not the same as the RTDB `requests` branch, which holds in-play requests from members. `{ aliasId, aliasKey, message?, status: 'open', createdAt }` (`aliasKey` is the key of the requester's own alias document; the rule checks that its `aliasId` field equals the claimed `aliasId`, so nobody can claim another player's audience), keys whitelisted. Any signed-in account, anonymous included (06: anonymous can join any session), creates one document keyed by their own uid on an operation whose `visibility` is `public`; invites reach private operations through the invite function. `message` is free text and therefore allowed **only for full accounts** (R: no messaging for tier 0). The invite function applies the same no-message rule for tier 0. A GM can add a uid to `memberUids` without a `members` document; that is acceptable because RTDB `members` is canonical. The requester cannot read it back (as in RTDB); the GM, while a handler, reads, updates `status`, and deletes. This closes the request field whitelist for join requests; in-play request kinds remain open.
+Join request from a non-member (11). Not the same as the RTDB `requests` branch, which holds in-play requests from members. `{ aliasId, aliasKey, message?, status: 'open', createdAt }` (`aliasKey` is the key of the requester's own alias document; the rule checks that its `aliasId` field equals the claimed `aliasId`, so nobody can claim another player's audience), keys whitelisted. Any signed-in account, anonymous included, creates one document keyed by their own uid on a campaign whose `visibility` is `public` and `status` is `open`; invites reach private campaigns through the invite function. `message` is free text and therefore allowed **only for full accounts** (R: no messaging for tier 0). The invite function applies the same no-message rule for tier 0. The requester cannot read it back; the GM, while a handler, reads, updates `status`, and deletes.
 
-### `operations/{opId}/transfers/{id}`
+### `campaigns/{campaignId}/transfers/{id}`
 
-Alias transfer request (concern 4, Fixed): `{ fromUid, aliasId, aliasKey, sourceOpId, status: 'offered' | 'accepted' | 'declined', createdAt }`, a document under the **destination** operation, approvable only by its GM. The source operation is notified (a function writes to the source GM's inbox) and does not consent. An alias in a running operation cannot move until that operation ends, which rules cannot check, so a function performs the move on an accepted request and refuses a running source `[U]`.
+Alias transfer request (concern 4, Fixed): `{ fromUid, aliasId, aliasKey, sourceCampaignId, status: 'offered' | 'accepted' | 'declined', createdAt }`, a document under the **destination** campaign, approvable only by its GM. The source campaign is notified (a function writes to the source GM's inbox) and does not consent. An alias in a running episode cannot move until that episode ends, which rules cannot check, so a function performs the move on an accepted request and refuses a running source `[U]`.
+
+### `operations/{opId}`
+
+`{ campaignId, gmUid, name, status: 'open' | 'complete', order, createdAt, updatedAt }` (status values Proposed, not ruled). A story arc inside the campaign; operations are sequential (D, 2026-10-29), `order` keeps them in sequence. `gmUid` is copied from the campaign so the write rule needs no lookup; read access is by campaign membership (one `get`). Written by the GM while a handler; `campaignId` and `gmUid` cannot change.
 
 ### `operations/{opId}/missions/{missionId}`
 
-Every mission gets a summary ([11](11-supplemental-features.md)): `{ title, summary, startedAt, endedAt, eventRange: { fromSeq, toSeq } }`, written by the archive function. The `eventRange` unit depends on X0 and is therefore Proposed.
+`{ title, status: 'planned' | 'running' | 'complete' | 'submitted' (only complete and submitted come from R-A3; the rest Proposed), aliasIds, settings, summary?, startedAt?, endedAt?, eventRange? }`. Missions may run in parallel (D). `aliasIds` is the Handler's pick of characters for the mission (R-A6); `settings` holds only the overrides of the campaign base (R-A1, R-C1). The GM writes everything but the summary fields; every mission gets a summary ([11](11-supplemental-features.md)), written by the archive function (`summary`, `endedAt`, `eventRange`). `[U]` The `eventRange` unit across several episodes is not designed yet.
+
+### `episodes/{episodeId}`
+
+```json
+{
+  "campaignId": "string",
+  "operationId": "string",
+  "missionId": "string",
+  "gmUid": "string",
+  "memberUids": ["uid"],
+  "engineMajor": 1,
+  "status": "open | archived",
+  "createdAt": "<timestamp>",
+  "updatedAt": "<timestamp>"
+}
+```
+
+- One document per episode: one event log, one RTDB live tree (`/episodes/$ep`), one local sembast file, one host. The id is the same as the RTDB key.
+- `memberUids` lists the accounts admitted to this episode and always contains `gmUid`. It is a subset of the campaign's `memberUids` `[U]` (rules cannot check a subset cheaply; the GM client keeps it so).
+- Created and edited by the GM while a handler; `campaignId`, `operationId`, `missionId` and `gmUid` cannot change. `status` becomes `archived` only through the archive function.
+
+### `episodes/{episodeId}/members/{uid}`
+
+`{ aliasId, joinedAt }`. **Canonical copy:** RTDB `members` is canonical during play and survives archive and clean-up as the locked stub (06). This document and `memberUids` are the searchable copy: the GM client writes both in one batch (the rule checks `getAfter`), and the archive function reconciles them from RTDB. Written by the GM only, while a handler. A member reads **only their own entry** and cannot list; the GM reads all (06 RTDB table). The archive chunk rule reads `aliasId` from here.
 
 ## Archives
 
-Archives are written by a function at the end of a mission, after the lock step of the archive order (lock, archive, clean-up; [06](06-accounts-backend.md)).
+Archives are written by a function when an episode ends, after the lock step of the archive order (lock, archive, clean-up; [06](06-accounts-backend.md)). One archive per episode.
 
-- `archiveIndex/{opId}`: `{ gmUid, memberUids, engineMajor, chunkCount, byteSize, archivedAt, formatVersion }`. Small; read by members. Fields the genesis `archives` list needs (05) are added here once X0 fixes the log unit (Held).
-- `archives/{opId}/chunks/{n}`: `{ kind, audience, fromSeq, toSeq, payload, formatVersion }`.
+- `archiveIndex/{episodeId}`: `{ campaignId, operationId, missionId, gmUid, memberUids, engineMajor, chunkCount, byteSize, archivedAt, formatVersion }`. Small; read by members. Fields the genesis `archives` list needs (05) are added here once the log unit's archive layout is settled (Held).
+- `archives/{episodeId}/chunks/{n}`: `{ kind, audience, fromSeq, toSeq, payload, formatVersion }`.
 
-`kind` is `frozen` (the canonical frozen log, archived as-is, 05; it holds every audience, so `audience` is `gm`), `head` (the final head snapshot, `gm`) or `textlog` (the per-perspective plain-text log, 05, one audience per chunk). `audience` is `gm`, `public` or `alias:<aliasId>`, mirroring the RTDB branches. Because rules read whole documents, every chunk has exactly one audience (Proposed; the layout per mission is Held on X0). The GM reads every audience (06); any member reads `public`; a member reads `alias:<id>` only for their own alias. `payload` is a JSON string sized so the whole document stays under about 800 to 900 KiB. `[U]` Exact chunk size is a tuning value, not measured against real events.
+`kind` is `frozen` (the canonical frozen log, archived as-is, 05; it holds every audience, so `audience` is `gm`), `head` (the final head snapshot, `gm`) or `textlog` (the per-perspective plain-text log, 05, one audience per chunk). `audience` is `gm`, `public` or `alias:<aliasId>`, mirroring the RTDB branches. Because rules read whole documents, every chunk has exactly one audience. The GM reads every audience (06); any member reads `public`; a member reads `alias:<id>` only for their own alias in that episode. `payload` is a JSON string sized so the whole document stays under about 800 to 900 KiB. `[U]` Exact chunk size is a tuning value, not measured against real events.
 
-The frozen log (the canonical event stream) and the per-perspective text log are stored the same way: the text log chunks use `audience` like events. How the two streams are laid out per mission is held on X0.
+The frozen log (the canonical event stream) and the per-perspective text log are stored the same way: the text log chunks use `audience` like events. **Retention (R-A3):** once a mission is marked complete or submitted, its episodes' archives are removed except the latest snapshot; the pruning step and where that snapshot is kept are a later row.
 
 ## Library, packs and listings
 
@@ -232,9 +267,9 @@ On approval a moderator writes, in one batch, `libraryPublic/{id}` (`kind, name,
 
 `{ name, version, ownerUid, engineMajor, tags, keywords, status, storagePath, visibility, updatedAt }`. The pack file itself is in Storage; the index is what is searched. `visibility` is `private` or `public`; public requires moderator approval like other public content. `status` is `testing` or `released` as for library items (11, Proposed).
 
-### `listingsPending/{opId}` and `listingsPublic/{opId}`
+### `listingsPending/{campaignId}` and `listingsPublic/{campaignId}`
 
-Public operations that take join requests ([11](11-supplemental-features.md)): `{ name, gmUid, virtual, tags, keywords, createdAt }`, a subset of the operation chosen by the GM. Same pending-then-public flow; only the GM of that operation, while a handler, may submit it. Listed to signed-in full accounts (11: "listed to signed-in users").
+Public campaigns that take join requests ([11](11-supplemental-features.md); listings live at the campaign, R-X0b): `{ name, gmUid, virtual, tags, keywords, createdAt }`, a subset of the campaign chosen by the GM. Same pending-then-public flow; only the GM of that campaign, while a handler, may submit it. Listed to signed-in full accounts (11: "listed to signed-in users").
 
 ## Security rules (draft)
 
@@ -259,8 +294,10 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
     function doc(path)    { return get(/databases/$(database)/documents/$(path)); }
-    function opGm(op)     { return doc('operations/' + op).data.gmUid; }
-    function gmOf(op)     { return isHandler() && opGm(op) == uid(); }
+    function campaignGm(c)   { return doc('campaigns/' + c).data.gmUid; }
+    function gmOfCampaign(c) { return isHandler() && campaignGm(c) == uid(); }
+    function episodeGm(ep)   { return doc('episodes/' + ep).data.gmUid; }
+    function gmOfEpisode(ep) { return isHandler() && episodeGm(ep) == uid(); }
     function myBadge()    { return doc('agents/' + uid()).data.badgeNumber; }
     function levels()     { return doc('tierLevels/' + string(tier())).data; }
     function visibleStatus(status) { return status == 'released' || tier() >= 5; }
@@ -316,16 +353,20 @@ service cloud.firestore {
       allow delete: if signedIn() && owner == uid();
     }
 
-    match /operations/{op} {
-      allow get: if signedIn() && (uid() in resource.data.memberUids || resource.data.gmUid == uid());
+    match /campaigns/{c} {
+      allow get: if signedIn() && uid() in resource.data.memberUids;
+      // [U] each query proves one branch: memberUids array-contains, or gmUid ==
       allow list: if signedIn() && pageOk()
         && (uid() in resource.data.memberUids || resource.data.gmUid == uid());
       allow create: if isHandler()
         && request.resource.data.gmUid == uid()
         && request.resource.data.memberUids == [uid()]
-        && request.resource.data.status == 'open';
+        && request.resource.data.status == 'open'
+        && request.resource.data.keys().hasOnly(['name','gmUid','memberUids','packPins','settings','status','visibility','virtual','createdAt','updatedAt'])
+        && capped('packPins', 5);
       allow update: if isHandler() && resource.data.gmUid == uid()
         && request.resource.data.gmUid == resource.data.gmUid
+        && request.resource.data.keys().hasOnly(['name','gmUid','memberUids','packPins','settings','status','visibility','virtual','createdAt','updatedAt'])
         && resource.data.gmUid in request.resource.data.memberUids   // the GM cannot drop out
         && capped('memberUids', 20) && capped('packPins', 5)
         && resource.data.status != 'archived'
@@ -333,70 +374,131 @@ service cloud.firestore {
       // delete: function only
 
       match /members/{m} {
-        allow get: if signedIn() && (uid() == m || opGm(op) == uid());   // anonymous members read their own entry
-        allow list: if gmOf(op) && pageOk();
-        // RTDB members is canonical; the GM writes this copy and memberUids in one batch
-        allow create: if gmOf(op)
-          && request.resource.data.keys().hasOnly(['aliasId','joinedAt'])
-          && m in getAfter(/databases/$(database)/documents/operations/$(op)).data.memberUids;
-        allow update: if gmOf(op) && request.resource.data.keys().hasOnly(['aliasId','joinedAt']);
-        allow delete: if gmOf(op)
-          && !(m in getAfter(/databases/$(database)/documents/operations/$(op)).data.memberUids);
+        allow get: if signedIn() && (uid() == m || campaignGm(c) == uid());   // anonymous members read their own entry
+        allow list: if gmOfCampaign(c) && pageOk();
+        // the GM writes this document and memberUids in one batch
+        allow create: if gmOfCampaign(c)
+          && request.resource.data.keys().hasOnly(['joinedAt'])
+          && m in getAfter(/databases/$(database)/documents/campaigns/$(c)).data.memberUids;
+        allow update: if gmOfCampaign(c) && request.resource.data.keys().hasOnly(['joinedAt']);
+        allow delete: if gmOfCampaign(c)
+          && !(m in getAfter(/databases/$(database)/documents/campaigns/$(c)).data.memberUids);
       }
       match /invites/{t} {
-        allow get: if gmOf(op);
-        allow list: if gmOf(op) && pageOk();
-        allow create, update: if gmOf(op)
+        allow get: if gmOfCampaign(c);
+        allow list: if gmOfCampaign(c) && pageOk();
+        allow create, update: if gmOfCampaign(c)
           && request.resource.data.keys().hasOnly(['createdBy','expiresAt','maxUses','uses','aliasHint']);
-        allow delete: if gmOf(op);
+        allow delete: if gmOfCampaign(c);
       }
       match /joinRequests/{r} {
-        // public operations only from clients; invites write here through the function
+        // public campaigns only from clients; invites write here through the function
         allow create: if signedIn() && r == uid()
           && request.resource.data.keys().hasOnly(['aliasId','aliasKey','message','status','createdAt'])
           && request.resource.data.status == 'open'
           && doc('aliases/' + uid() + '/items/' + request.resource.data.aliasKey).data.aliasId == request.resource.data.aliasId
           && ('message' in request.resource.data ? isFull() : true)   // tier 0 cannot message
-          && doc('operations/' + op).data.visibility == 'public'
-          && doc('operations/' + op).data.status == 'open';
-        allow get: if gmOf(op);
-        allow list: if gmOf(op) && pageOk();
-        allow update: if gmOf(op) && request.resource.data.keys().hasOnly(['aliasId','aliasKey','message','status','createdAt'])
+          && doc('campaigns/' + c).data.visibility == 'public'
+          && doc('campaigns/' + c).data.status == 'open';
+        allow get: if gmOfCampaign(c);
+        allow list: if gmOfCampaign(c) && pageOk();
+        allow update: if gmOfCampaign(c) && request.resource.data.keys().hasOnly(['aliasId','aliasKey','message','status','createdAt'])
           && !changes(['aliasId','aliasKey','message','createdAt']);
-        allow delete: if gmOf(op);
+        allow delete: if gmOfCampaign(c);
       }
       match /transfers/{t} {
         allow create: if isFull() && request.resource.data.fromUid == uid()
-          && request.resource.data.keys().hasOnly(['fromUid','aliasId','aliasKey','sourceOpId','status','createdAt'])
+          && request.resource.data.keys().hasOnly(['fromUid','aliasId','aliasKey','sourceCampaignId','status','createdAt'])
           && request.resource.data.status == 'offered'
           && doc('aliases/' + uid() + '/items/' + request.resource.data.aliasKey).data.aliasId == request.resource.data.aliasId;   // aliasKey = alias document key; binds the claimed id to the caller's own alias
-        allow get: if isFull() && (resource.data.fromUid == uid() || opGm(op) == uid());
-        allow list: if gmOf(op) && pageOk();
-        allow update: if gmOf(op)
+        allow get: if isFull() && (resource.data.fromUid == uid() || campaignGm(c) == uid());
+        allow list: if gmOfCampaign(c) && pageOk();
+        allow update: if gmOfCampaign(c)
           && resource.data.status == 'offered'
-          && request.resource.data.keys().hasOnly(['fromUid','aliasId','aliasKey','sourceOpId','status','createdAt'])
+          && request.resource.data.keys().hasOnly(['fromUid','aliasId','aliasKey','sourceCampaignId','status','createdAt'])
           && request.resource.data.status in ['accepted', 'declined']
-          && !changes(['fromUid', 'aliasId', 'aliasKey', 'sourceOpId', 'createdAt']);
-      }
-      match /missions/{mi} {
-        allow get: if signedIn() && uid() in doc('operations/' + op).data.memberUids;
-        allow list: if signedIn() && pageOk() && uid() in doc('operations/' + op).data.memberUids;
+          && !changes(['fromUid', 'aliasId', 'aliasKey', 'sourceCampaignId', 'createdAt']);
       }
     }
 
-    match /archiveIndex/{op} {
+    match /operations/{op} {
+      // read by campaign membership: one lookup
+      allow get: if signedIn() && uid() in doc('campaigns/' + resource.data.campaignId).data.memberUids;
+      allow list: if signedIn() && pageOk()
+        && uid() in doc('campaigns/' + resource.data.campaignId).data.memberUids;   // [U] queries filter campaignId ==
+      allow create: if isHandler() && request.resource.data.gmUid == uid()
+        && campaignGm(request.resource.data.campaignId) == uid()
+        && request.resource.data.keys().hasOnly(['campaignId','gmUid','name','status','order','createdAt','updatedAt']);
+      allow update: if isHandler() && resource.data.gmUid == uid()
+        && request.resource.data.keys().hasOnly(['campaignId','gmUid','name','status','order','createdAt','updatedAt'])
+        && !changes(['campaignId', 'gmUid', 'createdAt']);
+
+      match /missions/{mi} {
+        allow get, list: if signedIn()
+          && uid() in doc('campaigns/' + doc('operations/' + op).data.campaignId).data.memberUids;
+        // the GM plans missions; the archive function writes summary, endedAt and eventRange
+        allow create: if isHandler() && doc('operations/' + op).data.gmUid == uid()
+          && request.resource.data.keys().hasOnly(['title','status','aliasIds','settings','startedAt'])
+          && capped('aliasIds', 20);
+        allow update: if isHandler() && doc('operations/' + op).data.gmUid == uid()
+          && request.resource.data.keys().hasOnly(['title','status','aliasIds','settings','summary',
+               'startedAt','endedAt','eventRange'])
+          && !changes(['summary', 'endedAt', 'eventRange'])
+          && capped('aliasIds', 20);
+      }
+    }
+
+    match /episodes/{ep} {
+      allow get: if signedIn() && uid() in resource.data.memberUids;
+      allow list: if signedIn() && pageOk() && uid() in resource.data.memberUids;
+      allow create: if isHandler()
+        && request.resource.data.gmUid == uid()
+        && campaignGm(request.resource.data.campaignId) == uid()
+        // the operation and mission must belong to that campaign
+        && doc('operations/' + request.resource.data.operationId).data.campaignId == request.resource.data.campaignId
+        && exists(/databases/$(database)/documents/operations/$(request.resource.data.operationId)/missions/$(request.resource.data.missionId))
+        && request.resource.data.keys().hasOnly(['campaignId','operationId','missionId','gmUid','memberUids',
+             'engineMajor','status','createdAt','updatedAt'])
+        && request.resource.data.memberUids == [uid()]
+        && request.resource.data.status == 'open';
+      allow update: if isHandler() && resource.data.gmUid == uid()
+        && request.resource.data.keys().hasOnly(['campaignId','operationId','missionId','gmUid','memberUids',
+             'engineMajor','status','createdAt','updatedAt'])
+        && !changes(['campaignId', 'operationId', 'missionId', 'gmUid', 'createdAt'])
+        && resource.data.gmUid in request.resource.data.memberUids   // the GM cannot drop out
+        && capped('memberUids', 20)
+        && resource.data.status != 'archived'
+        && request.resource.data.status != 'archived';              // admin SDK only
+      // delete: function only (R-A3 pruning)
+
+      match /members/{m} {
+        allow get: if signedIn() && (uid() == m || episodeGm(ep) == uid());
+        allow list: if gmOfEpisode(ep) && pageOk();
+        // RTDB members is canonical; the GM writes this copy and memberUids in one batch
+        allow create: if gmOfEpisode(ep)
+          && request.resource.data.keys().hasOnly(['aliasId','joinedAt'])
+          && m in getAfter(/databases/$(database)/documents/episodes/$(ep)).data.memberUids;
+        // frozen once archived: the archive chunk rule reads aliasId from here
+        allow update: if gmOfEpisode(ep) && doc('episodes/' + ep).data.status != 'archived'
+          && request.resource.data.keys().hasOnly(['aliasId','joinedAt']);
+        allow delete: if gmOfEpisode(ep)
+          && !(m in getAfter(/databases/$(database)/documents/episodes/$(ep)).data.memberUids);
+      }
+    }
+
+    match /archiveIndex/{ep} {
       allow get: if signedIn() && uid() in resource.data.memberUids;
       allow list: if signedIn() && pageOk() && uid() in resource.data.memberUids;
     }
-    match /archives/{op}/chunks/{n} {
+    match /archives/{ep}/chunks/{n} {
       // audience is stored in the chunk, so the rule needs no lookup to read it
       allow get: if signedIn() && (
-        doc('archiveIndex/' + op).data.gmUid == uid()                         // GM reads every audience
+        doc('archiveIndex/' + ep).data.gmUid == uid()                         // GM reads every audience
         || (resource.data.audience == 'public'
-            && uid() in doc('archiveIndex/' + op).data.memberUids)
+            && uid() in doc('archiveIndex/' + ep).data.memberUids)
         || (resource.data.audience.matches('alias:.*')
             && resource.data.audience == 'alias:'
-               + doc('operations/' + op + '/members/' + uid()).data.aliasId));
+               + doc('episodes/' + ep + '/members/' + uid()).data.aliasId));
       allow list: if false;  // clients fetch by id from archiveIndex.chunkCount
     }
 
@@ -451,20 +553,20 @@ service cloud.firestore {
       allow delete: if isFull() && (resource.data.ownerUid == uid() || isModerator());
     }
 
-    match /listingsPublic/{op} {
+    match /listingsPublic/{c} {
       allow get: if isFull();
       allow list: if isFull() && pageOk();
-      allow create, update: if isModerator() && !existsAfter(/databases/$(database)/documents/listingsPending/$(op));
+      allow create, update: if isModerator() && !existsAfter(/databases/$(database)/documents/listingsPending/$(c));
       allow delete: if isModerator();
     }
-    match /listingsPending/{op} {
+    match /listingsPending/{c} {
       allow get: if isFull() && (resource.data.gmUid == uid() || isModerator());
       allow list: if isFull() && pageOk() && (isModerator() || resource.data.gmUid == uid());
-      allow create, update: if gmOf(op) && request.resource.data.gmUid == uid()
-        && doc('operations/' + op).data.visibility == 'public'
+      allow create, update: if gmOfCampaign(c) && request.resource.data.gmUid == uid()
+        && doc('campaigns/' + c).data.visibility == 'public'
         && request.resource.data.keys().hasOnly(['name','gmUid','virtual','tags','keywords','createdAt'])
         && capped('tags', 10) && capped('keywords', 30);
-      allow delete: if gmOf(op) || isModerator();
+      allow delete: if gmOfCampaign(c) || isModerator();
     }
   }
 }
@@ -475,11 +577,11 @@ Notes on the draft:
 - `profilesPublic` `get: if true` lets an unauthenticated browser read the public page by badge number; enumeration (`list`) needs sign-in. Proposed: yes, because the Hosting page is for people without the app (11), and it is safe only because the document holds the redacted, approved form.
 - A `list` rule that tests `resource.data` only passes when the query itself constrains the same field (for example `where memberUids array-contains uid`). Firestore refuses a list the rule cannot prove from the query. Each query in the next section is written to satisfy its rule `[U]`.
 - A `get` that errors inside `||` (for example a missing member document in the archive chunk rule) is treated as false for that branch `[U]`; test it.
-- Lookups per request: archive chunk 3, operation subcollections 1 to 2, `profilesPending` 1; all inside the 10 cap [V-7].
+- Lookups per request: archive chunk 3, episode create 4 (campaign, operation, mission, plus `getAfter` on member writes elsewhere), mission 2 (operation, then campaign), campaign and episode subcollections 1 to 2, `profilesPending` 1; all inside the 10 cap [V-7].
 
 ## Queries and composite indexes
 
-Every query the app runs, so a `FAILED_PRECONDITION` [V-43] is a deploy error and not a surprise. Single-field indexes are automatic and not listed. Queries below also filter `status == 'released'` (callers below tier 5 cannot read `testing` entries, and a list rule passes only if the query proves it). An `in` filter on a field is ordered first in these indexes `[U]` (Firestore's ordering rule for inequality filters; confirm for `in` in the emulator).
+Every query the app runs, so a `FAILED_PRECONDITION` [V-43] is a deploy error and not a surprise. Single-field indexes are automatic and not listed. Library and pack queries below also filter `status == 'released'` (callers below tier 5 cannot read `testing` entries, and a list rule passes only if the query proves it). Equality and `in` filters come before the order-by fields in these indexes `[U]` (confirm each in the emulator).
 
 | Query | Index |
 |---|---|
@@ -488,10 +590,13 @@ Every query the app runs, so a `FAILED_PRECONDITION` [V-43] is a deploy error an
 | Library tag filter, same shape | `libraryPublic`: `tags ARRAY_CONTAINS, status ASC, summaryLevel ASC, name ASC` |
 | My pending submissions | `libraryPending`: `ownerUid ASC, createdAt DESC` |
 | Moderation queues | single field `createdAt` on `libraryPending`, `profilesPending`, `listingsPending` |
-| Operations I GM | `operations`: `gmUid ASC, createdAt DESC` |
-| Operations I am in | `operations`: `memberUids ARRAY_CONTAINS, createdAt DESC` |
-| Public operations by tag or keyword | `listingsPublic`: `tags ARRAY_CONTAINS, createdAt DESC` and `keywords ARRAY_CONTAINS, createdAt DESC` |
-| Transfer requests for my operation | none (subcollection, filter `status ==` on one field) |
+| Campaigns I GM | `campaigns`: `gmUid ASC, createdAt DESC` |
+| Campaigns I am in | `campaigns`: `memberUids ARRAY_CONTAINS, createdAt DESC` |
+| Operations of a campaign | `operations`: `campaignId ASC, order ASC` |
+| Episodes of a mission | `episodes`: `missionId ASC, memberUids ARRAY_CONTAINS, createdAt ASC` `[U]` (the list rule needs the `memberUids` filter) |
+| Episodes I am in | `episodes`: `memberUids ARRAY_CONTAINS, createdAt DESC` |
+| Public campaigns by tag or keyword | `listingsPublic`: `tags ARRAY_CONTAINS, createdAt DESC` and `keywords ARRAY_CONTAINS, createdAt DESC` |
+| Transfer requests for my campaign | none (subcollection, filter `status ==` on one field) |
 | Packs by keyword or tag | `packIndex`: `visibility ASC, status ASC, keywords ARRAY_CONTAINS, name ASC` and `visibility ASC, status ASC, tags ARRAY_CONTAINS, name ASC` |
 | My packs | `packIndex`: `ownerUid ASC, name ASC` |
 | Archives I am in | `archiveIndex`: `memberUids ARRAY_CONTAINS, archivedAt DESC` |
@@ -503,13 +608,13 @@ Deployed as `firebase/firestore.indexes.json` and `firebase/firestore.rules` whe
 
 Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to `/5`; tier 0 has empty lists (no data access). A missing document makes every level read fail closed.
 
-1. Anonymous account: creates `aliases/<uid>/items/anon` once; second create refused; other keys refused; cannot read `agents`, create `operations`, or read `libraryData`; can create a `joinRequests` document without `message` on a public operation, and is refused with `message`.
+1. Anonymous account: creates `aliases/<uid>/items/anon` once; second create refused; other keys refused; cannot read `agents`, create `campaigns`, `operations` or `episodes`, or read `libraryData`; can create a `joinRequests` document without `message` on a public campaign, and is refused with `message`.
 2. Alias ids: a join request or transfer carrying another player's `aliasId` is refused; two anonymous accounts both keyed `anon` have different `aliasId` fields; an alias update cannot change `aliasId`; (host-level) admission of a duplicate `aliasId` is refused.
-3. Tier gates: tier 3 cannot create an operation; tier 4 can. A lapsed handler (claim back to 3) cannot update the operation, write `members`, create an `invites` document or submit a `listingsPending` document, but can still read the operation, missions and archives (invites and join requests are GM-handler only).
-4. Owner isolation and whitelists: `agents` and `aliases` readable only by the owner; `ageBracket` and `badgeNumber` not editable; an extra key (for example `email`) is refused on `agents`, `aliases`, `profilesPending`, `joinRequests`, `transfers` (create and update), `listingsPending`, `packIndex`, `libraryPending`; `badgeNumbers` and `signInCodes` refused for everyone.
-5. Operation membership: non-member `get` and `list` refused; `gmUid` change refused; the GM cannot remove themself from `memberUids`; a client cannot set `status: 'archived'`; a player cannot add themselves; a `members` create without the matching `memberUids` entry is refused; a member reads only their own `members` entry; a requester cannot read their request; a join request on an archived or private operation is refused; the GM can delete an invite; array caps refused above 20 / 10 / 30 / 5.
-6. Listings: a full account cannot submit a `listingsPending` document under an operation it does not run.
-7. Archive audiences: GM reads all three audience kinds; a member reads `public` and only their own `alias:<aliasId>`; `list` refused; a missing member document gives a refusal, not an error.
+3. Tier gates: tier 3 cannot create a campaign, operation or episode; tier 4 can. A lapsed handler (claim back to 3) cannot update the campaign, operation, mission or episode, write `members`, create an `invites` document or submit a `listingsPending` document, but can still read the campaign, operations, missions, episodes and archives (invites and join requests are GM-handler only).
+4. Owner isolation and whitelists: `agents` and `aliases` readable only by the owner; `ageBracket` and `badgeNumber` not editable; an extra key (for example `email`) is refused on `agents`, `aliases`, `campaigns`, `episodes`, `profilesPending`, `joinRequests`, `transfers` (create and update), `listingsPending`, `packIndex`, `libraryPending`; `badgeNumbers` and `signInCodes` refused for everyone.
+5. Campaign and episode membership: non-member `get` and `list` refused on campaigns, operations, missions and episodes; an operation or episode cannot be created under another GM's campaign; `campaignId`, `operationId` and `missionId` cannot change; the GM cannot write mission summary fields; an episode naming another campaign's operation, or a mission that does not exist, is refused; a member lists the operations of their campaign with `campaignId ==` and the same query without that filter is refused; `gmUid` change refused; the GM cannot remove themself from `memberUids`; a client cannot set `status: 'archived'`; a player cannot add themselves; a `members` create without the matching `memberUids` entry is refused; a member reads only their own `members` entry; a requester cannot read their request; a join request on an archived or private campaign is refused; the GM can delete an invite; array caps refused above 20 / 10 / 30 / 5.
+6. Listings: a full account cannot submit a `listingsPending` document for a campaign it does not run.
+7. Archive audiences: GM reads all three audience kinds; an episode member reads `public` and only their own `alias:<aliasId>`; a campaign member who was not in the episode reads nothing; after the archive the GM cannot change a member's `aliasId`; `list` refused; a missing member document gives a refusal, not an error.
 8. Library levels: with `tierLevels` `summaryLevels: [1,2]` a caller reads level 1-2 summaries and not level 3; `libraryData` follows `dataLevels`; `testing` items only for tier 5; owner cannot write `libraryPublic`; a holder of `arbiter` or `moderator` can, and `admin` alone cannot; the public create is refused while the pending document still exists; revocation back to pending works.
 9. Pending then public for profiles, listings and packs; a non-moderator cannot make a pack `public`; pack delete works for owner and moderator.
 10. Transfers: only the alias owner creates (`aliasKey` must name the caller's own alias document and its `aliasId` field must equal the claimed `aliasId`; a forged `aliasId` is refused), only the destination GM (a handler) decides, a decided request cannot be flipped.
@@ -519,7 +624,7 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 
 ## Held and questions for R
 
-**Held on X0 or D:** the archive layout per mission, the genesis `archives` fields and `missions.eventRange` unit (X0, Q24); carrying alias state between missions (Q24); the public profile's alias, operation and mission lists (X0); mission submissions as a library kind with summary and clearance level, the archive pending/public pair and news (06, 11); the feedback collection (write-only for users, admins read; 11, Proposed); the consent opt-in storage (11); Storage rules for profile images and pack files; the contents of `tierLevels` (R to rule).
+**Held on X0 or D:** the archive layout per mission, the genesis `archives` fields and `missions.eventRange` unit (X0, Q24); carrying alias state between missions (Q24); the public profile's alias, operation and mission lists (X0); the Handler persona document (R-A4, later row); the R-A3 pruning step; mission submissions as a library kind with summary and clearance level, the archive pending/public pair and news (06, 11); the feedback collection (write-only for users, admins read; 11, Proposed); the consent opt-in storage (11); Storage rules for profile images and pack files; the contents of `tierLevels` (R to rule).
 
 **Proposed answers, for R to confirm together** (each follows an existing ruling where one is named):
 
@@ -531,3 +636,9 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 6. **Provisional array caps** (R sets the numbers): `memberUids` 20, `tags` 10, `keywords` 30, `packPins` 5.
 7. **Transfer-move function** for the move and clean-up only: transactional, checks the source episode's RTDB `meta` with admin REST (no live host), moves the alias, notifies the source GM's inbox. The approval itself is a rules-checked client write.
 8. **`signInCodes` TTL** as clean-up only. The function checks expiry in a transaction.
+9. **Where the campaign document lives. Ruled by R, 2026-11-03: option A, top-level `campaigns/{campaignId}`.** R-A1 and R-A6 move pack pins, base settings, join links, the roster and listings to the campaign, so they need a home. Options:
+   - **A (recommended): top-level `campaigns/{campaignId}`,** with `operations`, `episodes`, `archiveIndex` and listings as top-level collections that carry `campaignId` (and `operationId`, `missionId`) as fields. Ids stay short and match the RTDB key, "episodes I am in" and "campaigns I am in" are plain single-collection queries, and an alias transfer or a mission move never changes a document path. Cost: rules that need the campaign do one `get` (missions do two), well inside the 10 cap.
+   - **B: nested `campaigns/{c}/operations/{op}/missions/{mi}/episodes/{ep}`.** Rules read parent ids from the path with no lookup, and a campaign's whole tree sits under one prefix. Cost: "episodes I am in" across campaigns needs a collection-group query, its own index and `{path=**}` rules; archive and RTDB ids no longer match one flat key; deep paths in every client call.
+   - Variant of A (information): nest `operations/{op}/missions/{mi}` under `campaigns/{c}` and keep `campaigns`, `episodes`, `archiveIndex` and listings top-level. Operations are only listed per campaign and their ids are not RTDB keys, so nothing is lost, the operations `list` rule needs no `[U]` query proof, and mission rules save a lookup.
+   - **C: campaign fields on the old `operations/{opId}` document** (no new collection). Fewest changes now, but it reintroduces the mixing R ruled against and gives campaign data no home once a campaign has several operations.
+

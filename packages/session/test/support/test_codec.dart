@@ -3,7 +3,7 @@ import 'package:engine/engine.dart' as eng show Visibility;
 import 'package:protocol/protocol.dart';
 
 /// A throwaway [EngineCodec] for the commands and events that exist today
-/// (`StartOperation`, `CreateAgent`, `OperationStarted`, `AgentCreated`).
+/// (`StartEpisode`, `CreateAgent`, `EpisodeStarted`, `AgentCreated`).
 /// The real codecs and their fixtures are row 6 in `protocol`.
 final class TestCodec implements EngineCodec {
   /// Creates the codec.
@@ -11,9 +11,9 @@ final class TestCodec implements EngineCodec {
 
   @override
   JsonMap encodeCommand(Command command) => switch (command) {
-    StartOperation() => {
-      'type': 'StartOperation',
-      'operationId': command.operationId,
+    StartEpisode() => {
+      'type': 'StartEpisode',
+      'operationId': command.episodeId,
       'settings': _settings(command.settings),
       'actor': _actor(command.actor),
     },
@@ -37,8 +37,8 @@ final class TestCodec implements EngineCodec {
 
   @override
   Command decodeCommand(JsonMap json) => switch (json['type']) {
-    'StartOperation' => StartOperation(
-      operationId: json['operationId']! as String,
+    'StartEpisode' => StartEpisode(
+      episodeId: json['operationId']! as String,
       settings: _readSettings(json['settings']! as Map<String, Object?>),
       actor: _readActor(json['actor']),
     ),
@@ -62,9 +62,9 @@ final class TestCodec implements EngineCodec {
 
   @override
   JsonMap encodeEvent(Event event) => switch (event) {
-    OperationStarted() => {
-      'type': 'OperationStarted',
-      'operationId': event.operationId,
+    EpisodeStarted() => {
+      'type': 'EpisodeStarted',
+      'operationId': event.episodeId,
       'engineVersion': event.engineVersion,
       'pack': [
         event.packRef.id,
@@ -98,8 +98,8 @@ final class TestCodec implements EngineCodec {
 
   @override
   Event decodeEvent(JsonMap json) => switch (json['type']) {
-    'OperationStarted' => OperationStarted(
-      operationId: json['operationId']! as String,
+    'EpisodeStarted' => EpisodeStarted(
+      episodeId: json['operationId']! as String,
       engineVersion: json['engineVersion']! as String,
       packRef: PackRef(
         id: (json['pack']! as List)[0] as String,
@@ -132,25 +132,25 @@ final class TestCodec implements EngineCodec {
   };
 
   @override
-  JsonMap encodeState(OperationState state) => {
+  JsonMap encodeState(EpisodeState state) => {
     'started': state.started,
     'entities': state.stores.entities.length,
   };
 
   @override
-  OperationState decodeState(JsonMap json) => throw UnsupportedError(
+  EpisodeState decodeState(JsonMap json) => throw UnsupportedError(
     'The host replays events; it never decodes state.',
   );
 
-  static JsonMap _settings(OperationSettings s) => {
+  static JsonMap _settings(EpisodeSettings s) => {
     'autoResolveChecks': s.autoResolveChecks,
     'autoConfirmConsequences': s.autoConfirmConsequences,
     'autoApplyEngineUpdates': s.autoApplyEngineUpdates,
     'autoApplyPackUpdates': s.autoApplyPackUpdates,
   };
 
-  static OperationSettings _readSettings(Map<String, Object?> j) =>
-      OperationSettings(
+  static EpisodeSettings _readSettings(Map<String, Object?> j) =>
+      EpisodeSettings(
         autoResolveChecks: j['autoResolveChecks']! as bool,
         autoConfirmConsequences: j['autoConfirmConsequences']! as bool,
         autoApplyEngineUpdates: j['autoApplyEngineUpdates']! as bool,

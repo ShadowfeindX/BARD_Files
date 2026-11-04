@@ -4,6 +4,11 @@ import 'package:protocol_envelope/protocol_envelope.dart';
 import 'json_read.dart';
 import 'shared_codec.dart';
 
+// The v1 wire names predate the Operation-to-Episode rename:
+// [EpisodeStarted] is still `operationStarted` with an `operationId` field on
+// the wire. Stored logs are frozen per engine major (05 §Why the
+// migrator never imports the engine), so the wire names change only
+// in a major bump, through the migrator.
 const _eventTypes = {
   'operationStarted',
   'agentCreated',
@@ -29,8 +34,8 @@ const _eventTypes = {
 /// not here.
 JsonMap encodeEvent(Event event) {
   final body = switch (event) {
-    OperationStarted(
-      :final operationId,
+    EpisodeStarted(
+      :final episodeId,
       :final engineVersion,
       :final packRef,
       :final settings,
@@ -38,7 +43,7 @@ JsonMap encodeEvent(Event event) {
       (
         'operationStarted',
         {
-          'operationId': operationId,
+          'operationId': episodeId,
           'engineVersion': engineVersion,
           'packRef': encodePackRef(packRef),
           'settings': encodeSettings(settings),
@@ -211,8 +216,8 @@ Event decodeEvent(Object? json) {
     Visibility visibility() => decodeVisibility(visibilityJson);
     switch (type) {
       case 'operationStarted':
-        return OperationStarted(
-          operationId: map.string('operationId'),
+        return EpisodeStarted(
+          episodeId: map.string('operationId'),
           engineVersion: map.string('engineVersion'),
           packRef: decodePackRef(map.object('packRef')),
           settings: decodeSettings(map.object('settings')),

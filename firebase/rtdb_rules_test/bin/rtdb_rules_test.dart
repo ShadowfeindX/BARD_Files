@@ -119,19 +119,19 @@ Future<void> main() async {
   final p4 = Who.user('p4');
   final out = Who.user('out1'); // not a member
   final none = Who.anon();
-  const op = 'op1';
-  String o(String s) => '/operations/$op/$s';
+  const ep = 'ep1';
+  String o(String s) => '/episodes/$ep/$s';
 
   await call('DELETE', '/', admin);
 
-  // ---- operation creation ----
+  // ---- episode creation ----
   await expectCode(
-    'anonymous account cannot create an operation',
+    'anonymous account cannot create an episode',
     call('PUT', o('meta'), gmAnon, body: {'gm': 'anonGm', 'status': 'active'}),
     401,
   );
   await expectCode(
-    'unauthenticated cannot create an operation',
+    'unauthenticated cannot create an episode',
     call('PUT', o('meta'), none, body: {'gm': 'gm1'}),
     401,
   );
@@ -141,7 +141,7 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'full account creates operation as gm',
+    'full account creates episode as gm',
     call(
       'PUT',
       o('meta'),
@@ -151,7 +151,7 @@ Future<void> main() async {
     200,
   );
   await expectCode(
-    'other account cannot take over existing operation',
+    'other account cannot take over existing episode',
     call('PUT', o('meta'), p2, body: {'gm': 'p2'}),
     401,
   );
@@ -182,13 +182,13 @@ Future<void> main() async {
   );
 
   // ---- multi-path PATCH and root PUT, before the lock ----
-  // A PATCH on the operation node updates several paths in one write; each
+  // A PATCH on the episode node updates several paths in one write; each
   // changed path is checked and a refusal rolls back the whole write.
   await expectCode(
     'multi-path PATCH: gm updates status and head together (control)',
     call(
       'PATCH',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta/status': 'paused',
@@ -201,7 +201,7 @@ Future<void> main() async {
     'multi-path PATCH: status archived with head is refused',
     call(
       'PATCH',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta/status': 'archived',
@@ -219,7 +219,7 @@ Future<void> main() async {
     'multi-path PATCH: status archived with an allowed event is refused',
     call(
       'PATCH',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta/status': 'archived',
@@ -235,19 +235,19 @@ Future<void> main() async {
   );
   await expectCode(
     'root PATCH: status archived across paths is refused',
-    call('PATCH', '/', gm, body: {'operations/$op/meta/status': 'archived'}),
+    call('PATCH', '/', gm, body: {'episodes/$ep/meta/status': 'archived'}),
     401,
   );
   await expectCode(
     'PATCH: gm cannot delete meta',
-    call('PATCH', '/operations/$op', gm, body: {'meta': null}),
+    call('PATCH', '/episodes/$ep', gm, body: {'meta': null}),
     401,
   );
   await expectCode(
     'multi-path PATCH: gm cannot delete meta/status with head',
     call(
       'PATCH',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta/status': null,
@@ -262,10 +262,10 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'root PUT of the operation node is refused (no write rule on the node; body not evaluated)',
+    'root PUT of the episode node is refused (no write rule on the node; body not evaluated)',
     call(
       'PUT',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta': {'gm': 'gm1', 'status': 'paused'},
@@ -274,8 +274,8 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'DELETE of the operation node is refused',
-    call('DELETE', '/operations/$op', gm),
+    'DELETE of the episode node is refused',
+    call('DELETE', '/episodes/$ep', gm),
     401,
   );
   await expectCode(
@@ -319,14 +319,14 @@ Future<void> main() async {
     (c, t) => c == 200 && jsonDecode(t) == false,
   );
   await expectCode(
-    'full account cannot create an operation without status (validate)',
-    call('PUT', '/operations/op3/meta', p2, body: {'gm': 'p2'}),
+    'full account cannot create an episode without status (validate)',
+    call('PUT', '/episodes/ep3/meta', p2, body: {'gm': 'p2'}),
     401,
   );
 
   // ---- ruling 1: meta is never deleted ----
   await expectCode(
-    'gm cannot delete meta of an unlocked operation (ruling 1)',
+    'gm cannot delete meta of an unlocked episode (ruling 1)',
     call('DELETE', o('meta'), gm),
     401,
   );
@@ -341,18 +341,18 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'gm cannot delete the whole operation node',
-    call('DELETE', '/operations/$op', gm),
+    'gm cannot delete the whole episode node',
+    call('DELETE', '/episodes/$ep', gm),
     401,
   );
   await expectCode(
-    'gm cannot delete meta in a multi-path update at the operation node',
-    call('PATCH', '/operations/$op', gm, body: {'meta': null}),
+    'gm cannot delete meta in a multi-path update at the episode node',
+    call('PATCH', '/episodes/$ep', gm, body: {'meta': null}),
     401,
   );
   await expectCode(
     'gm cannot delete meta in a multi-path update at the root',
-    call('PATCH', '/', gm, body: {'operations/$op/meta': null}),
+    call('PATCH', '/', gm, body: {'episodes/$ep/meta': null}),
     401,
   );
   await expectCode(
@@ -856,22 +856,22 @@ Future<void> main() async {
   // ---- presence, inbox ----
   await expectCode(
     'member writes own presence',
-    call('PUT', '/presence/$op/p1', p1, body: true),
+    call('PUT', '/presence/$ep/p1', p1, body: true),
     200,
   );
   await expectCode(
     'member cannot write other presence',
-    call('PUT', '/presence/$op/p2', p1, body: true),
+    call('PUT', '/presence/$ep/p2', p1, body: true),
     401,
   );
   await expectCode(
     'member reads presence list',
-    call('GET', '/presence/$op', p2),
+    call('GET', '/presence/$ep', p2),
     200,
   );
   await expectCode(
     'non-member cannot read presence',
-    call('GET', '/presence/$op', out),
+    call('GET', '/presence/$ep', out),
     401,
   );
   await call('PUT', '/inbox/p1/n1', admin, body: {'t': 'hello'});
@@ -899,7 +899,7 @@ Future<void> main() async {
 
   // ---- lock ----
   await expectCode(
-    'gm locks the operation',
+    'gm locks the episode',
     call('PUT', o('meta/locked'), gm, body: true),
     200,
   );
@@ -944,8 +944,8 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'locked: gm cannot delete the whole operation node',
-    call('DELETE', '/operations/$op', gm),
+    'locked: gm cannot delete the whole episode node',
+    call('DELETE', '/episodes/$ep', gm),
     401,
   );
   await expectCode(
@@ -980,7 +980,7 @@ Future<void> main() async {
   );
   await expectCode(
     'locked: member can still write own presence',
-    call('PUT', '/presence/$op/p1', p1, body: false),
+    call('PUT', '/presence/$ep/p1', p1, body: false),
     200,
   );
   await expectCode(
@@ -993,7 +993,7 @@ Future<void> main() async {
     'locked: multi-path PATCH of status and an event is refused',
     call(
       'PATCH',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta/status': 'paused',
@@ -1009,24 +1009,24 @@ Future<void> main() async {
   );
   await expectCode(
     'locked: PATCH cannot unlock',
-    call('PATCH', '/operations/$op', gm, body: {'meta/locked': false}),
+    call('PATCH', '/episodes/$ep', gm, body: {'meta/locked': false}),
     401,
   );
   await expectCode(
     'locked: PATCH cannot remove locked',
-    call('PATCH', '/operations/$op', gm, body: {'meta/locked': null}),
+    call('PATCH', '/episodes/$ep', gm, body: {'meta/locked': null}),
     401,
   );
   await expectCode(
     'locked: PATCH cannot delete meta',
-    call('PATCH', '/operations/$op', gm, body: {'meta': null}),
+    call('PATCH', '/episodes/$ep', gm, body: {'meta': null}),
     401,
   );
   await expectCode(
-    'locked: root PUT of the operation node is refused',
+    'locked: root PUT of the episode node is refused',
     call(
       'PUT',
-      '/operations/$op',
+      '/episodes/$ep',
       gm,
       body: {
         'meta': {'gm': 'gm1', 'status': 'archived', 'locked': false},
@@ -1035,8 +1035,8 @@ Future<void> main() async {
     401,
   );
   await expectCode(
-    'locked: DELETE of the operation node is refused',
-    call('DELETE', '/operations/$op', gm),
+    'locked: DELETE of the episode node is refused',
+    call('DELETE', '/episodes/$ep', gm),
     401,
   );
   await expectCode(
@@ -1133,24 +1133,19 @@ Future<void> main() async {
     401,
   );
 
-  // ---- archive step: the function marks the operation archived. Only
+  // ---- archive step: the function marks the episode archived. Only
   // admin REST can set this value; the rules refuse it from any client ----
   await expectCode(
-    'archive: function marks the operation archived (admin)',
+    'archive: function marks the episode archived (admin)',
     call('PUT', o('meta/status'), admin, body: 'archived'),
     200,
   );
 
   // ---- post-archive clean-up (R 2026-10-21): admin REST deletes live
-  // branches, meta and members stay as the locked stub ----
-  for (final branch in [
-    'events',
-    'textlog',
-    'requests',
-    'head',
-    'phone',
-    'signaling',
-  ]) {
+  // branches, meta and members stay as the locked stub. The phone box is
+  // not deleted here: it clears when the operation ends (R 2026-11-03), a
+  // later step, so it stays beside the stub until then ----
+  for (final branch in ['events', 'textlog', 'requests', 'head', 'signaling']) {
     await expectCode(
       'clean-up: function deletes $branch',
       call('DELETE', o(branch), admin),
@@ -1159,16 +1154,25 @@ Future<void> main() async {
   }
   await expectCode(
     'clean-up: function deletes presence',
-    call('DELETE', '/presence/$op', admin),
+    call('DELETE', '/presence/$ep', admin),
     200,
   );
   await expectBody(
-    'clean-up: only meta and members remain',
-    call('GET', '/operations/$op', admin, q: {'shallow': 'true'}),
+    'clean-up: only meta, members and phone remain',
+    call('GET', '/episodes/$ep', admin, q: {'shallow': 'true'}),
     (c, t) =>
         c == 200 &&
-        (jsonDecode(t) as Map).keys.toSet().containsAll({'meta', 'members'}) &&
-        (jsonDecode(t) as Map).length == 2,
+        (jsonDecode(t) as Map).keys.toSet().containsAll({
+          'meta',
+          'members',
+          'phone',
+        }) &&
+        (jsonDecode(t) as Map).length == 3,
+  );
+  await expectBody(
+    'clean-up: player still reads own phone box until the operation ends',
+    call('GET', o('phone/p1'), p1),
+    (c, t) => c == 200 && (jsonDecode(t) as Map).containsKey('m4'),
   );
   await expectBody(
     'clean-up: meta stays locked',
@@ -1202,12 +1206,12 @@ Future<void> main() async {
   );
   await expectCode(
     'archived: member cannot write own presence again',
-    call('PUT', '/presence/$op/p2', p2, body: true),
+    call('PUT', '/presence/$ep/p2', p2, body: true),
     401,
   );
   await expectCode(
     'archived: anonymous member cannot write own presence again',
-    call('PUT', '/presence/$op/p1', p1, body: true),
+    call('PUT', '/presence/$ep/p1', p1, body: true),
     401,
   );
 

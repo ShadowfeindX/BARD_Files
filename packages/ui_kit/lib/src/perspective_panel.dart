@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-/// Whose view of the operation a panel shows (07 §Perspective panels).
+/// Whose view of the episode a panel shows (07 §Perspective panels).
 enum PerspectiveKind {
   /// The GM's full view.
   gm,

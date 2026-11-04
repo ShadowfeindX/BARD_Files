@@ -1,7 +1,5 @@
 # Engine core
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
-
 The engine (`packages/engine`) is the game: pure Dart, Dart SDK only, no I/O, no clock and no randomness it was not handed. Design: [01-engine.md](../architecture/01-engine.md). Everything public is exported from `package:engine/engine.dart`.
 
 ## The loop
@@ -17,17 +15,17 @@ switch (decision) {
 
 - `decide` is the only function that draws from the `Rng` or the `IdSource`. A rejection produces no events and draws nothing.
 - `evolve` (and `replay`, a fold of it) never fails and never rolls. Every client runs it.
-- Commands before `StartOperation` are rejected with `RejectionCode.notStarted`.
+- Commands before `StartEpisode` are rejected with `RejectionCode.notStarted`.
 - An engine bound to a different pack than the episode pinned refuses every command (`RejectionCode.packMismatch`).
 
 ## Where things live
 
 | Folder (`lib/src/`) | Holds |
 |---|---|
-| `commands/` | The sealed `Command` family. One `part` file per system, each with a sealed sub-family (`OperationCommand`, `CharacterCommand`). |
+| `commands/` | The sealed `Command` family. One `part` file per system, each with a sealed sub-family (`EpisodeCommand`, `CharacterCommand`). |
 | `events/` | The sealed `Event` family, laid out the same way. Every event has an `actor` and a `visibility`. |
 | `components/` | The sealed `Component` family and one `ComponentType` constant per component (`Identity.componentType`, ...). |
-| `state/` | `OperationState` (meta, ECS stores, pending requests and checks, RNG draw count), `ComponentStores` and `PendingState`. |
+| `state/` | `EpisodeState` (meta, ECS stores, pending requests and checks, RNG draw count), `ComponentStores` and `PendingState`. |
 | `checks/` | Value types of the check flow: ids, `Difficulty`, `CheckModifier`, `CheckSpec`, `CheckBreakdown`, `CheckOutcome`, `DrawRange`, `RollSourceKind`. |
 | `read_models/` | `DerivedStats`: derived stats and the `VitalsView` (Health and Sanity now), computed from attributes, never stored. |
 | `expr/condition.dart` | Comparison conditions for the stat-gated broadcast. |
@@ -127,7 +125,7 @@ From the gate review of the engine core (2026-10-21):
 ## Proposed in this code (for R to accept or change)
 
 - The public API shape (01 §Public API surface is Proposed): `Engine`, `Decision` (`Accepted` / `Rejected`), `Rejection` and `RejectionCode`.
-- Command, event and rejection names and fields; `OperationSystem` (01 lists no system for the episode lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly` / `Redacted` (03 lists the four; the class names are Proposed); an agent's `AgentCreated` is seen by the GM and its owner.
+- Command, event and rejection names and fields; `EpisodeSystem` (01 lists no system for the episode lifecycle); `Visibility` as `Public` / `GmOnly` / `AliasesOnly` / `Redacted` (03 lists the four; the class names are Proposed); an agent's `AgentCreated` is seen by the GM and its owner.
 - `EntityKind` values (from 01's entity list) on `Identity`; display and filtering only.
 - The breakdown types (`Term` and its subclasses) that rolling events will carry.
 - Setting defaults: auto-resolve and auto-confirm off.

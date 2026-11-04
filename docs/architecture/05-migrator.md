@@ -1,7 +1,5 @@
 # 05. Migrator (`packages/migrator`)
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
-
 ## Purpose (Fixed)
 
 Move one episode's **state** and **pack** from engine major N to N+1. The GM runs it explicitly and reviews the result. Each engine major knows only its own schema and contains zero compatibility code across majors (compatibility decoding within a major is allowed; see [01-engine.md](01-engine.md#compatibility-decoding-within-a-major-fixed-allowed-additive-only)). There is no frozen prior engine and no old web build. Majors are rare (tied to reprinting the physical manuals).
@@ -17,7 +15,7 @@ packages/migrator/
   lib/src/schemas/v1/   frozen description of engine major 1's serialized shapes (plain Dart, JSON-level)
   lib/src/schemas/v2/   same for major 2
   lib/src/steps/v1_to_v2/
-    state_step.dart     transforms an OperationState snapshot JSON
+    state_step.dart     transforms an EpisodeState snapshot JSON
     pack_step.dart      transforms pack JSON (manifest engineApi bump, renamed keys, new required fields)
     report.dart         what changed, what could not be mapped, what needs a GM decision
 ```
@@ -57,7 +55,7 @@ seq=1044  2026-10-16T20:14:40Z  vis=gm      <GM-only note>.
 **After migration.** The N+1 episode starts a new log whose first event is the genesis event:
 
 ```
-OperationMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, opId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
+EpisodeMigrated(fromMajor: N, toMajor: N+1, archives: [ {major, episodeId, logRef, textLogRef}, ... ], migratorVersion, reportHash)
 ```
 
 followed by the migrated snapshot as its initial state. The migrator transforms the **head snapshot** (the state at the N-major log's last `seq`, written by the N engine with every batch; see [04-session.md](04-session.md#the-episode-loop-gm-canonical-fixed)), so it never needs to fold events itself. Rolling autosave keeps the local head snapshot current after every batch and refreshes its RTDB copy before migration (P12). If the head snapshot is missing or its `seq` is not the log's last `seq`, the migrator refuses and nothing is written.
@@ -79,7 +77,7 @@ followed by the migrated snapshot as its initial state. The migrator transforms 
    - **this cannot be undone or recovered.**
 
    The GM must take a deliberate action to proceed (Fixed, P13): tick "I understand this information cannot be recovered" and type the episode's name. A single tap never confirms it; a widget test covers this.
-6. On confirmation the episode is locked, then the archive is written to Firestore, then the live data is cleaned up (R 2026-10-21). The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived episode (frozen event log, text log and final head snapshot) is then written by the `archiveOperation` HTTPS function (FS3), chunked into a subcollection to stay under Firestore's 1 MiB per-document limit (FS5); a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new episode is then created. The original N data is kept until the GM deletes it.
+6. On confirmation the episode is locked, then the archive is written to Firestore, then the live data is cleaned up (R 2026-10-21). The GM client first sets the RTDB `meta/locked` flag, so nothing more can be written to the log. The archived episode (frozen event log, text log and final head snapshot) is then written by the `archiveEpisode` HTTPS function (FS3), chunked into a subcollection to stay under Firestore's 1 MiB per-document limit (FS5); a failed write is retried, since the lock cannot be undone. After the archive write is confirmed, the post-archive clean-up removes the live branches ([06](06-accounts-backend.md#realtime-database-model-live-play)). The new episode is then created. The original N data is kept until the GM deletes it.
 
 Players do nothing. When they next join, they receive the new episode under N+1 and see a notice in the log that history before the migration is archived text (Proposed).
 

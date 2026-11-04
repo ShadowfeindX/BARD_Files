@@ -18,8 +18,8 @@ enum PackTier {
   /// A GM's campaign or private pack.
   campaign,
 
-  /// Content for one operation only (F3 part 3).
-  operation,
+  /// Content for one episode only (F3 part 3).
+  episode,
 }
 
 /// Library verification state (02 §Manifest).

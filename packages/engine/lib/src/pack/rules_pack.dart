@@ -26,7 +26,7 @@ import 'files/techniques.dart';
 import 'files/threats.dart';
 import 'files/vehicles.dart';
 
-/// Identifies one exact pack: what an operation pins (02 §Operations pin
+/// Identifies one exact pack: what an episode pins (02 §Episodes pin
 /// packs).
 final class PackRef {
   /// Creates a pack reference.

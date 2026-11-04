@@ -6,9 +6,9 @@ const quinnAlias = AliasId('al_quinn');
 
 /// One realistic command of every kind; the key is its wire `type`.
 final Map<String, Command> sampleCommands = {
-  'startOperation': const StartOperation(
-    operationId: 'op_01J8Z3',
-    settings: OperationSettings(autoConfirmConsequences: true),
+  'startOperation': const StartEpisode(
+    episodeId: 'op_01J8Z3',
+    settings: EpisodeSettings(autoConfirmConsequences: true),
   ),
   'createAgent': CreateAgent(
     name: 'Agent Vale',
@@ -99,15 +99,15 @@ final sampleBreakdown = CheckBreakdown(
 
 /// One realistic event of every kind; the key is its wire `type`.
 final Map<String, Event> sampleEvents = {
-  'operationStarted': const OperationStarted(
-    operationId: 'op_01J8Z3',
+  'operationStarted': const EpisodeStarted(
+    episodeId: 'op_01J8Z3',
     engineVersion: '1.0.0-dev.1',
     packRef: PackRef(
       id: 'example-core',
       version: '0.0.1',
       contentHash: 'sha256:00ff',
     ),
-    settings: OperationSettings(),
+    settings: EpisodeSettings(),
     actor: GmActor(),
   ),
   'agentCreated': AgentCreated(

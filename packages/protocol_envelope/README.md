@@ -15,7 +15,7 @@ const codec = JsonEnvelopeCodec();
 final frame = codec.encode(Envelope.of(
   const Request(requestId: 'r1', command: {'type': 'RequestAction'}),
   engineVersion: const EngineVersion(1, 4, 0),
-  operationId: 'op_01J8Z3',
+  episodeId: 'ep_01J8Z3',
   from: 'alias_7',
 ));
 

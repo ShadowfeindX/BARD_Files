@@ -3,12 +3,12 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../models.dart';
 
-/// What the UI needs from a running operation.
+/// What the UI needs from a running episode.
 ///
 /// A session-backed implementation replaces the in-memory fake later;
 /// view models only see this interface (07 §Layering).
 /// Perspective signals hold already-filtered lines for one viewer.
-abstract interface class OperationService {
+abstract interface class EpisodeService {
   /// Releases the host. The service is unusable afterwards.
   Future<void> dispose();
 

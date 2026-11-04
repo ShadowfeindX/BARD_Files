@@ -17,7 +17,7 @@ import '../expr/expr.dart';
 import '../ids.dart';
 import '../pack/rules_pack.dart';
 import '../phone.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../visibility.dart';
 
 /// The log lines for one event.
@@ -72,7 +72,7 @@ final class Narrator {
   /// A GM edit made in review (`overriddenFrom`) is in the GM's line only;
   /// players read the final value (Proposed: F2 does not say players see
   /// edits).
-  Narration narrate(OperationState state, Event event) {
+  Narration narrate(EpisodeState state, Event event) {
     final gm = _text(state, event, forGm: true);
     final player = _text(state, event, forGm: false);
     return switch (event.visibility) {
@@ -82,15 +82,15 @@ final class Narrator {
     };
   }
 
-  String _text(OperationState state, Event event, {required bool forGm}) {
+  String _text(EpisodeState state, Event event, {required bool forGm}) {
     String was(Object? original) => forGm && original != null
         ? ' (changed by the Handler from $original)'
         : '';
     return switch (event) {
-      OperationStarted() =>
-        'The operation began (pack ${event.packRef.id} '
+      EpisodeStarted() =>
+        'The episode began (pack ${event.packRef.id} '
             '${event.packRef.version}).',
-      AgentCreated() => 'Agent ${event.name} joined the operation.',
+      AgentCreated() => 'Agent ${event.name} joined the episode.',
       ActionRequested() =>
         '${_name(state, event.entity)} asks to act: "${event.description}"'
             '${event.suggestedSkill == null ? '' : ' (suggests ${_skill(event.suggestedSkill!)})'}.',
@@ -126,13 +126,13 @@ final class Narrator {
   }
 
   /// A party's name; the Handler is "the Handler" to everyone.
-  String _party(OperationState state, PhoneParty party) => switch (party) {
+  String _party(EpisodeState state, PhoneParty party) => switch (party) {
     PhoneGm() => 'the Handler',
     PhoneAlias(:final alias) => _aliases(state, {alias}),
     PhoneNpc(:final entity) => _name(state, entity),
   };
 
-  String _evaluated(OperationState state, BroadcastEvaluated event) {
+  String _evaluated(EpisodeState state, BroadcastEvaluated event) {
     final recipients = event.recipients;
     final who = recipients.isEmpty
         ? 'nobody qualified'
@@ -143,7 +143,7 @@ final class Narrator {
   }
 
   /// The names of the agents [aliases] play, in the order given.
-  String _aliases(OperationState state, Set<AliasId> aliases) {
+  String _aliases(EpisodeState state, Set<AliasId> aliases) {
     final names = <String>[];
     for (final alias in aliases) {
       final entity = state.stores
@@ -174,7 +174,7 @@ final class Narrator {
       '${op.name}(${args.map(_exprText).join(', ')})',
   };
 
-  String _resolved(OperationState state, CheckResolved event) {
+  String _resolved(EpisodeState state, CheckResolved event) {
     final b = event.breakdown;
     final parts = [
       'die ${_faces(b.primary)}',
@@ -194,7 +194,7 @@ final class Narrator {
     _ => 'Something happened out of sight.',
   };
 
-  String _name(OperationState state, EntityId entity) =>
+  String _name(EpisodeState state, EntityId entity) =>
       state.stores.get(Identity.componentType, entity)?.name ?? entity.value;
 
   String _checkName(CheckSpec spec) => switch (spec.skill) {

@@ -43,9 +43,9 @@ final class Rig {
   final InMemoryEventStore store;
   final TableVerifier verifier;
   final RosterAdmission admission;
-  late OperationHost host;
+  late EpisodeHost host;
   late CountingRng rng;
-  final List<OperationParticipant> participants = [];
+  final List<EpisodeParticipant> participants = [];
   final List<Object> protocolErrors = [];
 
   static const codec = TestCodec();
@@ -72,8 +72,8 @@ final class Rig {
   }
 
   Future<void> openHost({bool Function(Command)? playerMay}) async {
-    host = await OperationHost.open(
-      operationId: 'op1',
+    host = await EpisodeHost.open(
+      episodeId: 'op1',
       gm: gmIdentity,
       engine: Engine(testPack()),
       codec: codec,
@@ -89,13 +89,13 @@ final class Rig {
     host.listen(network.host(hostAddress));
   }
 
-  Future<OperationParticipant> join(
+  Future<EpisodeParticipant> join(
     String agentId,
     String aliasId, {
     String? proof,
   }) async {
-    final player = OperationParticipant(
-      operationId: 'op1',
+    final player = EpisodeParticipant(
+      episodeId: 'op1',
       agentId: agentId,
       aliasId: aliasId,
       engine: Engine(testPack()),
@@ -108,10 +108,10 @@ final class Rig {
     return player;
   }
 
-  Future<SubmitResult> start({OperationSettings? settings}) => host.submit(
-    StartOperation(
-      operationId: 'op1',
-      settings: settings ?? const OperationSettings(),
+  Future<SubmitResult> start({EpisodeSettings? settings}) => host.submit(
+    StartEpisode(
+      episodeId: 'op1',
+      settings: settings ?? const EpisodeSettings(),
     ),
   );
 

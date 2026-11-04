@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-/// The demo flow on a real `OperationHost` and the shipped pack. Needs
+/// The demo flow on a real `EpisodeHost` and the shipped pack. Needs
 /// `bash tool/build_pack.sh` first (see docs/developer-guide/setup.md).
 Future<Composition> _pump(WidgetTester tester) async {
   tester.view.physicalSize = const Size(2400, 1400);
@@ -43,7 +43,7 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 
 /// The alias id of the agent called [name].
 String _idOf(Composition composition, String name) =>
-    composition.operation.agents.value.firstWhere((a) => a.name == name).id;
+    composition.episode.agents.value.firstWhere((a) => a.name == name).id;
 
 /// Shows [agent]'s dossier through the player picker.
 Future<void> _showDossier(WidgetTester tester, String agent) async {
@@ -140,14 +140,14 @@ void main() {
     expect(find.text('Agent Rook'), findsWidgets);
   });
 
-  testWidgets('new operation replaces the host with an empty one', (
+  testWidgets('new episode replaces the host with an empty one', (
     tester,
   ) async {
     await _pump(tester);
     expect(find.byKey(const ValueKey('player-picker')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('new-operation')));
+    await tester.tap(find.byKey(const ValueKey('new-episode')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('new-operation-confirm')));
+    await tester.tap(find.byKey(const ValueKey('new-episode-confirm')));
     await _settle(tester);
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 200)),
@@ -163,7 +163,7 @@ void main() {
     final composition = await _pump(tester);
     // The demo agents have Charisma 1; Rook has 2.
     await tester.runAsync(
-      () => composition.operation.addAgent('Agent Rook', const {
+      () => composition.episode.addAgent('Agent Rook', const {
         'STR': 3, 'DEX': 3, 'END': 2, 'PER': 2, 'INT': 2,
         'WIS': 2, 'CHA': 2, 'WIL': 2, 'LCK': 2, //
       }),
@@ -247,7 +247,7 @@ void main() {
   ) async {
     final composition = await _pump(tester);
     await tester.runAsync(
-      () => composition.operation.sendPhone('vale', 'alias:quill', 'Psst.'),
+      () => composition.episode.sendPhone('vale', 'alias:quill', 'Psst.'),
     );
     await _settle(tester);
     Finder psstIn(String alias) => find.descendant(
@@ -265,7 +265,7 @@ void main() {
     expect(psstIn('quill'), findsOneWidget);
 
     await tester.runAsync(
-      () => composition.operation.addAgent('Agent Rook', const {
+      () => composition.episode.addAgent('Agent Rook', const {
         'STR': 3, 'DEX': 3, 'END': 2, 'PER': 2, 'INT': 2,
         'WIS': 2, 'CHA': 2, 'WIL': 2, 'LCK': 2, //
       }),

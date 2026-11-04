@@ -7,13 +7,13 @@ import '../expr/evaluate.dart';
 import '../actor.dart';
 import '../pack/rules_pack.dart';
 import '../phone.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../visibility.dart';
 
 /// In-game messages (11 §Messaging). Today: the stat-gated broadcast. The
 /// phone (04 §In-game phone) comes later.
 ///
-/// Messages are not operation state: they live in the event log and the
+/// Messages are not episode state: they live in the event log and the
 /// text log, so `evolve` leaves the state as it is.
 final class MessagingSystem {
   /// Creates the system for [pack].
@@ -23,14 +23,14 @@ final class MessagingSystem {
   final RulesPack pack;
 
   /// Decides a [MessagingCommand].
-  Decision decide(OperationState state, MessagingCommand command) =>
+  Decision decide(EpisodeState state, MessagingCommand command) =>
       switch (command) {
         BroadcastToQualifying() => _broadcast(state, command),
         SendPhoneMessage() => _phone(state, command),
       };
 
   /// Applies a [MessagingEvent].
-  OperationState evolve(OperationState state, MessagingEvent event) =>
+  EpisodeState evolve(EpisodeState state, MessagingEvent event) =>
       switch (event) {
         BroadcastEvaluated() ||
         BroadcastDelivered() ||
@@ -42,10 +42,7 @@ final class MessagingSystem {
   /// The GM's preview of who would receive a broadcast. Each alias's agent
   /// (entity kind `agent`; an alias plays at most one) is tested, in
   /// creation order.
-  List<BroadcastCandidate> candidates(
-    OperationState state,
-    Condition condition,
-  ) {
+  List<BroadcastCandidate> candidates(EpisodeState state, Condition condition) {
     final result = <BroadcastCandidate>[];
     for (final MapEntry(key: entity, value: identity)
         in state.stores.all(Identity.componentType).entries) {
@@ -67,7 +64,7 @@ final class MessagingSystem {
     return result;
   }
 
-  Decision _broadcast(OperationState state, BroadcastToQualifying command) {
+  Decision _broadcast(EpisodeState state, BroadcastToQualifying command) {
     if (command.text.trim().isEmpty) {
       return const Rejected(
         Rejection(RejectionCode.invalidValue, 'The message is empty.'),
@@ -98,7 +95,7 @@ final class MessagingSystem {
     ]);
   }
 
-  Decision _phone(OperationState state, SendPhoneMessage command) {
+  Decision _phone(EpisodeState state, SendPhoneMessage command) {
     final text = command.text;
     if (_isBlank(text)) {
       return _reject(RejectionCode.invalidValue, 'The message is empty.');
@@ -160,7 +157,7 @@ final class MessagingSystem {
     ]);
   }
 
-  bool _exists(OperationState state, PhoneParty party) {
+  bool _exists(EpisodeState state, PhoneParty party) {
     final identities = state.stores.all(Identity.componentType);
     return switch (party) {
       PhoneGm() => true,

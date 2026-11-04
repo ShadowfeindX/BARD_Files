@@ -1,7 +1,5 @@
 # 08. Testing
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
-
 Every package is testable on its own, with in-memory implementations of everything it depends on. A task is done only when `bash tool/check_all.sh` passes (CLAUDE.md §8), which runs `flutter analyze` and the tests among its checks.
 
 ## Engine

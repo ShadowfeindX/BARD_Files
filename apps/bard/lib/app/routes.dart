@@ -10,10 +10,10 @@ import '../ui/table/table_panel.dart';
 import 'composition.dart';
 
 /// Builds the router. `/` shows all panels on one device; the other routes
-/// open a single panel, for a second window or display. [onNewOperation]
-/// replaces the operation; the caller then builds a fresh router.
-GoRouter buildRouter(Composition c, {required VoidCallback onNewOperation}) {
-  final console = ConsoleViewModel(c.operation);
+/// open a single panel, for a second window or display. [onNewEpisode]
+/// replaces the episode; the caller then builds a fresh router.
+GoRouter buildRouter(Composition c, {required VoidCallback onNewEpisode}) {
+  final console = ConsoleViewModel(c.episode);
   Widget single(String title, Widget body) => Scaffold(
     appBar: AppBar(title: Text(title)),
     body: Padding(padding: const EdgeInsets.all(8), child: body),
@@ -23,9 +23,9 @@ GoRouter buildRouter(Composition c, {required VoidCallback onNewOperation}) {
       GoRoute(
         path: '/',
         builder: (context, state) => HomeScreen(
-          service: c.operation,
+          service: c.episode,
           console: console,
-          onNewOperation: onNewOperation,
+          onNewEpisode: onNewEpisode,
         ),
       ),
       GoRoute(
@@ -39,7 +39,7 @@ GoRouter buildRouter(Composition c, {required VoidCallback onNewOperation}) {
           'Player',
           DossierView(
             model: DossierViewModel(
-              c.operation,
+              c.episode,
               state.pathParameters['agentId']!,
             ),
           ),
@@ -48,7 +48,7 @@ GoRouter buildRouter(Composition c, {required VoidCallback onNewOperation}) {
       GoRoute(
         path: '/table',
         builder: (context, state) =>
-            single('Table', TablePanel(service: c.operation)),
+            single('Table', TablePanel(service: c.episode)),
       ),
     ],
   );

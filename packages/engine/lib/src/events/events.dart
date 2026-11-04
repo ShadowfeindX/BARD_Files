@@ -1,4 +1,4 @@
-/// Events: facts that happened in an operation (01 §Commands and events).
+/// Events: facts that happened in an episode (01 §Commands and events).
 ///
 /// A sealed family, grouped into one sealed sub-family per system, so both
 /// `Engine.evolve` and each system switch over them exhaustively [V-16].
@@ -14,14 +14,14 @@ import '../ids.dart';
 import '../immutable_map.dart';
 import '../phone.dart';
 import '../pack/rules_pack.dart';
-import '../state/operation_state.dart';
+import '../state/episode_state.dart';
 import '../visibility.dart';
 
 part 'character_events.dart';
 part 'check_events.dart';
 part 'condition_events.dart';
 part 'messaging_events.dart';
-part 'operation_events.dart';
+part 'episode_events.dart';
 part 'vitals_events.dart';
 
 /// Something that happened. `evolve` applies it to state.
@@ -37,7 +37,7 @@ sealed class Event {
 
 /// An event that drew from the RNG.
 ///
-/// Folding one sets the operation's draw count to [draws]`.end`
+/// Folding one sets the episode's draw count to [draws]`.end`
 /// (`Engine.evolve` does this for every rolling event in one place), so the
 /// state always knows where the RNG stands and any roll can be audited from
 /// the seed (01 §RNG).

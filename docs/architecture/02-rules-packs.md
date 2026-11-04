@@ -1,7 +1,5 @@
 # 02. Rules packs and content
 
-> Code still says `Operation` for what the spec calls an episode until the rename PR.
-
 ## Vocabulary vs values (Fixed)
 
 | Owned by the engine (vocabulary) | Owned by a pack (values) |
