@@ -12,12 +12,12 @@ Actors are **not** isolates: they are single-threaded mailbox objects. Isolates 
 |---|---|---|
 | `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
 | `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
-| `ConnectionActor` | both ends, one per link | One transport link: framing, ping, backoff, hands decoded messages to its owner |
+| `ConnectionActor` | both ends, one per link | One transport link: framing (built); ping and backoff (planned; real transports); hands decoded messages to its owner |
 | `StoreActor` (planned, 10 §5) | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
 | `RelayActor` (planned, 10 §5) | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` (planned, 10 §5) | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-As built: `EpisodeHost`, `EpisodeParticipant` and `ConnectionActor`; the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+As built: `EpisodeHost`, `EpisodeParticipant` and `ConnectionActor` (framing only; ping and backoff are planned with the real transports); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical)
 
@@ -64,7 +64,7 @@ The consequence auto-confirm is not one of these: it stays a per-episode setting
 
 ### Names in the log
 
-How lines are produced is open ([N1-R1](10-waiting-on-d.md#n1-r1), [N1-R2](10-waiting-on-d.md#n1-r2), [N1-R4](10-waiting-on-d.md#n1-r4), [N1-R5](10-waiting-on-d.md#n1-r5)).
+(Planned: not built; see 10 §5 'Remaining engine systems' (`GmSystem`) and the Name rule row [N1-R2](10-waiting-on-d.md#n1-r2).) How lines are produced is open ([N1-R1](10-waiting-on-d.md#n1-r1), [N1-R2](10-waiting-on-d.md#n1-r2), [N1-R4](10-waiting-on-d.md#n1-r4), [N1-R5](10-waiting-on-d.md#n1-r5)).
 
 - **Before a reveal.** The log names a character by a short description the Handler types ("the man in the grey coat"); with none, numbered unknowns ("Unknown 1", "Unknown 2").
 - **Reveals.** The Handler can reveal a cover name first and the true name later, and can reveal a name to some agents only. A reveal is not taken back; the Handler can only give a new label from then on.
@@ -159,9 +159,9 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 |---|---|---|---|
 | Solo / prep | none | none | GM alone, building NPCs or testing. |
 | In person, one device | in-process | none | Table shares the GM's screen; player views are panels on the same device. |
-| In person, phones | LAN (or in-process + LAN) | none | GM device hosts; companion phones join on the local network. |
-| LAN | LAN | none | Discovery on the local network; host must be a native app (see below). |
-| P2P over internet | P2P | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
+| In person, phones | LAN (or in-process + LAN) (planned; S-6) | none | GM device hosts; companion phones join on the local network. |
+| LAN | LAN (planned; S-6) | none | Discovery on the local network; host must be a native app (see below). |
+| P2P over internet | P2P (planned; S-6) | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
 | Network-hosted (planned) | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online (planned; 10 §5 'Offline account cache and session outbox'). |
 
@@ -186,7 +186,7 @@ The backend copy is a mirror, never a second authority. If the backend holds eve
 
 ## Requests between sittings
 
-A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override ([above](#settings-resolution)). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are open ([Q5](10-waiting-on-d.md#q5)); the working assumption is that purchases are not auto-confirmed, since the GM review gate covers consequence events only.
+(Planned; open: [Q5](10-waiting-on-d.md#q5).) A request a player makes outside a live episode (a store purchase, or a contact release asking the Handler to hand over an NPC's details) waits for the Handler to approve, because the Handler may not be online. Auto-confirm for these is a setting with its base at the campaign and a per-mission override ([above](#settings-resolution)). Where the waiting requests are stored, and whether purchases may ever auto-confirm, are open ([Q5](10-waiting-on-d.md#q5)); the working assumption is that purchases are not auto-confirmed, since the GM review gate covers consequence events only.
 
 ## In-game phone
 

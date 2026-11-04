@@ -47,7 +47,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay (LA
 | `rejected` | GM → client | The GM engine (or GM) rejected a request. References the request id. |
 | `events` | GM → clients | One or more events with consecutive `seq`, already filtered for the recipient. |
 | `resync` | client → GM | "I have up to seq N" after a gap or reconnect. |
-| `textlog` | GM → client | Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history. |
+| `textlog` | GM → client | Archived text from earlier engine majors, already reduced to the variant this recipient saw. Sent after `welcome` or on request, so the in-game log and archive viewer can show pre-migration history (planned; sent once archives exist; 10 §5 'Migrator package'). |
 | `presence` | both | Online/away/typing; never part of the event log. |
 | `ping` / `pong` | both | Liveness. |
 
@@ -105,7 +105,7 @@ On `hello`:
 1. **Protocol major** must match the GM's, else `refused(protocolMismatch)`.
 2. **Engine major** must match the episode's, else `refused(engineMajorMismatch)`. Cross-major moves happen only through the migrator.
 3. **Engine minor/patch**: the client must be at least the version the episode's log requires (the highest `e` on any event so far). Lower: `refused(updateRequired)`. This guarantees no client meets an event type it does not understand.
-4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the episode.
+4. Pack: clients receive pack values they need via the snapshot or by fetching the pinned `(id, version, contentHash)` from the pack source. A client never uses a different pack version than the episode (fetching is planned; 10 §5 'Library and pack index'; today the pack is bundled).
 
 Decoding is compatible within a major: a client reads everything older minors wrote, filling defaults for absent fields and mapping deprecated fields to their replacements in memory, per [01-engine.md](01-engine.md#compatibility-decoding-within-a-major). Rule 3 above covers only the other direction: older clients never receive data from a newer minor.
 

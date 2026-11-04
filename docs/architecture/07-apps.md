@@ -5,7 +5,7 @@
 | App | Platforms | Who | Role |
 |---|---|---|---|
 | `apps/bard` | v1: Windows and Linux desktop, plus the player-only web build; designed for landscape medium/large screens | GM and players | Full GM experience and full player experience on native builds. The web build is player-only ([below](#web-build-role)) |
-| `apps/companion` | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins episodes the main app hosts |
+| `apps/companion` (planned; placeholder shell today, 10 §5 'Companion app') | phones (built in parallel) | players first | Character sheet, checks, in-game phone, notifications; joins episodes the main app hosts |
 | `apps/functions` | Firebase, HTTPS-only Dart Cloud Functions (experimental) | none directly | Badge login, role claims, payment webhook, store receipt validation, push, pack publishing helper (planned; scaffold only today, 10 §5). Depends only on `protocol_envelope`, never on the engine. No relay: Realtime Database is the relay |
 
 Both Flutter apps use the same `session`, `engine` and `protocol` packages, so a companion phone and a tablet are equal participants in an episode. The companion app is a different **UI**, not a different client.
@@ -32,7 +32,7 @@ lib/
 - View models talk to repositories; repositories wrap services. The `session` package is used through a service, so view models never see actors or transports.
 - View models expose **commands** (Flutter guide terminology for user-intent callbacks [V-2]). A command such as `requestLockpick()` turns into an engine command sent through the session. It never computes an outcome.
 - **State management:** Dart Signals, through `signals_flutter` 7.1.0 (publisher rodydavis.com; Flutter bindings over `signals_core`) in `apps/` and `ui_kit` [V-29]. The umbrella `signals` package is not used; the engine stays SDK-only. View models expose signals, and views read them.
-- **Routing:** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The canonical join link is `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join)), which every target can register; https links come later where supported. The V-30 live check on Linux and Windows covered the earlier `bard://join/<op>?alias=<id>` form only [V-30]. Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). Android https links, when added, need `assetlinks.json`.
+- **Routing:** `go_router` 18.1.1 [V-30], with `app_links` 7.2.2 as the desktop link companion that delivers links to the router. The join link is `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join)), which every target can register; https links come later where supported. The V-30 live check on Linux and Windows covered the earlier `bard://join/<op>?alias=<id>` form only [V-30]. Link delivery is planned (`app_links` is pinned, not wired; 10 §5 'Deep-link join'). Android https links, when added, need `assetlinks.json`.
 - **Persistence:** sembast (+ `sembast_web` for web player caches) behind the session's `EventStore` (planned; only `InMemoryEventStore` today, 10 §5), see [04-session.md](04-session.md#interfaces-the-session-depends-on).
 - Package versions are re-verified on pub.dev before each enters a pubspec.
 

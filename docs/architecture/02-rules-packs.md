@@ -160,7 +160,7 @@ Packs use the deprecation record defined in [01-engine.md](01-engine.md#deprecat
 4. Cross-validate references (a skill that names an attribute that does not exist, an item referencing an unknown damage category).
 5. Produce an immutable `RulesPack` and its `contentHash`.
 
-The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) lets D check a pack without running the app.
+The validator is part of the engine package so the apps and a command-line tool all agree on what "valid" means. A small command-line validator in the engine package (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) lets D check a pack without running the app. As built: `dart run engine:validate_pack <packDir>` (packages/engine/bin/validate_pack.dart); its name and output format are open (API-1).
 
 Backend code (Cloud Functions) does not run the validator (it never imports the engine; see [00-overview.md](00-overview.md#dependency-rules)). Planned (10 §5, pack publishing helper): publishing validates on the publishing device before upload. Every device validates again when it loads a pack (built), so an invalid upload can never be used. Library verification is a human review step, not a server-side check.
 
@@ -180,7 +180,7 @@ Backend code (Cloud Functions) does not run the validator (it never imports the 
 | Campaign / private | a GM | the GM's account (and local cache) (cloud/account parts planned; see 06) | no |
 | Episode-scoped | a GM, for one episode | pinned to that episode | no |
 
-- The **episode-scoped tier** sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and its use is logged like any other pack change.
+- The **episode-scoped tier** sits under Campaign and holds per-episode GM content. It uses the same schema and the same validator as any pack, is pinned by the episode (`packRef`), and, once PackUpdated is built, its use is logged like any other pack change (planned; 10 §5 'Pack update event').
 - GMs create NPCs, items, skills and techniques as entity templates in their own pack(s). These are ordinary pack files, so they use the same validator.
 - The **public library** is a government-style archive showing only items with `verification: verified`.
 - Planned (10 §5): library verification, the Firestore library, Cloud Storage distribution and the offline cache are not built.

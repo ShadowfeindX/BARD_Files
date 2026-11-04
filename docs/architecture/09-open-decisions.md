@@ -88,7 +88,7 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 ### S-4 How the built-in theme JSON ships
 
 - **Undecided:** how the built-in theme JSON ships and where `ThemeController` lives.
-- **Options:** recommended: JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec. Alternative: generated Dart constants (no asset loading in the package, but a generation step that CLAUDE.md section 10 asks to avoid or document, and rules-like data in code). The controller lives in `ui_kit` as proposed; if R prefers, it lives in each app.
+- **Options:** recommended: JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec. Alternative: generated Dart constants (no asset loading in the package, but a generation step that CLAUDE.md section 10 asks to avoid or document, and rules-like data in code). The controller lives in `ui_kit` as proposed. Open alternative: the controller could instead live in each app.
 - **Owner:** R. **Described in:** [07](07-apps.md#layering).
 
 ### S-5 Head-snapshot mirror interval

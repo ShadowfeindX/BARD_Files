@@ -22,7 +22,7 @@ Every package is testable on its own, with in-memory implementations of everythi
 ## Session
 
 - Host + N participants wired with an in-memory transport and in-memory store, driven by a fake clock.
-- Scenarios: duplicate requests roll once; out-of-order frames are applied in seq order; a participant that misses events resyncs; visibility filtering delivers the right subset to each perspective; a crashed host reopens from store with identical state; authorization refuses anonymous hosting.
+- Scenarios: duplicate requests roll once; out-of-order frames are applied in seq order; a participant that misses events resyncs; visibility filtering delivers the right subset to each perspective; a closed host reopens from store with identical state; authorization refuses anonymous hosting.
 - Planned: a **transport contract test suite** that every real transport (LAN, P2P, relay) must pass, so adding a transport means implementing an interface and running the same suite.
 - Planned: an **event-store contract test suite** for the sembast store (and any later store).
 - **Sembast crash test (hard kill, commit marker) [V-31].** Planned; no harness is in the repository yet. The probe's harness writes events + text + head in one transaction, then a commit marker in its own transaction, and is hard-killed at random points over many runs (the probe used 100 kills). On open, everything after the last marker is discarded; the test passes only if no committed batch is lost and no torn batch is visible. Run on Linux and Windows. It does not cover power loss or OS crash (not protected in v1).

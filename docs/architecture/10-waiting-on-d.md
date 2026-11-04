@@ -146,6 +146,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - App Check monitor-only on mobile and web (B4): `firebase_app_check` setup, no enforcement (see [06](06-accounts-backend.md#app-check)).
 - Library and pack index: Firestore library, verification, Cloud Storage pack distribution and the offline pack cache (see [02](02-rules-packs.md#distribution), [06](06-accounts-backend.md)).
 - Entitlements read model (see [06](06-accounts-backend.md)).
+- Companion app: character sheet, checks, in-game phone, notifications (placeholder shell today).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
 The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).
