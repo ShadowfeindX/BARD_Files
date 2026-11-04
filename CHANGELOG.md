@@ -9,6 +9,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - The live-game unit is now called an **Episode** in the spec and developer guide (tree: Campaign > Operation > Mission > Episode). "Operation" means only the story arc; "session" keeps its host and network meaning. Code identifiers, RTDB paths and the Firestore `operations/{opId}` node are unchanged pending a gated rename row.
 
 ### Docs: round-2 follow-ups
+- `09-open-decisions.md`: Pending D now lists DEC-41 and X0 / Q24 beside T5 and the theme labels; new Known issues and follow-ups section.
 - Recorded D's partly answered round-2 sheet (`10-pending-d-followup.md`); added the next-round question sheet for D, a follow-up sheet for R, and a homework and discussion notes document for D (automated single and multiplayer play, damage reduction, currency). `09-open-decisions.md` records D's 2026-10-29 answers and R's 2026-11-03 rulings on the R follow-up; `10-pending-r-a2-explained.md` explains which level owns the live game record.
 
 ### Project rules

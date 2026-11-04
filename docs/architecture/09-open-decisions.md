@@ -121,6 +121,8 @@ Still waiting on D: the follow-up questions in [10-pending-d-followup.md](10-pen
 |---|---|---|
 | T5 theme sharing (owner R and D; next R and D meeting) | Whether themes are shared only externally as exported files in v1, as R expects, or also in the app (a gallery would go through moderation, [11](11-supplemental-features.md#library-and-public-content)). Added 2026-11-04 (T9). | Import and export of theme files (T1). Proposed: no in-app gallery, upload or moderation in v1. |
 | T7 (e) theme labels (owner D; next R and D meeting) | D confirms the variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label in the theme selector; Proposed: the document mode label goes with them. Added 2026-11-04 (T7). | The variants and the System behaviour (T1, T7 d). |
+| DEC-41 map geometry (owner D; next R and D meeting) | Whether maps get any geometry rules: cover, terrain, line of sight, facing, areas. The rulebook has none. Numbered in the project library's design review (`design/synthesis-government-terminal.md`). | Until D rules, a map is style only and carries no rule effect (design, Proposed). |
+| X0 / Q24 levels and log owner (owner R and D; next R and D meeting, to confirm only) | Nothing undecided here; listed so D can confirm or raise a concern about the outcome. | Ruled: Campaign > Operation > Mission > Episode, with the Episode owning the event log, live tree, local file and host (X0, R-A2, above). |
 
 ## Open for R (themes)
 
@@ -136,6 +138,16 @@ Proposed in [07](07-apps.md#themes-and-player-appearance-settings), not ruled. T
 | T11 T7 follow-ups | Colour format Fixed (R, 2026-11-04). Still open: the `windowEdge` values; the `theme_core` name. | `#RRGGBB` for every token, `#RRGGBBAA` only for tokens marked alpha-capable (`sceneTint`, `highlight` in token set 1), alpha rejected elsewhere, contrast computed on the composited colour; `windowEdge` Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9` in all four variants (at least 3:1 against `desk`, `window` and `windowRaised`, computed from the design library's §6.1 values); package name `theme_core`. | R |
 
 **T8, cost note.** The separate package costs one more pubspec, a layer-table entry, a workspace member, and an asset hand-off (Flutter loads the built-in JSON in `ui_kit` and passes it to the package, since `theme_core` cannot use the asset bundle). For v1 alone that is a little structure ahead of need; the upside R named (room for distribution, per-campaign themes, icons and animations) outweighs it, so no change is proposed.
+
+## Known issues and follow-ups
+
+Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-themes).
+
+- **No web target.** `apps/bard` has `linux/` and `windows/` folders but no `web/`, so the player-only web build in the v1 platforms does not exist yet.
+- **No Chrome widget tests.** CI runs the `engine` and `session` tests on Node.js as well as the VM. Nothing runs on Chrome, so `ui_kit` and `apps/bard` widget tests are unproven on the web.
+- **`check_all.sh` fails in a checkout with untracked Dart files.** Its `dart format .` step covers the whole folder, including untracked ones such as local probes. A clean clone passes on its first run (checked on Windows, 2026-11-04).
+- **Episode rename in code.** The spec says Episode while code identifiers still say Operation until the rename PR merges.
+- **Session gaps.** `docs/developer-guide/session.md` lists the known gaps in the session layer.
 
 ## Held
 
