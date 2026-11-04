@@ -87,7 +87,7 @@ Profiles, aliases and campaigns are searchable account data and live in Firestor
 
 Rules:
 
-- An alias is locked to one campaign. **Transfers:**
+- An alias is locked to one campaign. **Transfers** (planned; not built; 10 §5 'Campaign-level members and rules'):
   - The **destination** campaign's GM approves a transfer.
   - The **source** campaign is notified; it does not consent.
   - An alias in a **running episode cannot move** until that episode ends.
@@ -276,7 +276,7 @@ Probe evidence is in [V-33]. The planned function dependencies are `firebase_adm
 
 ## Push notifications
 
-`firebase_messaging` 17.0.0 describes itself as delivering messages on Android and iOS, and the investigation found no Windows or Linux support [V-26][U]. On those platforms notifications are **in-app only**, via RTDB `/inbox/$uid`, which desktop clients listen to live. Mobile and web push go through the push function (planned, 10 §5).
+`firebase_messaging` 17.0.0 describes itself as delivering messages on Android and iOS, and the investigation found no Windows or Linux support [V-26][U]. On those platforms notifications are **in-app only**, via RTDB `/inbox/$uid` (planned; 10 §5 'Cloud Functions' row), which desktop clients listen to live. Mobile and web push go through the push function (planned, 10 §5).
 
 ## App Check
 
@@ -288,7 +288,7 @@ Payments are a backend role. The payment design is deferred: no provider is deci
 
 ## Environments
 
-Three Firebase projects: **dev, staging and prod**. The RTDB rules are tested in the Local Emulator Suite; the Firestore rules and the functions are to be tested there (open: [S-7](09-open-decisions.md#s-7-firestore-collections) for the Firestore rules), as Firebase's security checklist recommends [V-19]. Desktop clients need network access to `*.firebaseio.com`, `*.firebasedatabase.app`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com` and `firestore.googleapis.com` (allowlist used by the probes) [U].
+Three Firebase projects (planned; projects not yet created): **dev, staging and prod**. The RTDB rules are tested in the Local Emulator Suite; the Firestore rules and the functions are to be tested there (open: [S-7](09-open-decisions.md#s-7-firestore-collections) for the Firestore rules), as Firebase's security checklist recommends [V-19]. Desktop clients need network access to `*.firebaseio.com`, `*.firebasedatabase.app`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com` and `firestore.googleapis.com` (allowlist used by the probes) [U].
 
 ## Probe order
 

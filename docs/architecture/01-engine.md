@@ -150,7 +150,7 @@ A **condition** (used by the stat-gated broadcast, [11](11-supplemental-features
 
 | Placement | Expression | `var` supplied by the engine |
 |---|---|---|
-| Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
+| Advancement, attribute purchase XP (`advancement.json`; planned, see [Planned code changes](#planned-code-changes)) | `10 × var(newScore)` | the attribute score being bought |
 | Assistance bonus (`difficulty.json`) | as built: `1d6 + var(helperSkillBonus)`. (open: [FD-A2](10-waiting-on-d.md#fd-a2)) Planned: the helper's attribute score, key `helperAttribute` (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)); see [Planned code changes](#planned-code-changes) | as built: the helper's skill bonus. Planned: the helper's score in the check's attribute |
 
 Any new `var` key or placement needs R's approval first.

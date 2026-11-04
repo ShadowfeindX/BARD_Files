@@ -176,7 +176,7 @@ RTDB stays the canonical store during play (06): the live tree is `/episodes/$ep
 
 ### `campaigns/{campaignId}/invites/{token}`
 
-`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link. The link names the campaign, so the canonical link becomes `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); 09-2 said `<op>`; the route change belongs to the campaign-members row). Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private campaign accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
+`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link. The link names the campaign, so the link would become `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); 09-2 said `<op>`; the route change belongs to the campaign-members row). Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private campaign accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
 
 ### `campaigns/{campaignId}/joinRequests/{uid}`
 

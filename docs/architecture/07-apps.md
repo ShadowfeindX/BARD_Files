@@ -340,7 +340,7 @@ The open theme items ([T2](09-open-decisions.md#t2), [T3](09-open-decisions.md#t
 - No `Platform.isX` checks in shared code; they throw on the web [V-12].
 - Hosting capabilities differ by platform (the web build cannot host, see [04-session.md](04-session.md#play-modes)). The UI asks the session which transports are available instead of checking the platform itself.
 
-- Desktop builds reach Firebase through `firebase_dart` (planned; not built, 10 §5): probed on Windows and Linux, the v1 desktop targets ([06-accounts-backend.md](06-accounts-backend.md#stack)). Push notifications are in-app only on Windows and Linux.
+- Desktop builds reach Firebase through `firebase_dart` (planned; not built, 10 §5): probed on Windows and Linux, the v1 desktop targets ([06-accounts-backend.md](06-accounts-backend.md#stack)). Push notifications are in-app only on Windows and Linux, via RTDB `/inbox/$uid` (planned; 10 §5 'Cloud Functions' row).
 - **Windows identity (planned; see [06 Auth token storage](06-accounts-backend.md#auth-token-storage)).** The Windows runner's company and product names decide where `flutter_secure_storage` keeps the auth-box key (`%APPDATA%\<company>\<product>\`) [V-44]. They are set once before the first release and not changed, or every user is signed out.
 
 ### Web build role

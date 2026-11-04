@@ -115,7 +115,7 @@ The LAN QR carries only join information (host address, episode id, one-time joi
 
 ## Invite links
 
-The invite link names the campaign, `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); 09-2's `<op>` is superseded, see [12](12-firestore-collections.md#campaignscampaignidinvitestoken)). A Firestore invite document holds an expiry and a use count. Redeeming it creates a join request that the handler approves, with an RTDB inbox ping to the handler ([Live updates](#live-updates-outside-the-live-play-tree)). The alias is chosen after the link opens, so the link drops 09-2's `alias=` parameter.
+The invite link names the campaign, `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); 09-2's `<op>` would be superseded once R confirms (open: [Deep-link join](10-waiting-on-d.md#deep-link-join)), see [12](12-firestore-collections.md#campaignscampaignidinvitestoken)). A Firestore invite document holds an expiry and a use count. Redeeming it creates a join request that the handler approves, with an RTDB inbox ping to the handler ([Live updates](#live-updates-outside-the-live-play-tree)). The alias is chosen after the link opens, so the link drops 09-2's `alias=` parameter.
 
 ## Messaging
 
@@ -193,7 +193,7 @@ These are applied to the named chapters in a later change:
 | Ruling | Changes |
 |---|---|
 | P9 | The printed badge is a public profile link (PDF417, badge number only, no secret). Sign-in moves to a short-lived, single-use code shown on the signed-in phone, plus the reverse flow. Affects [00](00-overview.md) Accounts row, [06](06-accounts-backend.md) account model `badges[]`, the badge records in the Firestore account-data draft (open: [S-7](09-open-decisions.md#s-7-firestore-collections)), the Badges section and the badge-login function row, and [09](09-open-decisions.md) P9. |
-| 09-2 | Invite links use `bard://join/<campaignId>?invite=<token>` with no `alias=` (09-2's earlier `<op>` form is superseded). Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
+| 09-2 (Proposed) | Invite links would use `bard://join/<campaignId>?invite=<token>` with no `alias=` (09-2's earlier `<op>` form would be superseded once R confirms (open: Deep-link join)). Affects the Routing rows in [00](00-overview.md) and [07](07-apps.md). |
 | P10a | Mobile uses `FlutterFireAdapter` (normal Firebase client SDK); `firebase_dart` stays on Windows and Linux. Android is the companion's v1 target. Affects [00](00-overview.md) Targets, the [09](09-open-decisions.md) Targets row, [06](06-accounts-backend.md) Stack and platform text, and [07](07-apps.md) (the companion row gains GM tools for the handler tier). |
 | 06 Roles | The "tier" claim becomes the clearance tier claim with a per-tier lookup. Handler features check it. The `moderator` claim is assigned once moderators beyond R and D are chosen. |
 | 06 Library | The pending → public queue and moderator approval extend from library content to missions, public operations, public profiles and profile images. The approvers are still R and D, who hold the library verification claim; a separate `moderator` claim (06 Roles) is assigned once more moderators are chosen. |

@@ -14,7 +14,7 @@ The platform and stack chosen for the application; planned parts are labelled ([
 | Area | Choice |
 |---|---|
 | Stack | Flutter / Dart only. |
-| Targets | v1: **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is built in parallel. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now. |
+| Targets | v1: **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is in progress as a placeholder shell. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now. |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
 | Repository | Pub workspace monorepo, `packages/` plus `apps/`. Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` and a theme-model package, proposed name `theme_core` (open: [T11](09-open-decisions.md#t11); not built), shared by the main app and the companion app; the functions app depends only on `protocol_envelope`. |
 | Engine purity | The engine has no Flutter, Firebase or UI imports, and no wire-format concerns: the envelope and message types live in `protocol_envelope`, engine codecs in `protocol`. |
@@ -137,7 +137,7 @@ Follows the Flutter architecture guide: a UI layer of views and view models, a d
 ```
 View (widgets) ─► ViewModel ─► Repositories ─► Services
                       │             │              ├─ session (episode actors)
-                      │             │              ├─ backend adapters (firebase_dart, FlutterFire, LAN)
+                      │             │              ├─ backend adapters (firebase_dart, FlutterFire, LAN) (planned)
                       │             │              └─ local stores
                       └── reads engine read-models (pure functions over state)
 ```

@@ -154,7 +154,7 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 ### S-7 Firestore collections
 
 - **Held:** the Firestore collection draft (names, document shapes, rules and indexes), awaiting R.
-- **State:** drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed). RTDB rules are run in the Emulator Suite (200 of 200 [V-50]). Firestore rules and indexes are not run.
+- **State:** drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed). RTDB rules are run in the Emulator Suite (200 of 200 [V-54], [V-56]). Firestore rules and indexes are not run.
 - **Owner:** R. **Described in:** [06](06-accounts-backend.md#firestore), [12](12-firestore-collections.md).
 
 ## Deferred
