@@ -105,7 +105,7 @@ No other external tool, MCP, service or package source is used unless R names it
 ## 8. Engineering standards
 
 - **Architecture:** layered (UI → logic → data), following the Flutter architecture skill. Game rules live in a pure-Dart domain layer with no Flutter imports, so they are testable and reusable by both GM and player apps.
-- **Decided stack:** state management, routing, persistence, networking/sync and the backend are fixed by R and listed in `docs/architecture/00-overview.md` (Fixed decisions). Agents do not change them; a proposed change goes to R.
+- **Decided stack:** state management, routing, persistence, networking/sync and the backend are fixed by R and described in `docs/architecture/00-overview.md` (Platform and stack); the rulings behind them are in `docs/architecture/decision-record.md`. Agents do not change them; a proposed change goes to R.
 - **Style:** `dart format` clean. `flutter analyze` with zero warnings, using the project's `analysis_options.yaml`. Effective Dart naming and documentation (`///` on public APIs).
 - **Tests:** domain logic has unit tests. Widgets with behavior have widget tests. A task is not done until `bash tool/check_all.sh` passes (format, pack check, analyze, dependency rules, pins and tests).
 - **Platforms (v1):** Windows and Linux desktop. The web build is player-only. The companion app is Android. No macOS or iOS in v1.
