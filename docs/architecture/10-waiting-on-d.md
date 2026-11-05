@@ -152,4 +152,4 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Companion app: character sheet, checks, in-game phone, notifications (placeholder shell today).
 - Personal library index (R-A5), `randomTable` content wiring, and the rows listed in [01](01-engine.md#planned-code-changes).
 
-The theme rulings of 2026-11-04 (T1 to T11) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).
+The theme rulings of 2026-11-04 (T1 to T12) are stated in [07](07-apps.md#themes-and-player-appearance-settings) and recorded in [decision-record.md](decision-record.md); the theme items still open are in [09-open-decisions.md](09-open-decisions.md).
