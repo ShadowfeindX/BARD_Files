@@ -9,6 +9,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Built-in themes Phosphor, Manila and Night Desk as JSON assets (4 variants each), with `windowEdge` on every one. Values are from the design study and the proposed `windowEdge` values (T11, open).
 - Import size and chain depth are `ThemeLimits` parameters (T3, open). Variant labels are string keys (T7 e, open).
 - `paperStamp` is `#7E2A20` in every built-in (R, 2026-11-05): a dried-ink red darker than `paperAlert` `#A8382B`, 7.01:1 on paper. The spec text in 07 is updated to match.
+- The Handler takeover tokens are named `hostileTakeover` and `onHostileTakeover` (R, 2026-11-05; the spec called them `intrusionGround` and `onIntrusionGround`). Values are still placeholders (T4).
 - Not included: the standard paper set constant (Document mode, with T6), effect-safety substitution, "Add missing colours", CIEDE2000 advisories (T4).
 
 ### Docs: settled decisions folded into the spec

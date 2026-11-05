@@ -114,7 +114,7 @@ Names as in the synthesis §6.1, plus chip text tokens, the window edge, effect 
 | Status | `lineOk`, `lineDown`, `markLow`, `markMid`, `markHigh` |
 | Functional hues | `supervisor`, `anomaly` |
 | Result and state chips (fill / text) | `success` / `onSuccess`, `partial` / `onPartial`, `failure` / `onFailure`, `warning` / `onWarning`, `locked` / `onLocked`, `confirm` / `onConfirm` |
-| Effects and highlights | `highlight`, `intrusionGround`, `onIntrusionGround`, `sceneTint` (all Proposed, open: [T4](09-open-decisions.md#t4)) |
+| Effects and highlights | `highlight`, `hostileTakeover`, `onHostileTakeover`, `sceneTint` (all Proposed, open: [T4](09-open-decisions.md#t4)) |
 
 §6.1 and the study name the chips by outcome (success, partial, failure, warning, locked, confirm) and give each a fill and a text colour. The six outcome `on…` names are new; `onSignalFill` is already in §6.1. There are 42 tokens per variant.
 
@@ -144,8 +144,8 @@ These are the colours a Handler-forced effect may use. The Handler never picks a
 | `supervisor` | Design (§6.1: Handler chrome accent) | `SET BY HANDLER` line and Handler-set labels | §6.1, same in every variant |
 | `rule`, `ink`, `inkMuted` | Design (§7.6 lock card anatomy) | Lock card box, reason text, time and setter | §6.1, same in every variant |
 | `highlight` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | A Handler highlight of a field, record or window: a 2 px outline plus a word tag | Initially each theme's `supervisor`, same in every variant |
-| `intrusionGround` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Ground of a full-window takeover cue (P15, only as DEC-07 allows once decided) | Initially each theme's `desk`, same in every variant |
-| `onIntrusionGround` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Text and glyphs on `intrusionGround` | Initially each theme's `anomaly` (8.57:1 on Phosphor's `desk`, §6.1; Manila and Night Desk pairs not yet computed), same in every variant |
+| `hostileTakeover` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Ground of a full-window takeover cue (P15, only as DEC-07 allows once decided) | Initially each theme's `desk`, same in every variant |
+| `onHostileTakeover` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Text and glyphs on `hostileTakeover` | Initially each theme's `anomaly` (8.57:1 on Phosphor's `desk`, §6.1; Manila and Night Desk pairs not yet computed), same in every variant |
 | `sceneTint` | **Proposed, new** (open: [T4](09-open-decisions.md#t4)) | Scene tint set by the Handler (P33), drawn at low opacity over `desk` and title bars only, never under body text | Initially each theme's `anomaly`, same in every variant; the "fixed accessible set" of tints P33 mentions is a DEC-07 detail |
 
 The design has no values for the four new tokens. The initial values above reuse existing tokens so that no colour is invented; before they ship, each new pair is computed with the study's method (contrast and CIEDE2000 against the chips and chrome) and the names and the computed results are reported under [T4](09-open-decisions.md#t4).
@@ -223,7 +223,7 @@ Some pairs carry meaning the player must always be able to read. After lookup, t
 | State chips | `onLocked` on `locked`, `onWarning` on `warning` | 4.5:1 |
 | Lock card (§7.6) | `ink` and `inkMuted` on `window`; `rule` on `window` (box) | 4.5:1 text, 3:1 box |
 | Highlight, Handler labels, intrusion accent | `highlight` on `window` (3:1); `supervisor` and `anomaly` on `window` (4.5:1) | as stated |
-| Takeover cue | `onIntrusionGround` on `intrusionGround` | 4.5:1 |
+| Takeover cue | `onHostileTakeover` on `hostileTakeover` | 4.5:1 |
 | Scene tint | `ink` on `desk` with `sceneTint` composited | 4.5:1 |
 | Documents | `paperInk`, `paperInkMuted`, `paperAlert`, `paperStamp` on `paper`; `paperRule` on `paper` | 4.5:1 text, 3:1 rules |
 
@@ -260,7 +260,7 @@ Resolution, in order (Proposed, open: [T3](09-open-decisions.md#t3)):
 
 - **Create** by duplicating or deriving from a built-in or another custom theme ([Derived themes](#derived-themes-base-and-overrides-proposed-open-t3)).
 - **Edit** every token in every variant the custom theme provides, including the window edge, document and effect tokens. The player can remove variants other than `normal`. Input is hex entry with a swatch (with an alpha field only for alpha-capable tokens), plus the source theme's own colours as quick picks. A colour-picker package would need approval (CLAUDE.md §6).
-- **Live preview:** a pane renders a sample window with its edge, a record table, all six chips with glyphs and words, a lock card, a highlighted field, an intrusion ground and a scene tint sample, a paper document (in the theme and in document mode), line status, marks, supervisor and anomaly, using the resolved map being edited. Nothing changes outside the pane until Save.
+- **Live preview:** a pane renders a sample window with its edge, a record table, all six chips with glyphs and words, a lock card, a highlighted field, a hostile takeover ground and a scene tint sample, a paper document (in the theme and in document mode), line status, marks, supervisor and anomaly, using the resolved map being edited. Nothing changes outside the pane until Save.
 - **Advisories, never blocking.** The editor runs the study's checks, with the same methods and thresholds: WCAG 2.x contrast (4.5:1 for text, 3:1 for large text, UI parts and a chip against `window`), and CIEDE2000 differences after the Machado et al. (2009) severity 1.0 simulation in linear RGB (result chips 15 apart in normal, protan, deutan and tritan vision; 18 from chrome fills, `anomaly` and `supervisor` in normal vision only, rule d; `confirm` and Warning and Locked 15 from the result chips). Achromatopsia is checked only in `highContrast`. Each failing pair shows a warning next to the token and in a summary, together with any effect-safety substitutions. The player can still save and apply.
 - **Reset cannot be lost.** The appearance settings and the editor draw their own chrome in the custom theme's fallback built-in ([Fallback built-in](#fallback-built-in-proposed-open-t3)); only the preview pane uses the custom colours. Applying a custom theme asks for confirmation and reverts after 15 seconds without an answer. "Reset to System" (which selects System, the first-launch default) stays on the settings screen and in the app menu, reachable by keyboard. A bad custom theme therefore cannot hide the way back.
 

@@ -73,8 +73,8 @@ const List<ThemeToken> themeTokens = [
   ThemeToken('confirm', 'Chips'),
   ThemeToken('onConfirm', 'Chips'),
   ThemeToken('highlight', 'Effects', alphaCapable: true),
-  ThemeToken('intrusionGround', 'Effects'),
-  ThemeToken('onIntrusionGround', 'Effects'),
+  ThemeToken('hostileTakeover', 'Effects'),
+  ThemeToken('onHostileTakeover', 'Effects'),
   ThemeToken('sceneTint', 'Effects', alphaCapable: true),
 ];
 

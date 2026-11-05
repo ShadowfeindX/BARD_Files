@@ -46,8 +46,8 @@
       "confirm": "#E6F0E7",
       "onConfirm": "#010F02",
       "highlight": "#B9A3E3",
-      "intrusionGround": "#010F02",
-      "onIntrusionGround": "#E58FD0",
+      "hostileTakeover": "#010F02",
+      "onHostileTakeover": "#E58FD0",
       "sceneTint": "#E58FD0"
     },
     "highContrast": {
@@ -90,8 +90,8 @@
       "confirm": "#E6F0E7",
       "onConfirm": "#010F02",
       "highlight": "#B9A3E3",
-      "intrusionGround": "#010F02",
-      "onIntrusionGround": "#E58FD0",
+      "hostileTakeover": "#010F02",
+      "onHostileTakeover": "#E58FD0",
       "sceneTint": "#E58FD0"
     },
     "redGreenSafe": {
@@ -134,8 +134,8 @@
       "confirm": "#E6F0E7",
       "onConfirm": "#010F02",
       "highlight": "#B9A3E3",
-      "intrusionGround": "#010F02",
-      "onIntrusionGround": "#E58FD0",
+      "hostileTakeover": "#010F02",
+      "onHostileTakeover": "#E58FD0",
       "sceneTint": "#E58FD0"
     },
     "blueYellowSafe": {
@@ -178,8 +178,8 @@
       "confirm": "#E6F0E7",
       "onConfirm": "#010F02",
       "highlight": "#B9A3E3",
-      "intrusionGround": "#010F02",
-      "onIntrusionGround": "#E58FD0",
+      "hostileTakeover": "#010F02",
+      "onHostileTakeover": "#E58FD0",
       "sceneTint": "#E58FD0"
     }
   }
