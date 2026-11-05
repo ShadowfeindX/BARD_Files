@@ -1,128 +1,18 @@
-# 09. Decisions record and open items
+# 09. Open decisions
 
-R reviewed this spec item by item on 2026-10-20. This chapter records each ruling, then lists what is still open: items waiting on D (creative director), items held for a probe, and deferred concerns. The other chapters state the rulings as design; this chapter is the index.
+This chapter lists what is still open: items waiting on D, items waiting on R, open spec proposals, items held for a probe, deferred concerns, known issues and unproven claims. Decided items are not listed here; each chapter states its rulings as design only; ids, dates and reasons are in the record. The record of rulings (id, date, rationale) is [decision-record.md](decision-record.md).
 
-Package versions below were re-checked on 2026-10-20 [V-28]–[V-35]. Standing rule (F5): re-verify each package's version and platforms on pub.dev right before it enters a pubspec, and pin exact versions where deterministic behaviour matters (`xrandom`, `sembast`, `hive`).
-
-## Decisions record (ruled by R, 2026-10-20)
-
-Later rulings are added to their group with the date in the row (for example P10c 2026-10-21, T1, T7, T8 and T9 2026-11-04).
-
-### Structure and engine
-
-| # | Ruling | Where |
-|---|---|---|
-| P1 | Extra packages `content_core`, `backend`, `ui_kit`. | [00](00-overview.md) |
-| P2 | Pub workspace monorepo, `packages/` + `apps/`. | [00](00-overview.md) |
-| F4 | New SDK-only `protocol_envelope` package (envelope, message types, version negotiation). `protocol` keeps the engine codecs and depends on it. `apps/functions` depends only on `protocol_envelope`, so the engine never enters the functions' dependency graph. Reason (R): no wire-format concerns in the engine. | [00](00-overview.md), [03](03-protocol.md) |
-| P4 | Data-only dice expressions and formulas, no scripting. Adds the `var` node `{"type":"var","key":<name>}`, a named number the engine supplies at evaluation time (advancement XP = 10 × `newScore`; assist bonus = 1d6 + `helperSkillBonus`). | [01](01-engine.md), [02](02-rules-packs.md) |
-| P5 | RNG from pub package `xrandom` 0.7.2, class `Xoshiro128pp` (one of the generators `xrandom` marks as working on JS), never the `Xrandom`/`Drandom`/`Qrandom` aliases. Adapter behind the engine's `Rng` interface lives in `session`; engine stays SDK-only. Pinned exactly; known-seed test vectors on native and web [V-28]. | [01](01-engine.md), [04](04-session.md) |
-| P11 | Deprecation record (`since`, `replacedBy`, `removeIn`, `note`) for engine schema and pack entries. | [01](01-engine.md), [02](02-rules-packs.md) |
-| F1 | Rulebook gaps settled: proficiency bonus is an additional dice roll (G16); Health = END × LCK; Sanity = WIS × LCK; top category Cat-Ω, values decided by the Handler (G12); disorder table is a clean 1–6. The occult check attribute (C5/G6) was ruled by D on 2026-10-22. | [01](01-engine.md), [08](08-testing.md) |
-| F2 | GM review gate in `EpisodeHost`: consequence events (damage, sanity loss, conditions, any category value) are held as a GM-only pending batch; the GM confirms or edits; an edit is recorded on the event (`overriddenFrom`); only then seq, narrate, store and broadcast. Per-episode auto-confirm. Rolls are never gated: `CheckResolved` broadcasts immediately and rolled faces are never altered. Covers rulebook decision 21. | [01](01-engine.md), [04](04-session.md) |
-| F3 (2) | Skill = name, description, category (one of five, organizational only), attribute, proficiency. No "allowed uses". | [01](01-engine.md), [02](02-rules-packs.md) |
-| F3 (3) | Episode-scoped pack tier under Campaign for per-episode GM content: same schema and validator, pinned and logged. | [02](02-rules-packs.md) |
-| Concern 7 | `CheckResolved` reserves `source` (`rng` \| `entered`, plus who entered: GM or alias). The physical-dice feature is approved by D (2026-10-22), built after the demo. | [01](01-engine.md) |
-
-### Packs and content
-
-| # | Ruling | Where |
-|---|---|---|
-| P3 | Packs are JSON + manifest (not YAML); UI editing is planned since GMs publish packs too. The exact pack shape was confirmed by D on 2026-10-22. | [02](02-rules-packs.md) |
-| Packs | Authoring annotations (`note`, `source`, `openItems`, `placeholder`, `gap`, `*Note` keys) are stripped before shipping; no reserved annotation key, so unknown keys stay errors in shipped packs. | [02](02-rules-packs.md) |
-| Concern 5 | Library verification claim held by R and D only at first (set by the roles function; more auditors later through the console). Revocable: the item returns to pending with a reason; copies already in GM packs are unchanged. The item records verifier, date and version. | [02](02-rules-packs.md), [06](06-accounts-backend.md) |
-
-### Protocol, session and migrator
-
-| # | Ruling | Where |
-|---|---|---|
-| P6 | Hand-written `toJson`/`fromJson` codecs with `dart:convert`; no `build_runner`. | [03](03-protocol.md) |
-| P7 | Actors are single-threaded mailbox objects, not isolates. If UI lag appears it is solved another way. | [04](04-session.md) |
-| P12 | Text log narrated during play (after the GM confirms a consequence batch), one variant per perspective; `textlog` message; genesis `archives`; new episode id with seq restart. Rolling autosave: native hosts write events, text and head snapshot to the local store every batch, followed by a commit marker in its own transaction; on open, everything after the last marker is discarded [V-31]. The head snapshot is mirrored to RTDB on a GM-configurable per-operation interval (proposed default 5 minutes, plus on pause, close and before migration); event and text batches go to RTDB every batch. No power-loss protection in v1 (accepted). | [01](01-engine.md), [04](04-session.md), [05](05-migrator.md), [06](06-accounts-backend.md) |
-| 09-4 | Transport build order: in-process, LAN, RTDB relay, P2P. Transport packages (`web_socket_channel`, `bonsoir`, `flutter_webrtc`) are not approved yet; each goes to R when its transport is scheduled. | [04](04-session.md) |
-| Targets | v1 targets (R, 2026-10-20): Windows and Linux desktop, plus the web player build. macOS and iOS are not in v1, and their pending checks are dropped. | [00](00-overview.md), [07](07-apps.md) |
-| W1 | Web build is player-only (no GM hosting). Confirmed by D, 2026-10-22. | [04](04-session.md), [07](07-apps.md) |
-| P8 | Migrator works on frozen JSON-level schemas; steps are pure `(json, decisions) -> (json, report)`. | [05](05-migrator.md) |
-| P13 | Migration confirmation on a separate warning screen: tick "cannot be recovered" and type the episode name; a single tap never confirms. | [05](05-migrator.md) |
-
-### Apps
-
-| # | Ruling | Where |
-|---|---|---|
-| 09-1 | State management: `signals_flutter` 7.1.0 (Dart Signals, publisher rodydavis.com) in apps and `ui_kit`, not the umbrella `signals` package [V-29]. | [07](07-apps.md) |
-| 09-2 | Routing: `go_router` 18.1.1 with `app_links` 7.2.2 for desktop link delivery. Canonical join link `bard://join/<op>?alias=<id>`; https links later where supported. (Later: invite links use `?invite=<token>`, see [11](11-supplemental-features.md).) Verified live on Linux and Windows [V-30]; macOS and iOS are not in v1. | [07](07-apps.md) |
-| 09-3 | Persistence: `sembast` 3.9.0 (+ `sembast_web` 2.4.6+1 for web player caches) behind `EventStore`, one database file per episode opened on demand plus a small account/cache database [V-31]. | [04](04-session.md), [07](07-apps.md) |
-| T1 | Themes and appearance, ruled by R 2026-11-04: theme choice is a selectable setting on the player's profile (an account-level setting, not the public profile); the player picks a built-in theme (Phosphor, Manila, Night Desk) and, separately, a drop-down for how it renders (normal, high contrast or a colour-blind mode, "if available", R's words; read as only the variants that theme provides, Proposed); each theme is self-contained, its colour-blind and contrast variants saved with its defaults; players can create custom themes that set any colour the built-ins set, in the UI; players can import and export themes; testing with colour-blind players is still owed (VER-14). Supersedes the design review's local-only recommendation (DEC-25 A, DEC-40 A). T1 is silent on GM forcing (T4). R ruled T2 to T6 the same day: see T9. | [07](07-apps.md#themes-and-player-appearance-settings) |
-| T9 | Themes, R's rulings on T2 to T6, 2026-11-04. **T2:** "these settings are only for the player client", unless the question is where they should be stored to sync across clients; read as: the appearance setting and custom themes are client-side (whether cross-client sync is wanted in v1 stays open, T2 below). **T3:** "no limits on player theming" (no theme count, name length or override caps); a theme may name a built-in or custom theme as its base and store only the values it overrides, per variant. **T4:** "the Handler cannot force a change from one theme to another"; the Handler can force certain screen colours, highlights or effects that other game features describe once those are ruled (capability lock cards, synthesis §12, revision 4, with DEC-34 and GAP-33 open; intrusion cues, DEC-07), and their colours are included in every palette; R also asked for a solution for themes that lack colours a newer feature needs. DEC-07 stays unruled. **T5:** in v1 players likely share themes only externally, as exported files; R confers with D (Pending D). **T6:** all documents will eventually be rendered by our own pipeline (typst or another solution), so documents may be affected by theme; document colour tokens are in the palettes and custom themes may change them, with a document mode that shows a standard fixed scheme. Design details beyond these words are Proposed (T2, T3, T4, T6, T10, T11 below). | [07](07-apps.md#what-r-ruled) |
-| T7 | Theme details, ruled by R 2026-11-04: (a) the chip text token names `onSuccess`, `onPartial`, `onFailure`, `onWarning`, `onLocked`, `onConfirm` are accepted; (b) a token for the window edge (Manila's outer-edge rule colour in the synthesis §6.1), set on every built-in theme and variant (name `windowEdge` from R's example; values computed in 07, Proposed); (c) invalid themes are rejected on import (whether `#RRGGBB` without transparency matters: answered and Fixed in 07, T11); (d) the first-launch default follows the OS brightness, as a System option beside the three built-ins in the theme selector, followed live, with the variant drop-down still applying and custom themes selectable by name; (e) D confirms the variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label (Pending D). | [07](07-apps.md#what-r-ruled) |
-| T8 | Theme code placement, ruled by R 2026-11-04: a separate package. R's reason: the model may expand after v1 (theme distribution, per-campaign theme settings, custom icons, images, animations or more), so the structure is better in place now. Proposed: name `theme_core`, pure Dart, Dart SDK only (model, codec, validator, resolver, token registry, colour math, built-in themes as JSON assets); `ui_kit` keeps the widgets and the `ThemeController`; apps keep storage. 00's package map and dependency rules are amended. | [07](07-apps.md#layering), [00](00-overview.md#dependency-rules) |
-
-### Backend
-
-| # | Ruling | Where |
-|---|---|---|
-| FS1 | RTDB holds live play only; Firestore holds data at rest: archived operations, library, pack index (files stay in Storage), searchable account data. Answers B1. | [06](06-accounts-backend.md) |
-| FS2 | Desktop reaches Firestore through a small hand-written REST client in `backend`, authenticated with the `firebase_dart` ID token (`getIdToken()` per request) [V-32]. Web uses FlutterFire `cloud_firestore`. | [06](06-accounts-backend.md) |
-| FS3 | `archiveEpisode` HTTPS function writes archives to Firestore with `firebase_admin_sdk`. Functions read and write RTDB through their own REST calls with the runtime default credential (no key files), scoped with `auth_variable_override`; a dedicated runtime service account per function group [V-33]. Each one that reaches RTDB gets `roles/firebasedatabase.admin`, no narrower custom role (R, 2026-10-20) [V-46]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
-| FS4 | Standard edition: structured queries on keyword/tag fields, no full-text search. Revisit Enterprise if text search is needed [V-36]. | [06](06-accounts-backend.md) |
-| FS5 | Archived event and text logs are chunked into a subcollection to stay under 1 MiB per document [V-7]. | [05](05-migrator.md), [06](06-accounts-backend.md) |
-| P9 | Badge sign-in via an HTTPS Dart function minting a custom token, conditional on probe 8.3 (condition met: a real custom token signs in on Windows and Linux [V-41]). PDF417 symbology; payload is only badge id + 256-bit secret, secret stored hashed. Service Account Token Creator on the runtime service account is a deploy-checklist item [V-33]. Badge packages not approved yet. | [06](06-accounts-backend.md) |
-| P10a | Backend port and adapters, plus a document-store capability for Firestore. | [06](06-accounts-backend.md) |
-| P10b | Three Firebase projects (dev, staging, prod); RTDB and Firestore rules tested in the Emulator Suite. | [06](06-accounts-backend.md), [08](08-testing.md) |
-| P10c (RTDB) | The three items probe 8.6 left open [V-38], ruled by R 2026-10-20 ("I'll take your recommendations on P10c 1 and 2. Yes meta/locked should freeze."): `meta` cannot be deleted; signaling is keyed by uid (`signaling/$uid/...`, written by that uid or the GM); `meta/locked` also freezes signaling. Applied in `firebase/database.rules.json` and shown in the emulator [V-50]. The rest of the RTDB draft was approved by R 2026-10-21 ("The rest of the proposals in the draft are approved"; P1-P16, P18-P22, P24 in the library review sheet `architecture/rtdb-draft-review.md`). After archive a function deletes the live branches and keeps `meta` and `members` as a locked stub (R 2026-10-21, estimate flag 2 option a; members kept). The anonymous one-alias rule is in Firestore. | [06](06-accounts-backend.md#realtime-database-model-live-play) |
-| P10c (phone box) | Ruled by R 2026-10-21. P17: "GM messages go into the box as well. The box should only be cleared once a mission ends." (Changed by R 2026-11-03: the box clears when the operation ends.) P23: "Remove it as per your suggestion" (the prototype's `phoneDraft` path is removed from the rules plan). The mission-to-spec-unit mapping waits on Q24 and Q7; clearing mechanism ruled 2026-10-21 ("For P17, let's go with your proposal"): `PhoneMessageSent` events stay the record and a function clears the box with admin REST after the archive is written. The head snapshot stays in RTDB (R 2026-10-21). | [06](06-accounts-backend.md#realtime-database-model-live-play) |
-| P10c (rules gaps) | Ruled by R 2026-10-21: "I'll take your recommendations for 1 & 2. Anonymous players should not be able to join voice and video or send messages as age verification happens on account creation." Presence writes are refused once the operation is archived (the rules file marks this as `meta/status` = `archived`, set by the archive step (admin REST); the marker value is the implementation's choice); `meta` must carry `gm` and a string `status` that cannot be removed, and `locked` is a boolean; anonymous members cannot write signaling or send phone messages. Shown in the emulator [V-51]. Answers part of Q33 (what anonymous accounts can do). | [06](06-accounts-backend.md#rules-rulings-r-2026-10-21) |
-| P10c (review follow-ups) | Approved by R 2026-10-21 ("Yes to all of these."): archive order lock, archive, clean-up; anonymous members cannot read signaling; phone messages need string `from` and `text` with `text` at most 2,000 characters (field names are the implementation's choice); `meta/locked` cannot be removed once set; non-member text log reads refused (check). Shown in the emulator [V-52]. | [06](06-accounts-backend.md#rules-rulings-r-2026-10-21), [05](05-migrator.md) |
-| P10c (second review round) | Approved by R 2026-10-21 ("Yes let's fix those now"): only admin REST can set `meta/status` to `archived`; test run order lock, archive, clean-up; text log `alias:null` check; phone cap counts UTF-16 code units (documented, rule unchanged). Shown in the emulator [V-53]. | [06](06-accounts-backend.md#rules-rulings-r-2026-10-21) |
-| P14 | HTTPS-only Dart functions: badge login, roles, payment webhook and store receipts (placeholders until concern 6), push via `firebase_admin_sdk` Messaging, pack publishing helper, `archiveEpisode`. In-app inbox on RTDB at `/inbox/$uid`. | [06](06-accounts-backend.md) |
-| B2 | Probe order: 8.6 RTDB rules prototype, 8.5 anonymous upgrade, 8.3 real custom token on Windows/Linux, 8.4 claim pickup, 8.1 queued write across restart; later 8.1c, 8.7, Storage through `firebase_dart`, long sessions. All five ordered probes are done [V-38]–[V-42] (8.4 on Linux only), as are FS2 (natural expiry on Linux [V-45]), 8.1b and B5 (Linux and Windows), and the FS3 least IAM role [V-46]. Status: [verification.md](verification.md#probe-status). | [06](06-accounts-backend.md) |
-| B3 | Joins written by the GM client under RTDB rules; library verification under Firestore rules from the client; other admin-only RTDB writes through function REST. No Node function; the `firebase_admin` (appsup) lead is dropped. | [06](06-accounts-backend.md) |
-| B4 | No App Check enforcement in v1 (enforcement would lock out desktop) [V-37]; protection from Auth and rules; App Check monitor-only on mobile and web; revisit if abuse appears. | [06](06-accounts-backend.md) |
-| B5 | Encrypt the `firebase_dart` Hive box `firebase_auth` with `HiveAesCipher` after setup and before any auth use; key in the OS secure store via `flutter_secure_storage` 11.2.0. Guards: key access never fails silently, plus a plaintext-to-encrypted migration; a timeout for a locked Linux keyring. `hive` 2.2.3 is a direct dependency of `backend`, pinned exactly [V-34][V-35]. Accepted risk: `firebase_dart` depends on unmaintained `hive` and archived `firebaseapis` 0.2.0. | [06](06-accounts-backend.md) |
-| B6 | Desktop calls Dart callables by full URL with a Bearer ID token and the `{"data"}` envelope [V-33]. | [06](06-accounts-backend.md) |
-| Concern 4 | Destination GM approves alias transfers; the source campaign is notified (no consent); an alias in a running episode cannot move until it ends; the transfer request lives in Firestore under the destination campaign. | [06](06-accounts-backend.md) |
-
-Ruled before this review and unchanged: archived logs are frozen, not converted; a plain-text rendering is kept beside them; the new log starts at `EpisodeMigrated`; the GM explicitly confirms the unrecoverable loss.
-
-## Decisions record (ruled by D, 2026-10-22)
-
-D answered the decision kit in the R + D meeting. Cards and edits: [10-pending-d.md](10-pending-d.md); D's own answers: [10-pending-d-responses.md](10-pending-d-responses.md); questions they raised: [10-pending-d-followup.md](10-pending-d-followup.md). Rulings on game content are D's; none of the code edits is made yet.
-
-| # | Ruling | Where |
-|---|---|---|
-| M1 | Casting attribute: WIL by default, or the named skill's attribute. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
-| M2 | "Cast magic" is one roll; the Handler sets the final DC from the circumstances. | [01](01-engine.md#systems) |
-| M3 | Sanity check on success by default, the Handler decides otherwise; everyone present pays on success, only those casting on failure; casting needs training unless the Handler allows an affinity exception. Focus-item rule held (FD-M2). | [10](10-pending-d.md#m3-casting-details-g6) |
-| P1, P2 | Pack layout kept; Eldritch Lore (INT), Vehicle Modification (INT) added, Insight WIS. | [02](02-rules-packs.md) |
-| W1 | Web stays player-only (confirms the R ruling above). | [04](04-session.md), [07](07-apps.md) |
-| C7 | Physical dice approved, built after the demo. | [01](01-engine.md), [04](04-session.md) |
-| G1, G3, G13 | Fumble on the total, rounded down; primary d6 and damage dice explode; old difficulty names dropped. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
-| G4/G18, G5, G7, G9, G10, G19 | Changed as described on their cards (assistance by flat attribute score, sanity rework, death at 0 Health, weapon MIN floor, action counts, creation limits and SKALD). Follow-ups open. | [10](10-pending-d.md#rulebook-gaps) |
-| G2 | Superseded: flashback replaces advantage and disadvantage (details open). | [10](10-pending-d.md#fb1-flashback-replaces-advantage-and-disadvantage) |
-| K1, K2 | Rounding always favours the player; "roll" means the total. | [01](01-engine.md#rulebook-gaps-and-settled-rulings) |
-| C1 | 1.3.1 critical injury table, backlash, artifact repository, forms and personnel cut on purpose. | [10](10-pending-d.md#c1-content-cut-since-131) |
-| X0 | Campaign > Operation > Mission > Episode, each archived; supersedes "operation = campaign". The Episode owns the log (R-A2, below). | [11](11-supplemental-features.md#terminology-ruled-rename-pending), [README](README.md) |
-| Q33 | Anonymous accounts may browse free entries. | [11](11-supplemental-features.md#clearance-tiers) |
-| N1 | Reveal rules D1-D3, D5-D7 as proposed; D4: live episode log shows the new name, archives unchanged. R1-R5 open. | [10](10-pending-d.md#n1-narrator-lines-and-name-reveals) |
-| F1, F2 | Playtest players agreed (cases to list); sign-in code is any scannable code. | [11](11-supplemental-features.md) |
-| Q7, Q9, R-X0b, R7, R8 | R, 2026-10-27: phone contacts belong to the campaign and phone box messages to the operation; a published mission is debrief forms only (text logs never public); settings, pack pins, join links and listings live at campaign level; death at 0 Health goes through the review gate; flashback is an additive logged event beside the roll. | [10](10-pending-d.md#r-only-items) |
-| R-A1..R-C4 (follow-up 2) | R, 2026-11-03: agreed settings as campaign base defaults with per-mission overrides, pack pin at the campaign (R-A1); R-A2 (session as live unit) left Later pending the explanation in [10-pending-r-a2-explained.md](10-pending-r-a2-explained.md) (ruled the same day: R-A2 naming, next row); once a mission is marked complete or submitted, all session data except the latest snapshot is removed (R-A3, replaces keep-archives-for-good); Handler persona model agreed (R-A4); personal library is in v1 (R-A5); players managed at campaign level, rules change via the Opus gate (R-A6); focus item and artifact pack keys renamed (R-B1); generic `randomTable` pack kind with `TableRolled` event as an Opus row (R-B2); Q5 auto-confirm default and base live at the campaign, settable per mission, only available once an alias is added to a mission and connected to an active GM host (R-C1); phone box clears at operation end, reversing P17 (R-C2); PC extraction of exact book headings queued (R-C4). | [10](10-pending-d-followup-2-for-r.md) |
-| R-A2 (naming) | R, 2026-11-03 (after review with D): the lowest level of the tree is **Episode** (chosen over Session, which already means the host and network layer). Tree: Campaign > Operation (story arc, sequential) > Mission (parallel allowed) > Episode (sequential). Episode owns one event log, live tree, local file and host. Spec chapters renamed; code identifiers, RTDB path names and the Firestore `operations/{opId}` node keep their names until one rename row (Opus gate), and the Firestore node's level needs R's ruling. | [10](10-pending-r-a2-explained.md) |
-| Firestore node, phone box | R, 2026-11-03: create a new Firestore node (`episodes/{episodeId}`) for live-game data, locked behind its own rules, split from the operation record; the phone box clears when the operation ends. | [12](12-firestore-collections.md) |
-| FD-X1..X8, FD-M2 (round 2) | D, 2026-10-29 (partly answered; meeting ended early): operations are sequential, missions may run concurrently or in parallel, sessions are sequential; settings belong to the mission with base defaults and copy-from-mission; an alias may be in any number of operations or missions at the Handler's discretion; Handler personas are created per campaign (not tied to the GM account), have stats set by the GM, show alone inside operations and can move between campaigns; players are invited and managed at campaign level; each session's log is archived with a snapshot, kept until the mission ends so the Handler can roll back (later replaced by R-A3); at mission end the Handler compiles the summary and debrief forms and aliases return theirs; every player gets a personal archive of documents they wrote or are mentioned in. A focus item (personal grounding item, reduces Sanity cost) and an artifact (dangerous item with its own will, the book's "focus item") are different things; using both makes any failure catastrophic (design open; R suggests a random table). Also answered: FD-N1, FD-S1 (agreed), FD-K1 and FD-H1 (agreed); one alias per session unless the Handler allows more (FD-X6). Settings ownership conflicts with R-X0b (mission vs campaign) and was left to R (ruled: R-A1); FD-X8's lore-library publishing half is unanswered. Reconciliations and open items are in [10-pending-d-followup-2-for-r.md](10-pending-d-followup-2-for-r.md). | [10](10-pending-d.md) |
-
-Later (D): G8, G11, G14, Q6 currency; Q12 fake websites is not in v1.
+D's open game-content and design questions, with their options and defaults, are in [10-waiting-on-d.md](10-waiting-on-d.md); R's open items from the same meetings are there too.
 
 ## Pending D
 
-Still waiting on D: the follow-up questions in [10-pending-d-followup.md](10-pending-d-followup.md); G8, G11, G14 and Q6 (Later); the flashback details and the mission-library seed cases. Waiting on R: the items in [10-pending-d.md](10-pending-d.md#r-only-items). The original table of five items is answered (see the record above).
+Still waiting on D and on R for the game-content and design items: see [10-waiting-on-d.md](10-waiting-on-d.md). The rows below are the platform and theme items.
 
 | Item | What is undecided | Already fixed |
 |---|---|---|
-| T5 theme sharing (owner R and D; next R and D meeting) | Whether themes are shared only externally as exported files in v1, as R expects, or also in the app (a gallery would go through moderation, [11](11-supplemental-features.md#library-and-public-content)). Added 2026-11-04 (T9). | Import and export of theme files (T1). Proposed: no in-app gallery, upload or moderation in v1. |
-| T7 (e) theme labels (owner D; next R and D meeting) | D confirms the variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label in the theme selector; Proposed: the document mode label goes with them. Added 2026-11-04 (T7). | The variants and the System behaviour (T1, T7 d). |
+| <a id="t5"></a>T5 theme sharing (owner R and D; next R and D meeting) | Whether themes are shared only externally as exported files in v1, as R expects, or also in the app (a gallery would go through moderation, [11](11-supplemental-features.md#library-and-public-content)). Added 2026-11-04 (T9). | Proposed: no in-app gallery, upload or moderation in v1. |
+| <a id="t7"></a>T7 (e) theme labels (owner D; next R and D meeting) | D confirms the variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label in the theme selector; Proposed: the document mode label goes with them, and so does the wording of the forced-effect tags (lock reason, `SET BY HANDLER · [TIME]`, highlight tag, intrusion label). The selector layout is also Proposed (System first, then the built-ins, then custom themes). Added 2026-11-04 (T7). | The variants and the System behaviour (T1, T7 d). |
 | DEC-41 map geometry (owner D; next R and D meeting) | Whether maps get any geometry rules: cover, terrain, line of sight, facing, areas. The rulebook has none. Numbered in the project library's design review (`design/synthesis-government-terminal.md`). | Until D rules, a map is style only and carries no rule effect (design, Proposed). |
-| X0 / Q24 levels and log owner (owner R and D; next R and D meeting, to confirm only) | Nothing undecided here; listed so D can confirm or raise a concern about the outcome. | Ruled: Campaign > Operation > Mission > Episode, with the Episode owning the event log, live tree, local file and host (X0, R-A2, above). |
 
 ## Open for R (themes)
 
@@ -130,14 +20,124 @@ Proposed in [07](07-apps.md#themes-and-player-appearance-settings), not ruled. T
 
 | Item | What is undecided | Proposed | Owner |
 |---|---|---|---|
-| T2 sync | Whether cross-client sync of the setting and custom themes is wanted at all in v1; whether "only for the player client" excludes the Handler console. | Local storage per client plus export and import in v1; optional sync later. If sync is added: owner-only `appearance/{uid}` (deferred in [12](12-firestore-collections.md#collections-at-a-glance)), never `agents/{uid}`, whose `keys().hasOnly` whitelist stays; the variant as a neutral rendering label with no health framing, because a synced colour-blind variant sits outside 11's real-personal-data list (alternatives then: variant local-only, or amend 11). | R |
-| T3 safeguards and derived themes | Technical safeguards that are not theming limits; the base-and-overrides design. | Import file ceiling 1 MiB before parsing and base chain depth 32 (R can veto either); `base` (id plus token-set version) and sparse per-variant `overrides`; lookup own value, base chain, the fallback built-in (chain root, else `copiedFrom`, else brightness) for the variant, then its `normal`; cycle detection flags every member of a loop; missing base falls back with a notice and **Flatten**; export flattened by default, "overrides only" as an option; derived themes follow base edits and built-in updates (a feature and a risk), with **Detach (flatten)**. | R |
-| T4 effect tokens | New effect and highlight token names and values; the outdated-theme solution; the effect-safety rule; player opt-out. | Existing design tokens for lock cards and cues (`locked`/`onLocked`, `warning`/`onWarning`, `anomaly`, `supervisor`, `rule`, `ink`, `inkMuted`); new `highlight`, `intrusionGround`, `onIntrusionGround`, `sceneTint`, initially reusing existing tokens until computed by the study's method; token sets with a version map; only tokens no theme in the chain supplies are filled from the fallback built-in, with a notice and **Add missing colours**; failing effect and document pairs use the fallback value inside that element only; the player's effects opt-out wins (DEC-16 A). | R |
-| T6 document tokens and document mode | New document token names and values; document mode. | New `paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact` from §6.1 ladder steps; a Document mode toggle on every document view (per view plus a remembered preference) showing a fixed, non-themeable standard paper set, also used for print and export. | R |
-| T10 document renderer | The pipeline that renders documents (typst or another solution; no new dependency or tool without R's approval, CLAUDE.md §6); the print default. Related ideas: the synthesis "Forms and filing" section (print and export), cited by name. | Not chosen. Print and export use the standard paper set; DEC-29's black on white is the alternative print default. | R |
-| T11 T7 follow-ups | Colour format Fixed (R, 2026-11-04). Still open: the `windowEdge` values; the `theme_core` name. | `#RRGGBB` for every token, `#RRGGBBAA` only for tokens marked alpha-capable (`sceneTint`, `highlight` in token set 1), alpha rejected elsewhere, contrast computed on the composited colour; `windowEdge` Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9` in all four variants (at least 3:1 against `desk`, `window` and `windowRaised`, computed from the design library's §6.1 values); package name `theme_core`. | R |
+| <a id="t2"></a>T2 sync | Whether cross-client sync of the setting and custom themes is wanted at all in v1; whether "only for the player client" excludes the Handler console. | The Handler console keeps System (the player-client setting does not reach it). Local storage per client plus export and import in v1; optional sync later. If sync is added: owner-only `appearance/{uid}` (deferred in [12](12-firestore-collections.md#collections-at-a-glance)), never `agents/{uid}`, whose `keys().hasOnly` whitelist stays; the variant as a neutral rendering label with no health framing, because a synced colour-blind variant sits outside 11's real-personal-data list (alternatives then: variant local-only, or amend 11). | R |
+| <a id="t3"></a>T3 safeguards and derived themes | Technical safeguards that are not theming limits; the base-and-overrides design; whether the variant drop-down lists only the variants the chosen theme provides. | Import file ceiling 1 MiB before parsing and base chain depth 32 (R can veto either); `base` (id plus token-set version) and sparse per-variant `overrides`; lookup own value, base chain, the fallback built-in (chain root, else `copiedFrom`, else brightness) for the variant, then its `normal`; cycle detection flags every member of a loop; missing base falls back with a notice and **Flatten**; export flattened by default, "overrides only" as an option; derived themes follow base edits and built-in updates (a feature and a risk), with **Detach (flatten)**. | R |
+| <a id="t4"></a>T4 effect tokens | New effect and highlight token names and values; the outdated-theme solution (a theme lacking a colour a newer feature needs is completed from a built-in); the effect-safety rule; player opt-out; whether the Handler can force a variant (read as no, since a variant is part of a theme, which the Handler cannot force). | Existing design tokens for lock cards and cues (`locked`/`onLocked`, `warning`/`onWarning`, `anomaly`, `supervisor`, `rule`, `ink`, `inkMuted`); new `highlight`, `intrusionGround`, `onIntrusionGround`, `sceneTint`, initially reusing existing tokens until computed by the study's method; token sets with a version map; only tokens no theme in the chain supplies are filled from the fallback built-in, with a notice and **Add missing colours**; failing effect and document pairs use the fallback value inside that element only; the player's effects opt-out wins (DEC-16 A). | R |
+| <a id="t6"></a>T6 document tokens and document mode | New document token names and values; document mode. | New `paperInkMuted`, `paperRule`, `paperStamp`, `paperRedact` from §6.1 ladder steps; a Document mode toggle on every document view (per view plus a remembered preference) showing a fixed, non-themeable standard paper set, also used for print and export. | R |
+| <a id="t10"></a>T10 document renderer | The pipeline that renders documents (typst or another solution; no new dependency or tool without R's approval, CLAUDE.md §6); the print default. Related ideas: the synthesis "Forms and filing" section (print and export), cited by name. | Not chosen. Print and export use the standard paper set; DEC-29's black on white is the alternative print default. | R |
+| <a id="t11"></a>T11 T7 follow-ups | The `windowEdge` values; the `theme_core` name. | `windowEdge` Phosphor `#C0D8C2`, Manila `#5F5348`, Night Desk `#B8D8E9` in all four variants (at least 3:1 against `desk`, `window` and `windowRaised`, computed from the design library's §6.1 values); package name `theme_core`. | R |
 
-**T8, cost note.** The separate package costs one more pubspec, a layer-table entry, a workspace member, and an asset hand-off (Flutter loads the built-in JSON in `ui_kit` and passes it to the package, since `theme_core` cannot use the asset bundle). For v1 alone that is a little structure ahead of need; the upside R named (room for distribution, per-campaign themes, icons and animations) outweighs it, so no change is proposed.
+## Open spec items
+
+Proposals written into the chapters as structured designs, not yet ruled. Each has a stable id; the chapter that describes the proposal links here. Nothing built depends on them. Owner is the one who rules.
+
+### O-03-1 Protocol message bodies
+
+- **Undecided:** the field names of the message bodies (`hello`, `welcome`, `refused`, `request`, `rejected`, `events`, `resync`, `textlog`, `presence`, `ping`/`pong`), the refusal reason `anonymousAliasLimit`, and the engine version format (SemVer `major.minor.patch` with optional pre-release; no build metadata or leading zeros).
+- **Options:** one proposal, as written in the chapter. These are the only wire details the spec left open.
+- **Owner:** R. **Described in:** [03](03-protocol.md#message-bodies).
+
+### O-05-1 Notice after migration
+
+- **Undecided:** the notice players see in the log after a migration, saying that history before it is archived text.
+- **Options:** one proposal: players do nothing and see the notice in the log.
+- **Owner:** R. **Described in:** [05](05-migrator.md#gm-workflow).
+
+### O-08-1 Pack-validation job
+
+- **Undecided:** whether the example pack gets its own CI job. CI is built ([08](08-testing.md#continuous-integration)); pack validation currently runs inside the engine's tests (the pack loader loads the example pack), and there is no separate `content_core` validation step.
+- **Options:** keep validation in the engine tests; or add a job that loads and validates every pack folder in `content_core`.
+- **Owner:** R. **Described in:** [08](08-testing.md#continuous-integration).
+
+### 06-O1 Firestore REST client token handling
+
+- **Undecided:** the REST client's handling of a stale token and of index or claim errors. Calling `getIdToken()` on every request is decided and is not open.
+- **Options:** proposed: never cache the token string; on 401 retry once with `getIdToken(true)`; surface `FAILED_PRECONDITION` as a missing-index error; force `getIdToken(true)` after a role change.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#firestore).
+
+### 06-O2 Anonymous-to-full account upgrade
+
+- **Undecided:** the upgrade path, and whether hosting requires a verified email (the upgraded account has `email_verified: false`).
+- **Options:** proposed path: `updateEmail` then `updatePassword` on the signed-in `firebase_dart` user (keeps the uid), then `getIdToken(true)`; the Identity Toolkit `accounts:update` route is not used. The verified-email requirement is undecided.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#account-model).
+
+### 06-O3 Claim pickup after a role change
+
+- **Undecided:** how a client picks up a changed claim.
+- **Options:** proposed: the roles function writes an inbox notice to `/inbox/$uid`; the client calls `getIdToken(true)` and reloads `Entitlements`. Untested whether a client without the notice picks the claim up when its token expires.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#roles).
+
+### S-1 Event entry wrapper
+
+- **Undecided:** the wrapper for event entries: full, redacted and hidden entries per recipient, the JSON shapes, the `req` acknowledgement and resync on a gap.
+- **Options:** hidden entries for events a recipient cannot see (chosen in the proposal, so `seq` stays consecutive); or per-recipient gaps, which would break the consecutive-`seq` rule.
+- **Owner:** R. **Described in:** [04](04-session.md#event-entries); also referenced from [03](03-protocol.md).
+
+### S-2 `SendPhoneMessage` names and fields
+
+- **Undecided:** the command and field names of `SendPhoneMessage(from, to, text)`. The behaviour (party rules, 1 to 2,000 UTF-16 units) is design.
+- **Options:** names and fields as proposed in the chapter.
+- **Owner:** R (built; names open, see 01 Planned code changes, 'Built; names open'). **Described in:** [04](04-session.md#in-game-phone).
+
+### S-3 Perspective-panel feature areas
+
+- **Undecided:** the grouping of feature areas (Episode console, Dossier, World, Phone, Library, Filing); the content of each is to be set by R.
+- **Options:** the grouping as proposed in the chapter.
+- **Owner:** R. **Described in:** [07](07-apps.md#perspective-panels).
+
+### S-4 How the built-in theme JSON ships
+
+- **Undecided:** how the built-in theme JSON ships and where `ThemeController` lives.
+- **Options:** recommended: JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec. Alternative: generated Dart constants (no asset loading in the package, but a generation step that CLAUDE.md section 10 asks to avoid or document, and rules-like data in code). The controller lives in `ui_kit` as proposed. Open alternative: the controller could instead live in each app.
+- **Owner:** R. **Described in:** [07](07-apps.md#layering).
+
+### S-5 Head-snapshot mirror interval
+
+- **Undecided:** the default interval at which the host mirrors the head snapshot to the Realtime Database.
+- **Options:** proposed default 5 minutes, GM-configurable per episode; the snapshot is also mirrored on pause, on close and before migration.
+- **Owner:** R. **Described in:** [04](04-session.md#the-episode-loop-gm-canonical).
+
+### S-6 Transport packages
+
+- **Undecided:** the packages for the LAN and P2P transports: `web_socket_channel`, `bonsoir`, `flutter_webrtc` (CLAUDE.md section 12). Not approved.
+- **Options:** none beyond these candidates; each goes to R with its purpose and alternatives when its transport is scheduled (build order: in-process, LAN, Realtime Database relay, P2P).
+- **Owner:** R. **Described in:** [04](04-session.md#play-modes), [00](00-overview.md#platform-and-stack).
+
+### S-8 Badge packages
+
+- **Undecided:** the packages for badge printing and scanning: printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows and Linux beta, or USB 2D keyboard-wedge scanners). None is on the approved list (CLAUDE.md section 6).
+- **Options:** the candidates above; each goes to R with its purpose and alternatives when badges are scheduled.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#badges), [00](00-overview.md#dependency-rules).
+
+### S-9 Gateable shell capabilities
+
+- **Undecided:** which shell capabilities the Handler may gate. The library synthesis (section 12.7) proposes that theme, texture, motion and text-size settings are never gateable and that a lock card uses no flashing or motion beyond the standard window transition; the rest of capability gating is undecided (see DEC-34 and GAP-33 below).
+- **Options:** one proposal, as written in the synthesis; appearance settings are not gateable.
+- **Owner:** R. **Described in:** [07](07-apps.md#layering).
+
+### S-10 Duplicate and gap detection between the host and the backend copy
+
+- **Undecided:** the rule that detects whether the backend log holds events the GM device lacks, or the reverse, before the device resumes.
+- **Options:** compare the last `seq` and the hash of the last event on each side (the proposal in the chapter); other rules are not yet considered.
+- **Owner:** R. **Described in:** [04](04-session.md#offline-and-sync-semantics).
+
+### API-1 Engine and pack API shapes
+
+- **Undecided:** the names, fields and file shapes of the proposals marked "Proposed, open: API-1" in [01](01-engine.md) and [02](02-rules-packs.md): the engine's public API surface, the proposed pack-file fields and keys, the rounding fields, the `assistance`, `sanity_events`, `disorders`, `combat` and creation-profile shapes, the new commands and events, the library provenance field, the JSON form of the implemented `condition` node (`{"type":"compare","op":<lt|le|eq|ne|ge|gt>,"left":<formula>,"right":<formula>}`, six operators, no combinators),  whether a command-line validator exists ([02](02-rules-packs.md)) and the `packages/engine/schema/` documentation folder ([01](01-engine.md)).
+- **Options:** one proposal per item, as written in the chapters. The behaviour is design; only names and shapes are open.
+- **Owner:** R, at implementation. **Described in:** [01](01-engine.md), [02](02-rules-packs.md).
+
+### DEC-07 Intrusion cues
+
+- **Undecided:** whether and how intrusion cues happen (id from the project library's design review). The theme chapter only says which colours such effects may use (T4).
+- **Options:** none written.
+- **Owner:** R and D. **Described in:** [07](07-apps.md#effect-and-highlight-tokens).
+
+### DEC-34 and GAP-33 Capability lock cards
+
+- **Undecided:** which capability-lock-card effects exist (library synthesis section 12, revision 4).
+- **Options:** none written.
+- **Owner:** R. **Described in:** [07](07-apps.md#effect-and-highlight-tokens).
 
 ## Known issues and follow-ups
 
@@ -146,13 +146,16 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 - **No web target.** `apps/bard` has `linux/` and `windows/` folders but no `web/`, so the player-only web build in the v1 platforms does not exist yet.
 - **No Chrome widget tests.** CI runs the `engine` and `session` tests on Node.js as well as the VM. Nothing runs on Chrome, so `ui_kit` and `apps/bard` widget tests are unproven on the web.
 - **`check_all.sh` fails in a checkout with untracked Dart files.** Its `dart format .` step covers the whole folder, including untracked ones such as local probes. A clean clone passes on its first run (checked on Windows, 2026-11-04).
+- <a id="ui-style"></a>**UI style review.** The dossier look is not implemented and the UI style is in review, pending D's feedback (CLAUDE.md §12). `BardTheme` is a placeholder until then ([ui-kit notes](../ui-kit.md)).
 - **Session gaps.** `docs/developer-guide/session.md` lists the known gaps in the session layer.
 
 ## Held
 
-| Item | Waits on |
-|---|---|
-| P10c Firestore collections | Drafted (Proposed), awaiting R: [12-firestore-collections.md](12-firestore-collections.md). Rules and indexes not yet run in the Emulator Suite. |
+### S-7 Firestore collections
+
+- **Held:** the Firestore collection draft (names, document shapes, rules and indexes), awaiting R.
+- **State:** drafted in [12-firestore-collections.md](12-firestore-collections.md) (Proposed). RTDB rules are run in the Emulator Suite (200 of 200 [V-54], [V-56]). Firestore rules and indexes are not run.
+- **Owner:** R. **Described in:** [06](06-accounts-backend.md#firestore), [12](12-firestore-collections.md).
 
 ## Deferred
 
@@ -163,19 +166,9 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 - FS2 on Windows for natural expiry, plus revoked sessions, disabled users, password change and refresh-token failure (Linux natural expiry, composite indexes and claim rules: done [V-43][V-45]).
 - FS3: the RTDB role from a deployed function running as its dedicated service account (tested by impersonation only) [V-46].
 - 8.4 claim pickup on Windows (Linux done [V-42]).
+- Storage: rules and client behaviour of Cloud Storage for Firebase (rules pack files) are not yet probed.
 - RTDB rules on a deployed database with real signed tokens, and custom claims in RTDB rules (emulator only so far [V-38]).
 - Opening an existing plaintext `firebase_auth` box with the cipher (the B5 migration step) [V-34][V-44].
 - **VER-14 (themes, T1; defined in the project library's design review, recorded here as the repo's entry):** the built-in theme variants (the 12 sets in the library's `design/colorblind-palettes.md`), and the confirm, Warning and Locked colours are tested with real colour-blind players (at least protan, deutan and tritan viewers and one low-vision viewer) on the target displays. Testers to be chosen by R and D; values are revised if the test disagrees with the simulation. Proposed extension, not in the library's entry: include the `windowEdge`, effect and document colours once their values are set (T4, T6, T11).
+- Invite links (the campaign form, Proposed) on Linux, Android and web: R (2026-11-04) saw the link work on the local Windows app only; web invites have no spec yet.
 - Deep links on Wayland, Flatpak, Snap and packaged builds [V-30]. macOS and iOS are not in v1 (R, 2026-10-20), so their checks are dropped.
-
-## Concerns raised
-
-Each was raised once, per CLAUDE.md §2, and R's answer stands.
-
-1. **Firebase on desktop vs "all Flutter targets". Resolved by R:** `firebase_dart` on desktop [V-21], RTDB for live play, Firestore at rest over REST (FS1, FS2), HTTPS-only Dart functions; Linux required in v1.
-2. **Web GM cannot host LAN. Accepted by R;** web is player-only for now (W1).
-3. **Rulebook inconsistencies. Resolved by R (F1)** and, for the occult check attribute, by D (2026-10-22).
-4. **Alias transfer approval. Ruled** (concern 4 above).
-5. **Library verification workflow. Ruled** (concern 5 above).
-6. **Payments. Deferred.**
-7. **Physical dice. Field reserved;** feature approved by D (2026-10-22), built after the demo.

@@ -7,7 +7,7 @@
 | Flutter (stable) | 3.47.7 | `.flutter-version` (CI reads it) and `environment.flutter` in the Flutter members (`backend`, `ui_kit`, `apps/bard`, `apps/companion`) |
 | Dart SDK | 3.13.5 (ships with that Flutter) | `environment.sdk` in each pubspec |
 
-`go_router` 18.1.1 and `app_links` 7.2.2 need Flutter 3.44 or newer, so the pin must not go lower. To move to a newer Flutter, change `.flutter-version` and the `environment` lines together, run `bash tool/check_all.sh`, and note it in `CHANGELOG.md`.
+`go_router` 18.1.1 and `app_links` 7.2.2 need Flutter 3.44 or newer (unverified; not yet checked with an approved tool), so the pin must not go lower. To move to a newer Flutter, change `.flutter-version` and the `environment` lines together, run `bash tool/check_all.sh`, and note it in `CHANGELOG.md`.
 
 Install Flutter from Google's storage (CLAUDE.md §6). On Linux:
 
@@ -21,7 +21,7 @@ On Windows use the matching `windows` archive from the same storage path and add
 
 ## First build
 
-The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist). See [content_core/README.md](../../packages/content_core/README.md).
+The shipped rules pack is generated from annotated source and is not in git: run `bash tool/build_pack.sh` (or `tool/check_all.sh`, which does) before analyzing, running or testing (without it `flutter analyze` warns that the asset folders do not exist; unverified). See [content_core/README.md](../../packages/content_core/README.md).
 
 From the repository root:
 
@@ -46,30 +46,30 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 
 ## The checks
 
-`bash tool/check_all.sh` runs what CI runs, in this order:
+`bash tool/check_all.sh` runs steps 2 to 8 of the CI workflow locally (after `flutter pub get`), in the same order (the build-pack step, then the rows below); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only ([08-testing.md](../architecture/08-testing.md#continuous-integration)):
 
 | Step | Command | Fails when |
 |---|---|---|
 | Format | `dart format --output=none --set-exit-if-changed .` | a file is not formatted |
 | Analyze | `flutter analyze` | any warning or info (one `analysis_options.yaml` at the root) |
 | Dependency rules | `dart run tool/bin/check_dependency_rules.dart` | a pubspec lists a package its layer may not, a pubspec is not in the workspace, or `apps/functions` reaches `engine` or `protocol` transitively |
-| Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (F5) |
+| Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (exact pins; the standing rule is stated at the top of [decision-record.md](../architecture/decision-record.md)) |
 | Rules pack | `bash tool/build_pack.sh` then `bash tool/build_pack.sh --check` | the generated pack (`packages/content_core/assets/generated/`, git-ignored) is missing, stale or has extra files |
 | Tests | `bash tool/test_all.sh` | any package test fails |
 
-Pack validation of `content_core` ([08-testing.md](../architecture/08-testing.md#continuous-integration-proposed), step 5) joins this list when the pack loader lands.
+Pack validation of `content_core` is not a separate step: the engine's pack loader tests load the example pack as part of the Tests step (open: [O-08-1](../architecture/09-open-decisions.md#o-08-1-pack-validation-job)).
 
-The CI workflow is `.github/workflows/ci.yml`. It is **Proposed** in 08 and approved as a setup decision (implementation plan, decision 5).
+The CI workflow is `.github/workflows/ci.yml`, described in [08-testing.md](../architecture/08-testing.md#continuous-integration).
 
 ## Adding or changing a dependency
 
 1. Propose the package to R with its purpose and alternatives (CLAUDE.md §6). Nothing is added before approval.
-2. Re-verify the version, SDK range and platforms on pub.dev (F5).
+2. Re-verify the version, SDK range and platforms on pub.dev (exact pins; the standing rule is stated at the top of [decision-record.md](../architecture/decision-record.md)).
 3. Pin the exact version, with no `^`, in the pubspec of the one package that needs it.
 4. If the package is new to a layer, add it to `layerRules` in `tool/lib/dependency_rules.dart` **and** to the table in [00-overview.md](../architecture/00-overview.md#dependency-rules); the two must agree.
 5. Run `bash tool/check_all.sh`.
 
-`test` is pinned at 1.31.1 on purpose: Flutter 3.47.7 pins `test_api` 0.7.12, and later `test` versions need a newer `test_api`, so the workspace would not resolve. Move it up together with the Flutter pin.
+`test` is pinned at 1.31.1 on purpose: Flutter 3.47.7 pins `test_api` 0.7.12, and later `test` versions need a newer `test_api`, so the workspace would not resolve (unverified). Move it up together with the Flutter pin.
 
 ## Adding a package
 

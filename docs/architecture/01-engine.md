@@ -8,7 +8,7 @@ The engine is the game. It is pure Dart, imports only the Dart SDK, performs no 
 - Turn **commands** into **events** (`decide`), and **events** into **state** (`evolve`).
 - Roll dice through an injected, seeded RNG and record every die in the resulting event.
 - Expose **read models**: pure functions that answer UI questions ("what is this agent's Evasion?") from state.
-- Provide the **event narrator** (Fixed, P12): a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the episode's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs-fixed-ruled-by-r)). Narration runs after the GM confirms a consequence batch (P12, amended by F2), never on held events.
+- Provide the **event narrator**: a pure function that turns an event into the plain-text lines shown in the in-game log, one variant per perspective (GM, public, redacted, specific aliases), using the pack's `strings/`. Its output is stored as the episode's text log during play, which is what survives a major migration ([05-migrator.md](05-migrator.md#archived-logs)). Narration runs after the GM confirms a consequence batch, never on held events.
 
 Not its job: networking, persistence, accounts, ordering of messages, who is allowed to send what (that is `session`), or presentation.
 
@@ -21,7 +21,7 @@ evolve : (State, Event)                  → State    // no RNG, no IDs, no fail
 replay : (State0, List<Event>)           → State    // fold of evolve
 ```
 
-These are the same signatures as the [public API](#public-api-surface-proposed) below. `IdSource` supplies new entity IDs during `decide` only.
+These are the same signatures as the [public API](#public-api-surface) below. `IdSource` supplies new entity IDs during `decide` only.
 
 - `decide` is the only function that may consume randomness. It runs **only on the GM's engine** during an episode (and on any device in solo/offline prep).
 - `evolve` is total and deterministic. Every client runs it. Because events carry resolved results (dice faces, totals, outcomes), replaying a log never re-rolls and history never changes.
@@ -60,7 +60,7 @@ Rules for components:
 
 - A component never stores a value that can be derived. Health max, Sanity max, Evasion and Initiative bonus are **derived** by the engine from attributes using formulas the pack supplies (§3). They are read models, not stored fields, unless a permanent upgrade modifies them (stored as an explicit modifier, e.g. the §9 "Formidable" purchase).
 - Keys inside components (`STR`, `firearms`, `proficient`) are **pack values**. The engine validates them against the active pack.
-- A **skill** (F3) is defined by the pack with: name, description, category, attribute and proficiency. The category is one of five and is organizational only: it has no effect on rules. The engine does not model "allowed uses" for a skill (dropped from `skills.json`).
+- A **skill** is defined by the pack with: name, description, category, attribute and proficiency. The category is one of five and is organizational only: it has no effect on rules. The engine does not model "allowed uses" for a skill.
 
 ### State
 
@@ -68,7 +68,7 @@ Rules for components:
 EpisodeState
   ├─ meta: episode id, engine version, pack ref (id, version, content hash), settings
   ├─ stores: Map<ComponentType, Map<EntityId, Component>>   // ECS stores
-  ├─ encounter: initiative order, round, whose turn (when in combat)
+  ├─ encounter: initiative order, round, whose turn (when in combat)   // planned, not built (10 §5)
   ├─ pending: open action requests and checks awaiting the GM
   └─ rng: seed reference + draw counter (GM engine only uses it)
 ```
@@ -79,18 +79,21 @@ Stores are persistent immutable maps so `evolve` stays cheap. The choice of immu
 
 A system is a pure function grouped by concern. Each system handles a subset of commands in `decide` and a subset of events in `evolve`. Systems never call each other's internals; they share only state and the pack.
 
+Built today: CharacterSystem, CheckSystem, ConditionSystem, EpisodeSystem, MessagingSystem, TableSystem, VitalsSystem. Planned: the rest, namely CombatSystem (with the `encounter` state), VehicleSystem, OccultSystem, InventorySystem and GmSystem ([10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
+
 | System | Handles |
 |---|---|
-| `CharacterSystem` | creation steps (§3), attribute/skill allocation rules, advancement purchases (§9) |
-| `CheckSystem` | action requests, check requirements, resolution, opposed checks, assistance, overrides (§2, §5) |
-| `VitalsSystem` | damage, DR, healing, critical injury triggers, sanity loss and recovery (§4, §7) |
-| `ConditionSystem` | applying, ticking and clearing conditions, afflictions, disorders (§4) |
-| `CombatSystem` | initiative, rounds, turn order, action economy (major/minor/reaction), range penalties, movement (§7) |
+| `EpisodeSystem` | the episode's lifecycle: starting it and its settings |
+| `CharacterSystem` | creation steps (§3), attribute/skill allocation rules; advancement purchases (§9) are planned |
+| `CheckSystem` | action requests, check requirements, resolution (§2, §5); opposed checks and assistance are planned (`check_system.dart`). There is no outcome override of a resolved roll (see [Commands and events](#commands-and-events)); consequence edits belong to the review gate |
+| `VitalsSystem` | Health and Sanity changes as built; damage dice, DR, healing, death, sanity bands and sanity recovery are planned (§4, §7); 0 Health is death and 0 Sanity passes the character to the Handler (see [Rulebook values](#rulebook-values-the-engine-uses), item 11); no critical-injury triggers |
+| `ConditionSystem` | applying and clearing conditions and afflictions (§4); ticking and durations, and disorders, are planned (`condition_system.dart`) |
+| `CombatSystem` | initiative, rounds, turn order, action economy (one major, one minor, one reaction by default), range penalties, movement (§7) |
 | `VehicleSystem` | vehicle maneuvers, crash tests, passengers (§6, §7) |
-| `OccultSystem` | Settled by D (2026-10-22): one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (M2, M3). Details still open: focus-item rule (FD-M2). |
+| `OccultSystem` | one "cast magic" roll, no spell list; the Handler sets the final DC; ritual time, helpers and focus items are Handler guidance; sanity cost follows the effect (see [Magic](#magic-casting-sanity-cost-focus-items-and-artifacts)). The focus-item reduction is open ([FE-M5](10-waiting-on-d.md#fe-m5)). |
 | `InventorySystem` | items, equipment, transfer |
 | `MessagingSystem` | in-game phone messages (see [04-session.md](04-session.md#in-game-phone)) |
-| `TableSystem` | rolls on the pack's random tables (`RollTable` → `TableRolled`, R-B2): the seeded RNG rolls the table's dice, the total picks one row, and the event carries the faces, total, the table's lead-in and the row text. A roll, never held for review (F2). Players read only the fiction (lead-in, then row); the GM's line has the dice; a redacted roll shows players a redaction bar (R, 2026-11-03). Table content is D's; the engine ships no rows |
+| `TableSystem` | rolls on the pack's random tables (`RollTable` → `TableRolled`): the seeded RNG rolls the table's dice, the total picks one row, and the event carries the faces, total, the table's lead-in and the row text. A roll, never held for review. Players read only the fiction (lead-in, then row); the GM's line has the dice; a redacted roll shows players a redaction bar. Table content is D's; the engine ships no rows |
 | `GmSystem` | GM-only edits: spawn NPC, set value, reveal/hide, award XP, free-form narrative events |
 
 `decide` dispatches a command to exactly one system with an exhaustive `switch` over the sealed `Command` family [V-16]. `evolve` does the same over `Event`.
@@ -99,7 +102,7 @@ A system is a pure function grouped by concern. Each system handles a subset of 
 
 Both are sealed families in the engine. Each carries an `actor` (the alias or GM issuing it) and, for events, a `visibility`.
 
-Illustrative check flow (names and fields are Proposed; the consequence step is gated by GM review per F2):
+Illustrative check flow (names and fields are Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes); the consequence step is gated by GM review):
 
 ```
 Player:  RequestAction(actor, description, suggestedSkill?)        → ActionRequested
@@ -109,82 +112,115 @@ GM:      ApplyConsequence(...)                                      → (held fo
 ```
 
 - The GM may skip the request step (GM-initiated checks), and may set "auto-resolve" so `RequireCheck` immediately rolls. That is a GM setting stored in episode meta, not a different rule.
-- `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, advantage pool and the kept result, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it.
-- Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll (F2 replaces the earlier `ResultOverridden` proposal).
+- `CheckResolved` carries the full breakdown: every die with its faces, which dice exploded, each modifier with its source, total, DC, and the outcome band. The UI renders the breakdown; it never recomputes it. The Luck advantage pool and its kept result are added to the breakdown only if the Luck advantage row is built (not built; see [Dice and checks](#dice-and-checks-vocabulary)).
+- Nothing edits `CheckResolved`. The GM's control is over consequences, not rolls: there is no outcome override of a resolved roll.
 - Consequences are separate events, so a GM edit changes what follows without rewriting the roll.
-- **GM review gate (F2, option A, ruled by R 2026-10-20).** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed. This covers rulebook decision 21.
-- **Reserved field `source` on `CheckResolved` (concern 7).** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved now so logs written today stay valid. The feature (players entering physical dice faces, behind a per-episode GM setting that is off by default) is approved by D (2026-10-22, [09-open-decisions.md](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)) and built after the demo.
+- **GM review gate.** Consequence events (damage, sanity loss, conditions, and any category value) are produced by `decide` but held as a GM-only pending batch in `EpisodeHost` ([04-session.md](04-session.md)). The GM confirms the batch or edits it; an edit is recorded on the event as `overriddenFrom` (the original value) and sits beside it. Only then do sequence numbers, storage, narration and broadcast happen. A per-episode auto-confirm setting skips the wait; it is separate from the request auto-confirm setting in [04](04-session.md#settings-resolution). **Death at 0 Health (planned; Death and control row in [Planned code changes](#planned-code-changes)) goes through the gate:** it is part of the confirmed damage batch, so the Handler can edit the damage before the character dies; the Handler's own `KillCharacter` is not gated. Rolls are never gated or altered: `CheckResolved` broadcasts immediately, the GM never influences dice, and rolled faces are never changed.
+- **Reserved field `source` on `CheckResolved`.** Values `rng` | `entered`, plus who entered the faces (GM or an alias). The field is reserved so logs written today stay valid. The feature (players entering physical dice faces, behind a GM setting that is off by default) is not built; workstream row in [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule). Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `ResolveCheck` takes optional `faces`, validated against the dice the check would roll and refused unless `EpisodeSettings.allowPhysicalDice` (default `false`) is on; entered faces are recorded with `source: entered` and who entered them, and, like app rolls, are never re-rolled or changed. The setting follows the settings levels ([04](04-session.md#settings-resolution)).
 
 Event payloads must be self-sufficient: applying an event must not require re-running pack formulas that could change later. If a pack update changes a formula, old events still mean what they meant.
 
 ## Dice and checks (vocabulary)
 
-The engine implements these **kinds** of mechanics from the rulebook. All numbers (dice sizes, thresholds, bonuses, DCs) come from the pack.
+The engine is designed to implement these kinds of mechanics from the rulebook; rows marked planned are not built. All numbers (dice sizes, thresholds, bonuses, DCs) come from the pack.
 
 | Mechanic | Engine vocabulary | Values from pack |
 |---|---|---|
 | Skill check | `total = primary die + attribute + proficiency bonus + modifiers`, success if `total ≥ DC` (§2) | primary die size, which attribute, bonus per tier |
-| Proficiency tiers | tier key → bonus expression; the proficiency bonus is additional dice, Proficient +1d4 and Expert +1d6 (G16) | tiers and their bonus dice |
+| Proficiency tiers | tier key → bonus expression; the proficiency bonus is additional dice, Proficient +1d4 and Expert +1d6 | tiers and their bonus dice |
 | Difficulty categories | category key → DC | category table |
 | Exploding die | on max face of the primary die, roll again and add, chaining (§2) | which dice explode (rulebook: primary only) |
-| Luck advantage | roll N extra primary dice, keep the best total (§2) | N's source (rulebook: LCK) |
+| Luck advantage | roll N extra primary dice, keep the best total (§2). Not built: flashback replaces it and the pack block stays pending | N's source (rulebook: LCK) |
 | Partial success | within X of the DC (§2, §4) | X |
-| Fumble | total ≤ fraction of DC (§2) | fraction |
-| Opposed check | both sides roll, higher wins, ties to GM (§5, §7) | — |
-| Assistance | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (D, 2026-10-22; was `1d6 + var(helperSkillBonus)`) | gate DC, cap, bonus expression |
+| Fumble (planned) | total ≤ fraction of DC, rounded down (§2) | fraction |
+| Opposed check (planned) | both sides roll, higher wins, ties to GM (§5, §7) | — |
+| Assistance (planned) | helpers roll a gate check, then add a bonus (§2, §8); the bonus is the helper's flat attribute score and the helper count is capped at the roller's score + 1 (planned; built form: `1d6 + var(helperSkillBonus)`, see the variable table below) | gate DC, cap, bonus expression |
 | Derived stats | formula over attributes (§3) | formulas |
-| Damage | category → dice and minimum (§6), DR subtracts first (§7) | damage table, DR formula |
-| Sanity check | resist roll, outcome band → full/half/none/extra loss (§4) | bands, losses |
-| Range bands | band → penalty, weapon-category restrictions (§7) | bands, penalties |
+| Damage with DR (planned) | category → dice and minimum (§6); MIN is a floor on the total; DR subtracts first (§7) | damage table, DR formula |
+| Sanity check bands (planned) | resist roll against the DC for the current Sanity band; outcome band → full/half/none/extra loss (§4) | bands, losses |
+| Range bands (planned; bands parsed from ranges.json, penalties not applied) | band → penalty, weapon-category restrictions (§7) | bands, penalties |
 
 A **dice expression** is engine vocabulary: a small data structure (not a string parsed at runtime) such as `Dice(count: 1, sides: 6, explode: true)`, `Const(3)`, `Sum([...])`, `KeepHighest(pool, n)`, `Var(key)`. Packs write these in data form; the engine evaluates them with the RNG and returns both the value and the breakdown.
 
-A **formula** is engine vocabulary too: a tiny data-only expression tree over attribute references, constants, `var` nodes and `+ − × ÷ min max floor`. No scripting language, no `eval`. This keeps packs editable by D and safe to load from the cloud. (P4, approved by R: data-only expressions and formulas, no scripting. R's reason: a new mechanic usually arrives with other structural engine changes anyway.)
+A **formula** is engine vocabulary too: a tiny data-only expression tree over attribute references, constants, `var` nodes and `+ − × ÷ min max floor`. No scripting language, no `eval`. This keeps packs editable by D and safe to load from the cloud.
 
-A **condition** (approved by R with the stat-gated broadcast, 11 §Messaging) is a yes-or-no test built the same data-only way: `{"type":"compare","op":<lt|le|eq|ne|ge|gt>,"left":<formula>,"right":<formula>}`. Both sides are formulas with no dice and no `var`. It is a separate node kind from expressions, since it yields a yes or no rather than a number. The JSON form, the six operators and the absence of combinators (and, or, not) are Proposed.
+A **condition** (used by the stat-gated broadcast, [11](11-supplemental-features.md)) is a yes-or-no test built the same data-only way: `{"type":"compare","op":<lt|le|eq|ne|ge|gt>,"left":<formula>,"right":<formula>}`. Both sides are formulas with no dice and no `var`. It is a separate node kind from expressions, since it yields a yes or no rather than a number. The node is implemented (`packages/engine/lib/src/expr/condition.dart`); its shape is open ([API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): the JSON form, the six operators and the absence of combinators (and, or, not).
 
-**The `var` node** (approved by R 2026-10-20) is `{"type":"var","key":<name>}`: a named number the engine supplies at evaluation time, so a pack can refer to a value that exists only in the moment of the roll or purchase. The approved placements are:
+**The `var` node** is `{"type":"var","key":<name>}`: a named number the engine supplies at evaluation time, so a pack can refer to a value that exists only in the moment of the roll or purchase. The placements are:
 
 | Placement | Expression | `var` supplied by the engine |
 |---|---|---|
-| Advancement, attribute purchase XP (`advancement.json`) | `10 × var(newScore)` | the attribute score being bought |
-| Assistance bonus (`difficulty.json`) | the helper's attribute score (D, 2026-10-22; replaces `1d6 + var(helperSkillBonus)`; key name Proposed, `helperAttribute`) | the helper's score in the check's attribute |
+| Advancement, attribute purchase XP (`advancement.json`; formula and parsing built (`advancement.json`, `VarKeys.newScore`); the purchase in `CharacterSystem` is planned (see [Systems](#systems))) | `10 × var(newScore)` | the attribute score being bought |
+| Assistance bonus (`difficulty.json`) | as built: `1d6 + var(helperSkillBonus)`. (open: [FD-A2](10-waiting-on-d.md#fd-a2)) Planned: the helper's attribute score, key `helperAttribute` (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)); see [Planned code changes](#planned-code-changes) | as built: the helper's skill bonus. Planned: the helper's score in the check's attribute |
 
-Any new `var` key or placement goes to R first.
+Any new `var` key or placement needs R's approval first.
 
-### Rulebook gaps and settled rulings
+### Rulebook values the engine uses
 
-The engine can represent each variant; the **values** come from the rulebook as ruled. Agents do not choose (CLAUDE.md §9). Settled by R (F1, 2026-10-20):
+The engine can represent each variant; the **values** come from the rulebook. Agents do not choose (CLAUDE.md §9).
 
-1. **Proficiency bonus (settled, G16).** The bonus is additional dice: Proficient +1d4, Expert +1d6. The flat +3/+5 wording in §3 and §5 is not canonical.
-2. **Derived stats (settled).** Health = END × LCK. Sanity = WIS × LCK.
-3. **Top category (settled, G12).** The category above S is Cat-Ω. Its values (DC, damage, vehicle and threat-class values) are decided by the Handler, not fixed by the book.
-4. **Disorder table (settled).** §4 reads as a clean table of rolls 1 to 6.
-5. **Occult check attribute (settled by D, 2026-10-22, C5/G6).** WIL by default, or the attribute of the skill the player names. "Cast magic" is one roll: the Handler sets the final DC from the circumstances (time, helpers, focus items). See the D rulings below.
+1. **Proficiency bonus.** The bonus is additional dice: Proficient +1d4, Expert +1d6.
+2. **Derived stats.** Health = END × LCK. Sanity = WIS × LCK.
+3. **Top category.** The category above S is Cat-Ω. Its values (DC, damage, vehicle and threat-class values) are decided by the Handler, not fixed by the book.
+4. **Disorder table.** §4 reads as a clean table of rolls 1 to 6.
+5. **Occult check attribute.** WIL by default, or the attribute of the skill the player names. "Cast magic" is one roll: the Handler sets the final DC from the circumstances (time, helpers, focus items). See [Magic](#magic-casting-sanity-cost-focus-items-and-artifacts).
 
-Settled by D (2026-10-22; the cards are in [10-pending-d.md](10-pending-d.md), the record in [09](09-open-decisions.md#decisions-record-ruled-by-d-2026-10-22)):
+Shapes named in the items below are Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)).
 
-6. **Rounding (K1).** Always to the benefit of the player; each rounding names its direction.
-7. **"Roll" means the total (K2, G1)** in most cases, unless otherwise specified (D). A fumble is a total at or below 25% of the DC, rounded down.
-8. **Exploding dice (G3).** The primary d6 and damage dice; not the proficiency die or any other.
-9. **Assistance (G4, G18).** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score. The `helperSkillBonus` variable above is replaced (open questions: FD-A1, FD-A2).
-10. **Sanity (G5).** The Handler sets the loss; the resist DC follows current Sanity (20/40/60/80/100% = Cat-S/A/B/C/D); half loss rounds down; a failed disorder check rolls 1d6 on the disorder table. D will rework the sanity tables.
-11. **Death (G7).** 0 Health is death; 0 Sanity passes the character to the Handler; the Handler can kill at any time. The 1.3.1 critical-injury table is cut (C1); whether the incapacitated state is also gone is FD-D1.
-12. **Weapon MIN (G9).** A floor on the total damage; melee floor is the greater of MIN and the STR score; Whether Strength also adds to damage dice is not ruled (FD-G9).
-13. **Turn (G10).** One Major, one Minor and one reaction by default; Handler-granted items, bonuses or skills may raise them.
-14. **Creation (G19).** Limits by character kind (agent alias or Occult Organization member: 20 points, one attribute at 5, two at 4, at least 1 Expert; SKALD civilian: 15 points).
-15. **Advantage and disadvantage (G2)** are to be replaced by flashback (FB1); nothing is built for them.
+6. **Rounding.** Rounding always favours the player. Every rounding in the engine or a pack names its direction (`rounding: "down" | "up"` beside the fraction, Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). Damage to players rounds down, healing and XP round up, sanity loss rounds down, and thresholds that cause bad outcomes (the fumble threshold) round down.
+7. **"Roll" means the total** in most cases, unless otherwise specified. A fumble is a total at or below 25% of the DC, rounded down. As built, the engine produces no fumble outcome; see the Fumble row in [Planned code changes](#planned-code-changes).
+8. **Exploding dice.** The primary d6 and damage dice; not the proficiency die or any other.
+9. **Assistance.** Helpers allowed = the roll's attribute score + 1; each helper adds their flat attribute score (which attribute's score a helper adds: [FD-A2](10-waiting-on-d.md#fd-a2)). Proposed pack shape (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `assistance.cap` `{"type": "attributePlus", "plus": 1}`; refusal code `tooManyHelpers`. Whether the helper still passes the Cat-D gate check first, and whether an untrained character may help, are open ([FD-A1](10-waiting-on-d.md#fd-a1)).
+10. **Sanity** (planned; see 'Sanity check bands' in Dice and checks). The Handler sets the loss; the book's ranges are suggestions and nothing rolls automatically. The resist DC follows current Sanity: 0 to 20% of maximum is Cat-S (DC 21), 21 to 40% Cat-A, 41 to 60% Cat-B, 61 to 80% Cat-C, 81 to 100% Cat-D. Half loss rounds down. In an anomalous attack a partial success halves the loss, or the Handler sets a narrative effect. A fumbled resist roll costs the full loss plus 1, and the Handler describes the complication. A failed disorder check rolls 1d6 on the disorder table. Proposed pack shape (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `sanity_events.json` `pick: "gm"`, `resistDc.bands`, `halfRounding: "down"`, `fumbleExtra: 1`; `disorders.json` `rollDie` 1d6. The reworked sanity and disorder tables are open ([FD-S3](10-waiting-on-d.md#fd-s3)); until they are supplied the book's ranges stay as suggestions and the pack keeps `null` where no value has been given.
+11. **Death.** 0 Health is death (the app shows a death screen; planned, with `KillCharacter` below: Death and control row in [Planned code changes](#planned-code-changes)); 0 Sanity passes the character to the Handler's control, very likely ending in a bad narrative event and death; the Handler can kill a character at any time. The Handler chooses the DC and the effect from a list of automated effects (the engine's consequence events: damage, sanity loss, condition, modifier) plus a custom text option. There is no critical-injury table. Death at 0 Health goes through the review gate (see [Commands and events](#commands-and-events)). Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `KillCharacter` (Handler), `CharacterDied`, `ControlTransferred`. Details of the death flow are open ([FD-D1](10-waiting-on-d.md#fd-d1) to [FD-D5](10-waiting-on-d.md#fd-d5)).
+12. **Weapon MIN.** A floor on the total damage, modifiers included; the melee floor is the greater of the weapon's MIN and the STR score (Proposed pack shape, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes): `meleeFloor: "max(min, STR)"`). Weapon MIN values stay `null` where no value has been given; whether Strength also adds to damage dice is open ([FD-G9](10-waiting-on-d.md#fd-g9)).
+13. **Turn.** One Major, one Minor and one reaction (Dodge or Parry) between turns by default (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes): `combat.json` `actionsPerTurn: {major: 1, minor: 1, reaction: 1}`); an item, bonus or skill the Handler grants may raise any of them (Proposed component `ActionBudgetBonus`, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). What Aim and the reactions answer, and when the reaction refreshes, are open ([FD-C1](10-waiting-on-d.md#fd-c1), [FD-C2](10-waiting-on-d.md#fd-c2)).
+14. **Creation.** Limits by character kind, not exact totals. Agent alias or Occult Organization member: at most 20 attribute points, one attribute at 5, two at most at 4, at least 1 Expert, Proficients optional. SKALD (civilian character, not an agent alias): at most 15 points, one attribute at most 4, two at most 3; 1 expertise and 1 proficiency and neither is mandatory (Proposed reading: at most one of each; open: [FD-G4](10-waiting-on-d.md#fd-g4)). Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): pack creation profiles `agent` and `skald` replace the single attribute range and proficiency counts, and `CharacterSystem` takes a profile. The remaining caps, the minimum score and how many skills an agent may take are open ([FD-G1](10-waiting-on-d.md#fd-g1) to [FD-G4](10-waiting-on-d.md#fd-g4)).
+15. **No advantage or disadvantage.** Flashback ([below](#flashback)) takes that role; nothing is built for advantage, and the `luckAdvantage` block stays pending.
+16. **Human adversaries** get their stats from weapons and gear exactly like players: attributes, skills and `items/`. The enemy defense and attack numbers apply only to supernatural classes and are not yet given (open: [G11](10-waiting-on-d.md#g11)).
 
-With the proficiency question ruled, the worked examples in §2 are unblocked as tests ([08-testing.md](08-testing.md#engine)).
+### Magic: casting, sanity cost, focus items and artifacts
 
-## RNG (fixed)
+`OccultSystem` is one roll kind with a Handler-set DC; the rest is how it is paid for:
 
-Ruled by R 2026-10-20 (P5).
+- **When sanity is checked.** The Handler decides when a sanity check is needed (for example when casting against a supernatural entity); the default is on a success only. A cast carries a Handler flag that requires the check on any cast (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes): `sanityCheckOn: "success"`).
+- **Who pays.** Every player present at the ritual pays sanity on a success, whether or not they cast; on a fail only the players taking part in the cast pay. The cost is the result of the effect going off, not a cost of the magic. Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) `sanityPayers: {onSuccess: "present", onFail: "participants"}`; the cast records who is present and who takes part, and amounts are suggested per payer through the review tray. The amount per payer is open ([FD-M1](10-waiting-on-d.md#fd-m1)).
+- **Training.** Casting normally needs skill, training, knowledge or guidance; a high-affinity individual (high WIL, related skills, Handler discretion) may cast under extreme circumstances or spontaneously. A missing prerequisite is refused unless the Handler allows it on that cast (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes): `RejectionCode` `missingOccultTraining` with a Handler allowance flag). There is no numeric affinity threshold (open: [FD-M4](10-waiting-on-d.md#fd-m4)).
+- **Focus item and artifact.** They are different things. A **focus item** is a personally relevant item (a favourite trinket, an item from childhood) that grounds the agent and reduces the Sanity cost of certain actions. An **artifact** is a dangerous, powerful item with its own will: using it costs Sanity and takes the player's mental fortitude. The book labels the artifact rule "Focus Items" (Section 8, Casting & Rituals: +1d6, +2 Sanity per category above D). Target pack keys: `artifact` holds the book's rule; `focusItem` stays `null` until the reduction is given. As built, `ritualDefaults.focusItem` in `occult.json` holds the book's rule (+1d6, +2 Sanity per category above D); planned: that block is renamed `artifact` and a new `focusItem` stays `null` (open: [FE-M5](10-waiting-on-d.md#fe-m5) to [FE-M9](10-waiting-on-d.md#fe-m9)); see the Focus item and artifact row in [Planned code changes](#planned-code-changes). Using both together makes any failure catastrophic. Proposed, open: [FE-M9](10-waiting-on-d.md#fe-m9): the outcome would come from a random table (`tables/` kind, `TableSystem`), content D's. The focus-item reduction, who approves a focus item, and the artifact's resist roll are open ([FE-M5](10-waiting-on-d.md#fe-m5) to [FE-M9](10-waiting-on-d.md#fe-m9)).
+- **Cast DC.** All factors (time, helpers, focus items, circumstances) are folded into the one DC the Handler types. `ritualDefaults` stays in `occult.json` as Handler guidance only, not as engine rules. Whether the app lists the factors for the Handler is open ([FD-M3](10-waiting-on-d.md#fd-m3)).
+
+### Flashback
+
+Flashback lets a player add a bonus to a **failed** roll by giving a narrative reason, from past preparation, why they would have succeeded. Because rolled faces are never altered, a flashback is an additive, logged event beside the roll: the original roll stays as rolled and the bonus is shown next to it. Proposed names (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)): `UseFlashback` command and `FlashbackUsed` event; the narrator and the `ui_kit` breakdown show both. The size of the bonus, how often it may be used, who approves the reason, whether it can rescue a fumble, and what happens to Luck's extra dice are open ([FD-F1](10-waiting-on-d.md#fd-f1) to [FD-F5](10-waiting-on-d.md#fd-f5)); nothing is built.
+
+### Planned code changes
+
+None of these is built, except where a row says otherwise. Names and shapes are Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)). Each becomes a workstream row, sequenced by R.
+
+| Change | Proposed code | Where it is described |
+|---|---|---|
+| Cast magic is one roll | A `castMagic` kind on `RequireCheck` or a new command; sanity suggested through `VitalsSystem`; `occult.json` parser replaces the raw `occultPending` | this chapter, [02](02-rules-packs.md#pack-side-values-by-file) |
+| Sanity payers and training | Present and participating lists on the cast; `missingOccultTraining` refusal with a Handler allowance | this chapter |
+| Death and control | `KillCharacter` (Handler, not gated), `CharacterDied`, `ControlTransferred`; death screen in `ui_kit` | this chapter, [04](04-session.md#the-episode-loop-gm-canonical), [07](07-apps.md#planned-screens) |
+| Assistance | `CheckSystem` assistance with `tooManyHelpers` and one breakdown line per helper; `var` `helperAttribute` replaces the built `helperSkillBonus` key (engine `VarKeys`, its tests, `difficulty.json`) | this chapter, [02](02-rules-packs.md#named-variables-in-pack-formulas) |
+| Turn | `CombatSystem` action tracking, `ActionBudgetBonus` | this chapter |
+| Creation profiles | `CharacterSystem` creation takes a profile; SKALD as a character kind ([11](11-supplemental-features.md#agents-aliases-and-profiles)) | this chapter, [02](02-rules-packs.md#pack-side-values-by-file) |
+| Name reveals | `RevealName`, `NameRevealed`, `KnownAs`; narrator takes a viewer | [04](04-session.md#names-in-the-log) |
+| Flashback | `UseFlashback`, `FlashbackUsed` | this chapter |
+| Physical dice | `ResolveCheck` takes optional `faces`; `EpisodeSettings.allowPhysicalDice` (default `false`) | this chapter (Reserved field), [04](04-session.md#play-modes) |
+| Fumble | `CheckOutcome.fumble`, narrator line, `ui_kit` label; the engine and `difficulty.json` hold a placeholder basis today | this chapter, [02](02-rules-packs.md#pack-side-values-by-file) |
+| Focus item and artifact keys | `occult.json` block `ritualDefaults.focusItem` renamed `artifact`; a new `focusItem` stays `null` (open: [FE-M5](10-waiting-on-d.md#fe-m5) to [FE-M9](10-waiting-on-d.md#fe-m9)) | this chapter, [02](02-rules-packs.md#pack-side-values-by-file) |
+
+**Built; names open.** The in-game phone commands exist: `SendPhoneMessage(from, to, text)` and `PhoneMessageSent` (`packages/engine/lib/src/commands/messaging_commands.dart`, `events/messaging_events.dart`, `systems/messaging_system.dart`); their names and fields are open ([S-2](09-open-decisions.md#s-2-sendphonemessage-names-and-fields)). Described in [04](04-session.md#in-game-phone).
+
+The worked examples in rulebook §2 (checks) are tests ([08-testing.md](08-testing.md#engine)).
+
+## RNG
 
 - The GM engine receives an `Rng` interface and stays SDK-only. Production uses the pub package `xrandom` (0.7.2, revercode.com), class **`Xoshiro128pp`**, seeded per episode. It is wrapped by an adapter in `session` that implements the engine's `Rng`; the engine itself never imports `xrandom`. Tests use a scripted RNG that returns fixed faces.
-- Why not `dart:math` `Random`: its docs offer an optional seed but promise nothing about the sequence across platforms or SDK versions [V-15]. `xrandom` marks `Xoshiro128pp`, `Xorshift32` and `Xorshift128` as working on JS and tests its generators against C reference output in VM and Node.js modes, which addresses the web's 53-bit integer limits and 32-bit bitwise truncation [V-14][V-28].
+- `dart:math` `Random` is not used: its docs offer an optional seed but promise nothing about the sequence across platforms or SDK versions [V-15]. `xrandom` marks `Xoshiro128pp`, `Xorshift32` and `Xorshift128` as working on JS and tests its generators against C reference output in VM and Node.js modes, which addresses the web's 53-bit integer limits and 32-bit bitwise truncation [V-14][V-28].
 - Use the class `Xoshiro128pp` by name. The aliases `Xrandom`, `Drandom` and `Qrandom` are not used.
-- The version is pinned exactly (F5 standing rule: re-verify on pub.dev before it enters a pubspec). **Known-seed test vectors** run on native and on web [V-28], and fail the build if the sequence ever changes.
+- The version is pinned exactly (standing rule: re-verify on pub.dev before it enters a pubspec). **Known-seed test vectors** run on native and on web [V-28], and fail the build if the sequence ever changes.
 - Every `CheckResolved` (and any other rolling event) records the draw counter range it used. With the seed (stored GM-side) any roll can be audited. Results are never recomputed from the seed in normal play.
 - The seed is GM-only data and is never sent to players.
 
@@ -193,21 +229,19 @@ Ruled by R 2026-10-20 (P5).
 - `engine` uses semantic versioning. The **major** is the engine API major that packs declare.
 - Within a major: additive changes only (new optional fields with defaults, new commands/events, new components, new systems). A client that sees an event type it does not know must refuse to continue and prompt to update (protocol rule, see [03-protocol.md](03-protocol.md#version-negotiation)).
 - A change that alters the meaning of existing data is a new major and goes through the migrator.
-- Each major's serialized schema is written down in `packages/engine/schema/` (Proposed) as documentation and as the input the migrator's frozen copy is taken from.
+- Each major's serialized schema is written down in `packages/engine/schema/` (Proposed, open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)) as documentation and as the input the migrator's frozen copy is taken from.
 
-### Compatibility decoding within a major (Fixed: allowed, additive-only)
+### Compatibility decoding within a major
 
-R ruled that compatibility decoding within a major is allowed. Engine 1.6 must read anything engine 1.0–1.5 wrote: events, snapshots, packs. This is compatibility *within* one schema family, so it does not conflict with "zero compat code across majors".
+Compatibility decoding within a major is allowed. Engine 1.6 must read anything engine 1.0–1.5 wrote: events, snapshots, packs. This is compatibility *within* one schema family, so it does not conflict with "zero compat code across majors".
 
 - **Additive-only.** A minor may add optional fields (with a default used when absent), new event/command types, new components, new systems. It may never remove a field, change a field's type or meaning, or make an optional field required.
 - **Decoders are tolerant of the past, strict about the future.** A decoder fills defaults for fields an older minor did not write. It rejects types from a *newer* minor it does not know (the version negotiation in [03-protocol.md](03-protocol.md#version-negotiation) prevents that case in normal play).
 - **Old data is never rewritten.** Events stay as they were written; decoding upgrades them in memory only.
 
-### Deprecation (fixed)
+### Deprecation
 
-Ruled by R 2026-10-20 (P11): the deprecation record below (`since`, `replacedBy`, `removeIn`, `note`) is used for engine schema and pack entries.
-
-R asked for a way to signal that something still works now but will change later. A new field may be intended to replace an old one that still does its job. Deprecation marks the old one so engine developers, pack authors and GMs see it coming, without breaking anything in the current major.
+Deprecation signals that something still works now but will change later. A new field may be intended to replace an old one that still does its job. Deprecation marks the old one so engine developers, pack authors and GMs see it coming, without breaking anything in the current major. The deprecation record below (`since`, `replacedBy`, `removeIn`, `note`) is used for engine schema and pack entries.
 
 **What can be deprecated:** a component field, a whole component, a command or event type, a pack file key, or a pack entry (a skill, item, condition, table row).
 
@@ -229,7 +263,7 @@ R asked for a way to signal that something still works now but will change later
 | `note` | yes | Human-readable reason and what to do instead. |
 | `replacedBy` | no | Reference to the successor, when one exists. Entries use `kind:id` (`skill:example_new_skill`); fields use `owner.field` (`example_component.newField` for engine schema, `skills.newField` for a pack file key). |
 
-**In engine code:** deprecated Dart members carry the built-in `@Deprecated('message')` annotation, which makes the analyzer report every use [V-20]. The message repeats the record (`since`, replacement, removal major). The schema docs in `packages/engine/schema/` carry the same record so non-Dart readers see it.
+**In engine code:** deprecated Dart members carry the built-in `@Deprecated('message')` annotation, which makes the analyzer report every use [V-20]. The message repeats the record (`since`, replacement, removal major). The schema docs in `packages/engine/schema/` carry the same record so non-Dart readers see it (planned: the directory does not exist yet; [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)).
 
 **Old and new side by side.** While both exist within a major:
 
@@ -243,14 +277,16 @@ R asked for a way to signal that something still works now but will change later
 
 | Audience | How they find out |
 |---|---|
-| Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` |
+| Engine developers (R, D) | Analyzer warnings on deprecated members [V-20]; CI fails if a deprecation record is missing `since`, `removeIn` or `note` (planned CI check; [10 §5](10-waiting-on-d.md#5-workstream-rows-still-to-schedule)) |
 | Pack authors (D, GMs) | The pack validator reports each deprecated key or entry as a **warning**, never an error, with the note and removal major |
-| GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack |
+| GMs running episodes | The pack-update summary and the episode's settings screen list deprecations that affect the pinned pack (planned; 10 §5 'Pack update event') |
 | Players | Nothing; deprecation never changes play |
 
-Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs-fixed).
+Packs use the same record for their own entries: see [02-rules-packs.md](02-rules-packs.md#deprecation-in-packs).
 
-## Public API surface (Proposed)
+## Public API surface
+
+Names and signatures below are Proposed (open: [API-1](09-open-decisions.md#api-1-engine-and-pack-api-shapes)).
 
 ```dart
 /// Engine entry point for one episode.
