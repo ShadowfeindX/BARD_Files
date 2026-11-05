@@ -18,7 +18,7 @@ The stack follows the backend-split investigation (project library: `architectur
 | Hosting | Firebase Hosting (web build) (planned) | — |
 | Cloud Run | No separate service planned | Dart functions themselves deploy to Cloud Run [V-33] |
 
-Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42], the FS2 claims/index follow-up [V-43] and natural expiry [V-45] (Linux only). Android was not probed.
+Platform targets in v1: **Windows and Linux desktop**, plus the web player build. macOS and iOS are not in v1. `firebase_dart` was probed on Windows and on Linux with identical results [V-21], and every later client probe ran on both [V-39]–[V-41][V-44] except 8.4 [V-42], the Firestore claims/index follow-up [V-43] and natural expiry [V-45] (Linux only). Android was not probed.
 
 ### Backend port and adapters
 
