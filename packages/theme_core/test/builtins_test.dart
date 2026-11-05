@@ -5,6 +5,7 @@ import 'support.dart';
 
 void main() {
   final builtIns = loadBuiltIns();
+  paperStampTest();
 
   test(
     'registry has 42 tokens of set 1, alpha only on highlight/sceneTint',
@@ -107,6 +108,22 @@ void main() {
           }
         }
       }
+    }
+  });
+}
+
+void paperStampTest() {
+  test('paperStamp is darker than paperAlert (dried ink) and readable', () {
+    for (final doc in loadBuiltIns()) {
+      final m = doc.mapFor(ThemeVariant.normal)!;
+      expect(
+        m['paperStamp']!.relativeLuminance,
+        lessThan(m['paperAlert']!.relativeLuminance),
+      );
+      expect(
+        m['paperStamp']!.contrastWith(m['paper']!),
+        greaterThanOrEqualTo(4.5),
+      );
     }
   });
 }
