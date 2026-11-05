@@ -5,8 +5,8 @@
 /// `getIdToken`; tests use a fake.
 abstract interface class IdTokenProvider {
   /// Returns a valid ID token. With [forceRefresh] the provider must obtain a
-  /// new token instead of returning its cached one (used after a 401 and after
-  /// a role change).
+  /// new token instead of returning its cached one (the client uses it after a
+  /// 401; callers use it after a role change).
   ///
   /// Returns `null` when nobody is signed in; the request is then sent
   /// without an `Authorization` header and Security Rules decide.

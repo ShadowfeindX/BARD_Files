@@ -90,14 +90,14 @@ class QueryOrder {
 /// A start or end position in the ordered results.
 class QueryCursor {
   /// Creates a cursor over the `orderBy` fields, in order.
-  const QueryCursor(this.values, {this.before = true});
+  const QueryCursor(this.values, {this.inclusive = true});
 
   /// One value per `orderBy` term.
   final List<Object?> values;
 
-  /// For `startAt`: `true` includes the position, `false` starts after it.
-  /// For `endAt`: `true` stops before it, `false` includes it.
-  final bool before;
+  /// Whether the results include the documents at this position (for both
+  /// `startAt` and `endAt`).
+  final bool inclusive;
 }
 
 /// A structured query over one collection (or every collection with the same

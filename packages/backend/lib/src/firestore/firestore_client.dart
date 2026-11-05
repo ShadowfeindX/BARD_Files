@@ -16,7 +16,12 @@ import 'id_token_provider.dart';
 /// above this class. Every request asks [IdTokenProvider] for a token (FS2) and
 /// sends it as a Bearer header; Security Rules do the authorizing.
 class FirestoreClient {
-  /// Creates a client for [projectId]. The project id is supplied at run time
+  /// Creates a client for [projectId]. [delay] replaces the real wait between
+  /// retries (tests).
+  ///
+  /// Argument errors (bad paths, conflicting preconditions) surface as errors
+  /// of the returned future, so always `await` calls.
+  /// The project id is supplied at run time
   /// and must never be written into committed files.
   FirestoreClient({
     required this.projectId,
@@ -98,7 +103,10 @@ class FirestoreClient {
     String? documentId,
     Map<String, Object?> data,
   ) async {
-    final base = parent.isEmpty ? _documentsUrl : '$_documentsUrl/$parent';
+    final encodedParent = parent.isEmpty
+        ? ''
+        : '/${parent.split('/').map(Uri.encodeComponent).join('/')}';
+    final base = '$_documentsUrl$encodedParent';
     final uri = Uri.parse('$base/${Uri.encodeComponent(collectionId)}').replace(
       queryParameters: documentId == null ? null : {'documentId': documentId},
     );
@@ -143,6 +151,10 @@ class FirestoreClient {
     bool? mustExist,
     DateTime? ifUpdateTime,
   ) async {
+    if (fieldPaths != null && fieldPaths.isEmpty) {
+      // An empty mask would drop the parameter and overwrite the document.
+      throw ArgumentError.value(fieldPaths, 'fieldPaths', 'must not be empty');
+    }
     final query = <String, List<String>>{
       if (fieldPaths != null)
         'updateMask.fieldPaths': [for (final f in fieldPaths) _quoteField(f)],
@@ -328,17 +340,21 @@ class FirestoreClient {
               'direction': o.descending ? 'DESCENDING' : 'ASCENDING',
             },
         ],
-      if (q.startAt != null) 'startAt': _encodeCursor(q.startAt!),
-      if (q.endAt != null) 'endAt': _encodeCursor(q.endAt!),
+      if (q.startAt != null)
+        'startAt': _encodeCursor(q.startAt!, isStart: true),
+      if (q.endAt != null) 'endAt': _encodeCursor(q.endAt!, isStart: false),
       if (q.offset != null) 'offset': q.offset,
       if (q.limit != null) 'limit': q.limit,
     };
   }
 
-  Map<String, Object?> _encodeCursor(QueryCursor c) => {
-    'values': [for (final v in c.values) codec.encode(v)],
-    'before': c.before,
-  };
+  Map<String, Object?> _encodeCursor(QueryCursor c, {required bool isStart}) =>
+      {
+        'values': [for (final v in c.values) codec.encode(v)],
+        // REST `before` means "before the position": it includes the position
+        // for a start cursor and excludes it for an end cursor.
+        'before': isStart ? c.inclusive : !c.inclusive,
+      };
 
   Map<String, Object?> _encodeFilter(QueryFilter f) {
     switch (f) {

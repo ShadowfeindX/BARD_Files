@@ -24,6 +24,7 @@ FirestoreClient _client(
 );
 
 void main() {
+  _extra();
   test('getDocument decodes fields and sends a fresh Bearer token', () async {
     final transport = FakeTransport([
       json(
@@ -323,5 +324,54 @@ void main() {
       ),
       throwsArgumentError,
     );
+  });
+}
+
+void _extra() {
+  test('empty fieldPaths is refused', () async {
+    final client = _client(FakeTransport([]), CountingTokens());
+    await expectLater(
+      client.patchDocument('a/1', {}, fieldPaths: []),
+      throwsArgumentError,
+    );
+  });
+
+  test('parent segments are URL-encoded on create', () async {
+    final transport = FakeTransport([
+      json(200, _doc('a/x y/b/z', {})),
+      json(200, _doc('a/x y/b/z', {})),
+    ]);
+    final client = _client(transport, CountingTokens());
+    await client.createDocument('a/x#y/b/z', {});
+    await client.addDocument('a/x#y/b', {});
+    expect(transport.seen[0].uri.path, '/v1/$_root/a/x%23y/b');
+    expect(transport.seen[1].uri.path, '/v1/$_root/a/x%23y/b');
+  });
+
+  test('ABORTED maps to aborted, not alreadyExists', () {
+    final e = FirestoreException.fromResponse(409, {
+      'status': 'ABORTED',
+      'message': 'contention',
+    });
+    expect(e.kind, FirestoreErrorKind.aborted);
+    expect(
+      FirestoreException.fromResponse(409, null).kind,
+      FirestoreErrorKind.alreadyExists,
+    );
+  });
+
+  test('cursor inclusivity follows the SDK meaning', () async {
+    final transport = FakeTransport([json(200, <Object?>[])]);
+    await _client(transport, CountingTokens()).runQuery(
+      const FirestoreQuery(
+        'c',
+        orderBy: [QueryOrder('n')],
+        startAt: QueryCursor([1]),
+        endAt: QueryCursor([5]),
+      ),
+    );
+    final q = transport.seen.single.body!['structuredQuery']! as Map;
+    expect((q['startAt']! as Map)['before'], true);
+    expect((q['endAt']! as Map)['before'], false);
   });
 }

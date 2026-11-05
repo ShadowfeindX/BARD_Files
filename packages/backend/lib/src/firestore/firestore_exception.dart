@@ -16,12 +16,16 @@ enum FirestoreErrorKind {
   /// [FirestoreException.indexUrl] holds the console link when one was sent.
   missingIndex,
 
-  /// 400 / `FAILED_PRECONDITION` for any other precondition (for example a
-  /// failed `exists` or `updateTime` check).
+  /// `FAILED_PRECONDITION` for any other precondition (for example a failed
+  /// `updateTime` check). The exact status of a failed `exists` check is not
+  /// verified against a live server.
   failedPrecondition,
 
   /// 400 / `INVALID_ARGUMENT`: the request was malformed.
   invalidArgument,
+
+  /// 409 / `ABORTED`: contention; the caller may retry the whole operation.
+  aborted,
 
   /// 429 / `RESOURCE_EXHAUSTED`: quota or rate limit.
   resourceExhausted,
@@ -97,6 +101,8 @@ class FirestoreException implements Exception {
         return FirestoreErrorKind.alreadyExists;
       case 'FAILED_PRECONDITION':
         return FirestoreErrorKind.failedPrecondition;
+      case 'ABORTED':
+        return FirestoreErrorKind.aborted;
       case 'INVALID_ARGUMENT':
         return FirestoreErrorKind.invalidArgument;
       case 'RESOURCE_EXHAUSTED':

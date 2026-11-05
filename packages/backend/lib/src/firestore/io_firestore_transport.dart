@@ -28,7 +28,10 @@ class IoFirestoreTransport implements FirestoreTransport {
     try {
       final request = await _client.openUrl(method, uri).timeout(timeout);
       headers.forEach(request.headers.set);
-      if (body != null) request.add(body);
+      if (body != null) {
+        request.contentLength = body.length;
+        request.add(body);
+      }
       final response = await request.close().timeout(timeout);
       final text = await response
           .transform(utf8.decoder)
