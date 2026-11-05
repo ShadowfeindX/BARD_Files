@@ -13,3 +13,5 @@ Pure-Dart theme model (no Flutter, no dependencies). See `docs/architecture/07-a
 `assets/themes/{phosphor,manila,night-desk}.json` are hand-edited. Change a `#RRGGBB` value and run `bash tool/check_all.sh` (or `cd packages/theme_core && dart test`). The tests check that every variant has all 42 tokens, that `windowEdge` reaches 3:1 against `desk`, `window` and `windowRaised`, that chip text reaches 4.5:1, and that each file matches the canonical encoding (key order, two-space indent). `ui_kit` loads the files through the Flutter asset bundle and passes the text to `ThemeCodec.decode`.
 
 Not built yet: effect-safety substitution, "Add missing colours", CIEDE2000 and colour-vision advisories (all wait on T4 or later rows).
+
+Behaviour choices the spec does not state: name cleaning also removes LRM, RLM and ALM marks (stricter than 'bidi overrides'); `flatten` of a derived theme records its fallback built-in as `copiedFrom` so the fallback does not change; a theme that only leads into a loop (not a member) resolves as loop-flagged using the loop member's own values.
