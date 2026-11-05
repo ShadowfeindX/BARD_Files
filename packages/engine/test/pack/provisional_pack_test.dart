@@ -41,7 +41,6 @@ void main() {
       'occult.json',
       'sanity_events.json: valueChoice',
       'sanity_events.json: fumble',
-      'skills.json: skills[9].attribute',
       'skills.json: skills[12].category',
       'threats.json: perClassNumbersForAttackAndDefense',
       'vehicles.json: performance[7].drivingModifier',
@@ -93,7 +92,7 @@ void main() {
       'expert': 1,
     });
     expect(pack.proficiencyTier('expert')!.bonus, Dice(count: 1, sides: 6));
-    expect(pack.skill('insight')!.attribute, isNull);
+    expect(pack.skill('insight')!.attribute, 'WIS');
     expect(pack.skill('mind_shielding')!.category, isNull);
     expect(pack.difficultyCategories.map((c) => '${c.key}=${c.dc}'), [
       'F=3',
