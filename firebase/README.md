@@ -8,6 +8,8 @@ Realtime Database (RTDB) rules for live play and the checks that prove them. The
 | `firebase.json` | Emulator configuration: Database emulator on `127.0.0.1:9000`, no UI. |
 | `rtdb_rules_test/` | SDK-only Dart program (no packages) that checks the rules through the emulator's REST API. |
 | `run_rtdb_rules_test.sh` | Starts the Database emulator, runs the checks, stops the emulator. |
+| `firestore.rules` | Throwaway rules for the Firestore client check only (any signed-in user, and a `role == 'gm'` claim path). Not the product rules. |
+| `run_firestore_client_test.sh` | Starts the Firestore emulator (port 8080) and runs `packages/backend/test/firestore_emulator_test.dart` against it. The test is skipped when `FIRESTORE_EMULATOR_HOST` is not set, so `check_all.sh` skips it. |
 
 ## Running the checks
 

@@ -67,7 +67,7 @@ class FirestoreClient {
     final uri = Uri.parse('$_documentsUrl/${_documentPath(path)}');
     try {
       final json = await _send('GET', uri);
-      return _toDocument(json! as Map<String, Object?>);
+      return _toDocument(_expectMap(json));
     } on FirestoreException catch (e) {
       if (e.kind == FirestoreErrorKind.notFound) return null;
       rethrow;
@@ -116,21 +116,22 @@ class FirestoreClient {
       body: {'fields': codec.encodeFields(data)},
       idempotent: documentId != null,
     );
-    return _toDocument(json! as Map<String, Object?>);
+    return _toDocument(_expectMap(json));
   }
 
   /// Writes [data] as the whole document at [path]: replaces it if it exists,
   /// creates it otherwise.
   ///
   /// [mustExist] adds an existence precondition (`true` = update only,
-  /// `false` = create only). [ifUpdateTime] succeeds only if the stored
-  /// document still has that update time (optimistic concurrency).
+  /// `false` = create only). [ifUpdateToken] succeeds only if the stored
+  /// document still has that update time (optimistic concurrency). Pass
+  /// [FirestoreDocument.updateToken] of the version you read.
   Future<FirestoreDocument> setDocument(
     String path,
     Map<String, Object?> data, {
     bool? mustExist,
-    DateTime? ifUpdateTime,
-  }) => _patch(path, data, null, mustExist, ifUpdateTime);
+    String? ifUpdateToken,
+  }) => _patch(path, data, null, mustExist, ifUpdateToken);
 
   /// Writes only the fields named in [fieldPaths] (dotted paths such as
   /// `meta.owner`), taking their values from [data]; a path missing from
@@ -141,15 +142,15 @@ class FirestoreClient {
     Map<String, Object?> data, {
     required List<String> fieldPaths,
     bool? mustExist,
-    DateTime? ifUpdateTime,
-  }) => _patch(path, data, fieldPaths, mustExist, ifUpdateTime);
+    String? ifUpdateToken,
+  }) => _patch(path, data, fieldPaths, mustExist, ifUpdateToken);
 
   Future<FirestoreDocument> _patch(
     String path,
     Map<String, Object?> data,
     List<String>? fieldPaths,
     bool? mustExist,
-    DateTime? ifUpdateTime,
+    String? ifUpdateToken,
   ) async {
     if (fieldPaths != null && fieldPaths.isEmpty) {
       // An empty mask would drop the parameter and overwrite the document.
@@ -158,7 +159,7 @@ class FirestoreClient {
     final query = <String, List<String>>{
       if (fieldPaths != null)
         'updateMask.fieldPaths': [for (final f in fieldPaths) _quoteField(f)],
-      ..._preconditionParams(mustExist, ifUpdateTime),
+      ..._preconditionParams(mustExist, ifUpdateToken),
     };
     final uri = _withQuery('$_documentsUrl/${_documentPath(path)}', query);
     final json = await _send(
@@ -166,7 +167,7 @@ class FirestoreClient {
       uri,
       body: {'fields': codec.encodeFields(data)},
     );
-    return _toDocument(json! as Map<String, Object?>);
+    return _toDocument(_expectMap(json));
   }
 
   /// Deletes the document at [path]. Deleting a missing document succeeds
@@ -174,11 +175,11 @@ class FirestoreClient {
   Future<void> deleteDocument(
     String path, {
     bool? mustExist,
-    DateTime? ifUpdateTime,
+    String? ifUpdateToken,
   }) async {
     final uri = _withQuery(
       '$_documentsUrl/${_documentPath(path)}',
-      _preconditionParams(mustExist, ifUpdateTime),
+      _preconditionParams(mustExist, ifUpdateToken),
     );
     await _send('DELETE', uri);
   }
@@ -196,7 +197,8 @@ class FirestoreClient {
       uri,
       body: {'structuredQuery': _encodeQuery(query)},
     );
-    final results = json as List<Object?>;
+    if (json is! List) throw _badShape('a list', json);
+    final results = json;
     return [
       for (final r in results)
         if ((r! as Map<String, Object?>)['document']
@@ -304,6 +306,15 @@ class FirestoreClient {
     return null;
   }
 
+  static Map<String, Object?> _expectMap(Object? json) =>
+      json is Map<String, Object?> ? json : throw _badShape('an object', json);
+
+  static FirestoreException _badShape(String wanted, Object? got) =>
+      FirestoreException(
+        kind: FirestoreErrorKind.unknown,
+        message: 'expected $wanted in the response, got ${got.runtimeType}',
+      );
+
   // ---- encoding helpers --------------------------------------------------
 
   FirestoreDocument _toDocument(Map<String, Object?> json) {
@@ -314,6 +325,7 @@ class FirestoreClient {
       data: codec.decodeFields(json['fields'] as Map<String, Object?>?),
       createTime: _time(json['createTime']),
       updateTime: _time(json['updateTime']),
+      updateToken: json['updateTime'] as String?,
     );
   }
 
@@ -396,15 +408,14 @@ class FirestoreClient {
 
   static Map<String, List<String>> _preconditionParams(
     bool? mustExist,
-    DateTime? ifUpdateTime,
+    String? ifUpdateToken,
   ) {
-    if (mustExist != null && ifUpdateTime != null) {
-      throw ArgumentError('pass either mustExist or ifUpdateTime, not both');
+    if (mustExist != null && ifUpdateToken != null) {
+      throw ArgumentError('pass either mustExist or ifUpdateToken, not both');
     }
     return {
       if (mustExist != null) 'currentDocument.exists': ['$mustExist'],
-      if (ifUpdateTime != null)
-        'currentDocument.updateTime': [ifUpdateTime.toUtc().toIso8601String()],
+      if (ifUpdateToken != null) 'currentDocument.updateTime': [ifUpdateToken],
     };
   }
 

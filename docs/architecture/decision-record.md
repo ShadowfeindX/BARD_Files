@@ -115,6 +115,13 @@ Later rulings are added to their group with the date in the row (for example P10
 
 Ruled before this review and unchanged (ruling date not recorded; see [05](05-migrator.md#archived-logs)): archived logs are frozen, not converted into the N+1 schema (R ruled archive-only); a plain-text rendering is kept beside them; the new log starts at `EpisodeMigrated`; the GM explicitly confirms the unrecoverable loss. Why archive-only: converting would force the migrator to invent values for fields the old schema never recorded, and those placeholders would sit in history forever.
 
+## Decisions record (ruled by R, 2026-11-05)
+
+| Id | Ruling | Where |
+|---|---|---|
+| FS2-i | The Firestore REST client surfaces only a `FAILED_PRECONDITION` whose message says the query "requires an index" as a missing-index error (with the console link). Any other `FAILED_PRECONDITION` is a separate precondition error. Reason: a precondition failure on a write (for example a stale `updateTime`) is not a deploy problem. Rejected: mapping every `FAILED_PRECONDITION` to missing-index. | [06](06-accounts-backend.md#firestore) |
+| F5-i | `firebase_dart` 1.6.2 is approved for `packages/backend` and enters its pubspec pinned exactly. Re-verified on pub.dev 2026-11-05: latest stable 1.6.2, published 2026-03-27, Dart SDK >=3.5.0. It backs the desktop `IdTokenProvider`. | [00](00-overview.md#platform-and-stack) |
+
 ## Decisions record (ruled by D, 2026-10-22)
 
 D answered the decision kit in the R + D meeting. The cards, D's answers and follow-up questions were kept in the decision kit (`10-pending-*.md`), now folded into the chapters and removed (history is in git). Rulings on game content are D's; none of the code edits is made yet.

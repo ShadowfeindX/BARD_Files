@@ -40,6 +40,7 @@ void main() {
     expect(doc.id, 'a');
     expect(doc.data, {'n': 3});
     expect(doc.updateTime, DateTime.utc(2026, 11, 5, 9, 1, 0, 123, 456));
+    expect(doc.updateToken, '2026-11-05T09:01:00.123456789Z');
     expect(transport.seen.single.method, 'GET');
     expect(
       transport.seen.single.uri.toString(),
@@ -191,7 +192,7 @@ void main() {
       'a/1',
       {'x': 1},
       fieldPaths: ['x', 'meta.some key'],
-      ifUpdateTime: DateTime.utc(2026, 1, 1),
+      ifUpdateToken: '2026-01-01T00:00:00.000000001Z',
     );
     expect(transport.seen[0].method, 'PATCH');
     expect(transport.seen[0].uri.query, 'currentDocument.exists=false');
@@ -201,7 +202,7 @@ void main() {
     ]);
     expect(
       transport.seen[1].uri.queryParameters['currentDocument.updateTime'],
-      '2026-01-01T00:00:00.000Z',
+      '2026-01-01T00:00:00.000000001Z',
     );
   });
 
@@ -316,18 +317,158 @@ void main() {
     expect(() => client.getDocument('a//b'), throwsArgumentError);
     expect(() => client.addDocument('a/b', {}), throwsArgumentError);
     expect(
-      () => client.setDocument(
-        'a/b',
-        {},
-        mustExist: true,
-        ifUpdateTime: DateTime.now(),
-      ),
+      () => client.setDocument('a/b', {}, mustExist: true, ifUpdateToken: 'x'),
       throwsArgumentError,
     );
   });
 }
 
 void _extra() {
+  test(
+    'query encodes OR, IN, array ops, NOT_EQUAL null, NaN, offset, select',
+    () async {
+      final transport = FakeTransport([json(200, <Object?>[])]);
+      await _client(transport, CountingTokens()).runQuery(
+        const FirestoreQuery(
+          'c',
+          allDescendants: true,
+          where: OrFilter([
+            FieldFilter('a', FilterOp.inList, [1, 2]),
+            FieldFilter('b', FilterOp.notInList, ['x']),
+            FieldFilter('t', FilterOp.arrayContains, 'k'),
+            FieldFilter('t', FilterOp.arrayContainsAny, ['k', 'j']),
+            FieldFilter('n', FilterOp.notEqual, null),
+            FieldFilter('f', FilterOp.equal, double.nan),
+            FieldFilter('m', FilterOp.lessThan, 3),
+            FieldFilter('m', FilterOp.greaterThan, 1),
+            FieldFilter('m', FilterOp.lessThanOrEqual, 3),
+            FieldFilter('m', FilterOp.notEqual, 2),
+          ]),
+          offset: 4,
+          select: ['a', 'x y'],
+        ),
+      );
+      final q = transport.seen.single.body!['structuredQuery']! as Map;
+      expect((q['from']! as List).single, {
+        'collectionId': 'c',
+        'allDescendants': true,
+      });
+      expect(q['offset'], 4);
+      expect(q['select'], {
+        'fields': [
+          {'fieldPath': 'a'},
+          {'fieldPath': '`x y`'},
+        ],
+      });
+      final filters =
+          ((q['where']! as Map)['compositeFilter']! as Map)['filters']! as List;
+      expect((q['where']! as Map)['compositeFilter']['op'], 'OR');
+      String op(int i) {
+        final m = filters[i] as Map;
+        return ((m['fieldFilter'] ?? m['unaryFilter'])! as Map)['op']!
+            as String;
+      }
+
+      expect(
+        [for (var i = 0; i < filters.length; i++) op(i)],
+        [
+          'IN',
+          'NOT_IN',
+          'ARRAY_CONTAINS',
+          'ARRAY_CONTAINS_ANY',
+          'IS_NOT_NULL',
+          'IS_NAN',
+          'LESS_THAN',
+          'GREATER_THAN',
+          'LESS_THAN_OR_EQUAL',
+          'NOT_EQUAL',
+        ],
+      );
+      final inValue = ((filters[0] as Map)['fieldFilter']! as Map)['value'];
+      expect(inValue, {
+        'arrayValue': {
+          'values': [
+            {'integerValue': '1'},
+            {'integerValue': '2'},
+          ],
+        },
+      });
+    },
+  );
+
+  test('request headers and error paths', () async {
+    final transport = FakeTransport([
+      json(409, errorBody(409, 'ALREADY_EXISTS', 'exists')),
+      json(404, errorBody(404, 'NOT_FOUND', 'missing')),
+      json(400, errorBody(400, 'FAILED_PRECONDITION', 'update time mismatch')),
+      json(200, {'unexpected': 'map'}),
+    ]);
+    final client = _client(transport, CountingTokens());
+    await expectLater(
+      client.createDocument('a/1', {}),
+      throwsA(
+        isA<FirestoreException>().having(
+          (e) => e.kind,
+          'kind',
+          FirestoreErrorKind.alreadyExists,
+        ),
+      ),
+    );
+    await expectLater(
+      client.patchDocument('a/1', {'x': 1}, fieldPaths: ['x'], mustExist: true),
+      throwsA(
+        isA<FirestoreException>().having(
+          (e) => e.kind,
+          'kind',
+          FirestoreErrorKind.notFound,
+        ),
+      ),
+    );
+    await expectLater(
+      client.deleteDocument('a/1', ifUpdateToken: '2026-01-01T00:00:00Z'),
+      throwsA(
+        isA<FirestoreException>().having(
+          (e) => e.kind,
+          'kind',
+          FirestoreErrorKind.failedPrecondition,
+        ),
+      ),
+    );
+    expect(transport.seen[0].headers['Content-Type'], 'application/json');
+    expect(transport.seen[0].headers['Accept'], 'application/json');
+    expect(transport.seen[2].uri.queryParameters, {
+      'currentDocument.updateTime': '2026-01-01T00:00:00Z',
+    });
+    // A 200 with the wrong shape is reported as a Firestore error.
+    await expectLater(
+      client.runQuery(const FirestoreQuery('c')),
+      throwsA(isA<FirestoreException>()),
+    );
+  });
+
+  test('401 then 503 refreshes once then backs off', () async {
+    final transport = FakeTransport([
+      json(401, errorBody(401, 'UNAUTHENTICATED', 'expired')),
+      json(503, errorBody(503, 'UNAVAILABLE', 'down')),
+      json(200, _doc('a/1', {})),
+    ]);
+    final tokens = CountingTokens();
+    final delays = <Duration>[];
+    await _client(transport, tokens, delays).getDocument('a/1');
+    expect(tokens.calls, [false, true, false]);
+    // The refresh retry counts as an attempt, so the first backoff is 400 ms.
+    expect(delays, [const Duration(milliseconds: 400)]);
+  });
+
+  test('a token provider failure passes through', () async {
+    final client = FirestoreClient(
+      projectId: 'proj',
+      tokenProvider: _ThrowingTokens(),
+      transport: FakeTransport([]),
+    );
+    await expectLater(client.getDocument('a/1'), throwsStateError);
+  });
+
   test('empty fieldPaths is refused', () async {
     final client = _client(FakeTransport([]), CountingTokens());
     await expectLater(
@@ -374,4 +515,10 @@ void _extra() {
     expect((q['startAt']! as Map)['before'], true);
     expect((q['endAt']! as Map)['before'], false);
   });
+}
+
+class _ThrowingTokens implements IdTokenProvider {
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) =>
+      throw StateError('no auth');
 }

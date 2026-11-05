@@ -6,6 +6,7 @@ class FirestoreDocument {
     required this.data,
     this.createTime,
     this.updateTime,
+    this.updateToken,
   });
 
   /// Path relative to the database root, for example `campaigns/abc`.
@@ -17,9 +18,13 @@ class FirestoreDocument {
   /// When the document was created, when the server sent it.
   final DateTime? createTime;
 
-  /// When the document last changed, when the server sent it. Pass it back as
-  /// an update-time precondition for optimistic writes.
+  /// When the document last changed, when the server sent it.
   final DateTime? updateTime;
+
+  /// The server's update time exactly as sent (nanosecond precision). Pass it
+  /// as `ifUpdateToken` for an optimistic write; [updateTime] has lost the
+  /// nanoseconds and would not match.
+  final String? updateToken;
 
   /// The last path segment.
   String get id => path.substring(path.lastIndexOf('/') + 1);

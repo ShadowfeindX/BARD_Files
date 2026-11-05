@@ -51,8 +51,8 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 
 ### 06-O1 Firestore REST client token handling
 
-- **Undecided:** the REST client's handling of a stale token and of index or claim errors. Calling `getIdToken()` on every request is decided and is not open.
-- **Options:** proposed: never cache the token string; on 401 retry once with `getIdToken(true)`; surface `FAILED_PRECONDITION` as a missing-index error; force `getIdToken(true)` after a role change.
+- **Undecided:** the REST client's handling of a stale token and of claim changes. (The missing-index mapping is settled: [decision record](decision-record.md#decisions-record-ruled-by-r-2026-11-05).) Calling `getIdToken()` on every request is decided and is not open.
+- **Options:** proposed: never cache the token string; on 401 retry once with `getIdToken(true)`; force `getIdToken(true)` after a role change.
 - **Owner:** R. **Described in:** [06](06-accounts-backend.md#firestore).
 
 ### 06-O2 Anonymous-to-full account upgrade
