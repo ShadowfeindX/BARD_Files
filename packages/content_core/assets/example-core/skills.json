@@ -92,12 +92,7 @@
       "name": "Insight",
       "description": "[D to write: the canonical book has no skill descriptions]",
       "category": "social",
-      "attribute": null,
-      "_attributePlaceholder": {
-        "placeholder": true,
-        "gap": "G15",
-        "note": "No attribute on the dossier. The older 2.1 draft suggests WIS. D decides."
-      }
+      "attribute": "WIS"
     },
     {
       "id": "arcane_knowledge",
@@ -143,7 +138,7 @@
   "openItems": [
     {
       "gap": "G15",
-      "summary": "Skill list reconciliation: Mind Shielding, three missing attributes, paired skills."
+      "summary": "Skill list reconciliation: Mind Shielding, two missing attributes, paired skills."
     }
   ]
 }

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 /// Authoring annotation keys named in
-/// `docs/architecture/02-rules-packs.md#authoring-annotations-fixed`.
+/// `docs/architecture/02-rules-packs.md#authoring-annotations`.
 /// Every key ending in `Note` is also an annotation, and so is every key that
 /// starts with `_` (R, 2026-10-21).
 const annotationKeys = {'note', 'source', 'openItems', 'placeholder', 'gap'};
@@ -12,7 +12,7 @@ bool isAnnotationKey(String key) =>
     annotationKeys.contains(key) || key.endsWith('Note') || key.startsWith('_');
 
 /// Keys whose value is a deprecation record (`since`, `replacedBy`,
-/// `removeIn`, `note`; 01-engine.md#deprecation-fixed). Its `note` is data,
+/// `removeIn`, `note`; 01-engine.md#deprecation). Its `note` is data,
 /// not an annotation, so records under these keys are left alone.
 const _deprecationKeys = {'deprecated', 'deprecatedFields'};
 

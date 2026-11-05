@@ -68,7 +68,7 @@ None of these were decided by whoever built the sample. Each is marked in the fi
 | G11 | The numbers an enemy needs to attack and defend. | `threats.json`, `npcs/` |
 | G13 | The old difficulty names (Tough DC 9 and others) have no home. | `difficulty.json`, `vehicles.json` |
 | G14 | "Single use" purchases and Artifact Clearance. | `advancement.json` |
-| G15 | Skill list: Mind Shielding (no category yet), and attributes for Insight, Eldritch Lore, Vehicle Modification. | `skills.json` |
+| G15 | Skill list: Mind Shielding (no category yet), and attributes for Eldritch Lore and Vehicle Modification (Insight is settled on WIS). | `skills.json` |
 
 G7 (dying and critical injuries) is open too but has no file yet, because the book has no values to put in one.
 

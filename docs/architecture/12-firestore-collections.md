@@ -1,8 +1,8 @@
-# 12. Firestore collections (P10c, Firestore part)
+# 12. Firestore collections
 
-Status: **Proposed**, awaiting R. This is the Firestore half of P10c; the RTDB half is Fixed in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the tree is Campaign > Operation > Mission > Episode. The old `operations/{opId}` node is split into campaign, operation and episode records (see "Campaign, operation, mission and episode records"); the RTDB live tree is `/episodes/$ep` ([06](06-accounts-backend.md#realtime-database-model-live-play)). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
+Status: **Proposed**, awaiting R. Open: [S-7](09-open-decisions.md#s-7-firestore-collections). This is the Firestore part of the data model; the RTDB part is described in [06](06-accounts-backend.md#realtime-database-model-live-play). Nothing here is built. *Naming note (2026-11-03):* the tree is Campaign > Operation > Mission > Episode. The old `operations/{opId}` node is split into campaign, operation and episode records (see "Campaign, operation, mission and episode records"); the RTDB live tree is `/episodes/$ep` ([06](06-accounts-backend.md#realtime-database-model-live-play)). The rules and indexes below have **not** been run in the Emulator Suite; every behaviour claim that depends on that is marked `[U]` (unverified). Verified facts carry their V-id.
 
-This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chose Firestore for data at rest and a hand-written REST client on desktop). It names the collections, the document shapes, the security rules and the composite indexes. Account fields come from [11](11-supplemental-features.md). Archive layout follows [05](05-migrator.md). Anything that depends on the unresolved event-log unit (X0) is held and listed at the end.
+This chapter fills the gap left by [06](06-accounts-backend.md) (FS1 to FS5 chose Firestore for data at rest and a hand-written REST client on desktop). It names the collections, the document shapes, the security rules and the composite indexes. Account fields come from [11](11-supplemental-features.md). Archive layout follows [05](05-migrator.md). The event-log unit is ruled (the Episode); the few held items are listed at the end.
 
 ## Constraints that shape the design
 
@@ -26,7 +26,7 @@ Claims used by rules (set by the roles function only; the claim is the only copy
 | Collection | Document id | Audience | Written by |
 |---|---|---|---|
 | `agents/{uid}` | account uid | owner (private fields) | owner, function at creation |
-| `appearance/{uid}` | account uid | owner only | owner. **Deferred, pending T2**: R ruled the appearance settings "only for the player client" (T9, 2026-11-04), read as client-side storage; this document exists only if R wants cross-client sync ([07](07-apps.md#where-it-is-stored-t2-client-side)). Not in v1 unless R says so; no rule drafted below |
+| `appearance/{uid}` | account uid | owner only | owner. **Deferred, pending T2**: R ruled the appearance settings "only for the player client" (T9, 2026-11-04), read as client-side storage; this document exists only if R wants cross-client sync ([07](07-apps.md#where-it-is-stored)). Not in v1 unless R says so; no rule drafted below |
 | `profilesPublic/{badge}` | badge number (never the uid) | anyone (public page) | moderator, after approval of `profilesPending` |
 | `profilesPending/{badge}` | badge number | owner, moderators | owner; deleted on approval |
 | `badgeNumbers/{n}` | 16-digit badge number | function only | function |
@@ -130,7 +130,7 @@ The alias sheet and play state (inventory, skills, contacts) are engine componen
 
 ## Campaign, operation, mission and episode records (R, 2026-11-03)
 
-The tree is Campaign > Operation > Mission > Episode ([11](11-supplemental-features.md#terminology-ruled-rename-pending)). R ruled on 2026-11-03 that live-game data gets its **own Firestore node**, `episodes/{episodeId}`, kept behind its own rules instead of mixed with handler-level data. R-A1 and R-A6 put pack pins, base settings, join links, invites, listings and the player roster at the **campaign**, so the old `operations/{opId}` document can no longer own them. Each level is a top-level collection that names its parents by id:
+The tree is Campaign > Operation > Mission > Episode ([11](11-supplemental-features.md#terminology-ruled)). R ruled on 2026-11-03 that live-game data gets its **own Firestore node**, `episodes/{episodeId}`, kept behind its own rules instead of mixed with handler-level data. R-A1 and R-A6 put pack pins, base settings, join links, invites, listings and the player roster at the **campaign**, so the old `operations/{opId}` document can no longer own them. Each level is a top-level collection that names its parents by id:
 
 | Node | Holds | Read by | Written by |
 |---|---|---|---|
@@ -165,7 +165,7 @@ RTDB stays the canonical store during play (06): the live tree is `/episodes/$ep
 ```
 
 - `memberUids` is a denormalised copy of the campaign's member documents, so "campaigns I am in" is one indexed query and rules test membership without a `get` against the 10-lookup cap. It always contains `gmUid` (the GM cannot drop out). It is shown to every member, which is acceptable inside a campaign (11 keeps the uid out of *public* payloads only). Provisional caps: `memberUids` at most 20, `packPins` at most 5.
-- `packPins` is the campaign's pack version pin (R-A1: one pin for the whole campaign, so characters' numbers do not change between missions). `settings` holds the base settings each new mission copies; the auto-confirm default lives here (R-C1). Its keys are the engine's settings vocabulary and are not whitelisted by rules `[U]`.
+- `packPins` is the campaign's pack version pin (R-A1: one pin for the whole campaign, so characters' numbers do not change between missions). `settings` holds the base settings each new mission copies; the Q5 request auto-confirm default lives here (R-C1). Its keys are the engine's settings vocabulary and are not whitelisted by rules `[U]`.
 - Only the GM creates and edits the document, and only while a handler (`tier() >= 4`); a lapsed handler keeps read and archive access only ([11](11-supplemental-features.md)). `gmUid` cannot change after creation. `status` becomes `archived` only through a function (admin SDK); rules refuse a client write of `archived`, matching the RTDB ruling (06). `virtual` means played online (11).
 - Writing `memberUids` is allowed to the GM only; joins go through the GM (invite or request approval), never a self-add.
 - The Handler persona (R-A4) is campaign-owned; its document shape is a later row and is not drafted here.
@@ -176,7 +176,7 @@ RTDB stays the canonical store during play (06): the live tree is `/episodes/$ep
 
 ### `campaigns/{campaignId}/invites/{token}`
 
-`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link. The link names the campaign, so the canonical link becomes `bard://join/<campaignId>?invite=<token>` (09-2 said `<op>`; the route change belongs to the campaign-members row). Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private campaign accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
+`{ createdBy, expiresAt, maxUses, uses, aliasHint? }`. The token is the document id and also the deep link. The link names the campaign, so the link would become `bard://join/<campaignId>?invite=<token>` (Proposed, open: [Deep-link join](10-waiting-on-d.md#deep-link-join); 09-2 said `<op>`; the route change belongs to the campaign-members row). Only the GM, while a handler, reads and writes the collection. A joiner presents the token to a function that validates it, increments `uses`, writes `joinRequests/{uid}` with admin access (so a private campaign accepts it) and pings the GM's RTDB inbox. The handler approves as for any join request (11). `[U]` The function is not specified yet.
 
 ### `campaigns/{campaignId}/joinRequests/{uid}`
 
@@ -233,7 +233,7 @@ The frozen log (the canonical event stream) and the per-perspective text log are
 
 ### `libraryPending/{id}`, `libraryPublic/{id}` and `libraryData/{id}`
 
-User-created content (skills, techniques, spells, items, NPC templates, packs' loose parts, later mission submissions). Gated sections are **separate documents** with a data document and a summary document (11, V-48), and access is a per-tier list of levels, not "tier >= N".
+User-created content (skills, techniques, spells, items, NPC templates, packs' loose parts, later mission submissions). A mission submission carries the debrief forms and summary only, never an event log or text log (Q9, R 2026-10-27). Gated sections are **separate documents** with a data document and a summary document (11, V-48), and access is a per-tier list of levels, not "tier >= N".
 
 `libraryPending/{id}` holds the submission whole; moderators read it, the owner reads and edits it:
 
@@ -257,7 +257,7 @@ User-created content (skills, techniques, spells, items, NPC templates, packs' l
 On approval a moderator writes, in one batch, `libraryPublic/{id}` (`kind, name, summaryLevel, status, tags, keywords, summary, ownerUid, verifier, verifiedAt, version`) and `libraryData/{id}` (`dataLevel, status, data`), then deletes the pending document. `verifier`, `verifiedAt` and `version` are the record 06 requires. **Revocation** (06) is a moderator writing the item back to `libraryPending` with `revokedReason` and deleting the two public documents; copies already in GM packs are unchanged.
 
 - `keywords` is the lowercased, deduplicated words of `name` and `tags`, built by the client when it writes (FS4: Standard edition has no full-text search). Search is `array-contains` on one keyword.
-- Reads: a summary is readable if `summaryLevel` is in `tierLevels/{tier}.summaryLevels` (one `get`), data if `dataLevel` is in `.dataLevels`; tier 0 has no data access (11). The app queries with `where summaryLevel in [<its levels>]` so the rule can prove it `[U]`. The contents of `tierLevels` are R's to rule (11 lists examples only). An `in` query takes at most 30 values `[U]`, which bounds the level lists.
+- Reads: a summary is readable if `summaryLevel` is in `tierLevels/{tier}.summaryLevels` (one `get`), data if `dataLevel` is in `.dataLevels`; tier 0 reads the same free level-1 entries as tier 1 (Q33, D 2026-10-22, 11), so `tierLevels/0` lists level 1 and nothing above. The app queries with `where summaryLevel in [<its levels>]` so the rule can prove it `[U]`. The contents of `tierLevels` are R's to rule (11 lists examples only). An `in` query takes at most 30 values `[U]`, which bounds the level lists.
 - `status: 'testing'` is readable only by tier 5 (11, Proposed); tier 5 stays separate from the verification and `moderator` claims.
 - Spells are schemaless: `data` is free-form (engine owns vocabulary, packs own values).
 - The free tier is bundled in the app, so `libraryPublic` holds creator content and later additions; other content is cached after first fetch.
@@ -606,9 +606,9 @@ Deployed as `firebase/firestore.indexes.json` and `firebase/firestore.rules` whe
 
 ## Test plan (Emulator Suite)
 
-Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to `/5`; tier 0 has empty lists (no data access). A missing document makes every level read fail closed.
+Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to `/5`; tier 0 lists level 1 only (Q33). A missing document makes every level read fail closed.
 
-1. Anonymous account: creates `aliases/<uid>/items/anon` once; second create refused; other keys refused; cannot read `agents`, create `campaigns`, `operations` or `episodes`, or read `libraryData`; can create a `joinRequests` document without `message` on a public campaign, and is refused with `message`.
+1. Anonymous account: creates `aliases/<uid>/items/anon` once; second create refused; other keys refused; cannot read `agents`, create `campaigns`, `operations` or `episodes`, or read `libraryData` above level 1 (level-1 entries are readable); can create a `joinRequests` document without `message` on a public campaign, and is refused with `message`.
 2. Alias ids: a join request or transfer carrying another player's `aliasId` is refused; two anonymous accounts both keyed `anon` have different `aliasId` fields; an alias update cannot change `aliasId`; (host-level) admission of a duplicate `aliasId` is refused.
 3. Tier gates: tier 3 cannot create a campaign, operation or episode; tier 4 can. A lapsed handler (claim back to 3) cannot update the campaign, operation, mission or episode, write `members`, create an `invites` document or submit a `listingsPending` document, but can still read the campaign, operations, missions, episodes and archives (invites and join requests are GM-handler only).
 4. Owner isolation and whitelists: `agents` and `aliases` readable only by the owner; `ageBracket` and `badgeNumber` not editable; an extra key (for example `email`) is refused on `agents`, `aliases`, `campaigns`, `episodes`, `profilesPending`, `joinRequests`, `transfers` (create and update), `listingsPending`, `packIndex`, `libraryPending`; `badgeNumbers` and `signInCodes` refused for everyone.
@@ -624,7 +624,7 @@ Not run. When built, mirror `firebase/rtdb_rules_test/`. Seed `tierLevels/0` to 
 
 ## Held and questions for R
 
-**Held on X0 or D:** the archive layout per mission, the genesis `archives` fields and `missions.eventRange` unit (X0, Q24); carrying alias state between missions (Q24); the public profile's alias, operation and mission lists (X0); the Handler persona document (R-A4, later row); the R-A3 pruning step; mission submissions as a library kind with summary and clearance level, the archive pending/public pair and news (06, 11); the feedback collection (write-only for users, admins read; 11, Proposed); the consent opt-in storage (11); Storage rules for profile images and pack files; the contents of `tierLevels` (R to rule).
+**Held:** the archive layout per mission, the genesis `archives` fields and `missions.eventRange` unit across several episodes; carrying alias state between missions; the public profile's alias, operation and mission lists; the Handler persona document (R-A4, later row); the R-A3 pruning step; mission submissions as a library kind with summary and clearance level, the archive pending/public pair and news (06, 11); the feedback collection (write-only for users, admins read; 11, Proposed); the consent opt-in storage (11); Storage rules for profile images and pack files; the contents of `tierLevels` (R to rule).
 
 **Proposed answers, for R to confirm together** (each follows an existing ruling where one is named):
 

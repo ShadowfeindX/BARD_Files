@@ -4,6 +4,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Docs: settled decisions folded into the spec
+- Audited every decision R and D settled in the meetings of 2026-10-22, 2026-10-29 and 2026-11-03 against chapters 00 to 08, 11, 12, the README and the developer guide, and folded the missing ones into the chapters: Magic rulings (M3, focus item versus artifact), the full G1 to G19 detail, flashback (FB1) and human adversaries (HA1) in 01; a "Pack-side rulings by file" table in 02; settings resolution (R-A1, R-C1), names in the log (N1), death through the review gate (R7) and requests between sittings (Q5) in 04; Handler personas, anonymous browsing and campaign-level players and retention in 06; screens that follow the rulings in 07; the level rules, character kinds (SKALD), contact list at the campaign (Q7), debrief-only published missions (Q9) and campaign listings in 11; Q33 and Q9 corrections in 12. Rulings that need code are listed as Proposed rows in 01.
+- `10-waiting-on-d.md` replaces the seven `10-pending-*.md` files (the decision kit, D's responses and follow-up sheets, the notes for D and R-A2 explained). It keeps only what is still open: unanswered questions for D, D's homework, items marked Later, and R's open items, each with its default marked as an assumption.
+- New `decision-record.md` holds every settled ruling by R and D (moved out of `09-open-decisions.md`, which now lists only open, held, deferred and known-issue items). Chapters cite decision ids as plain tags and link to the record.
+- Developer guide: the pack shape is Fixed (P1).
+
 ### Random tables (R-B2)
 - Pack: new `tables/` folder, one random table per file (`id`, `name`, `dice`, optional `lead`, `rows` of `{from, to, text}`). The loader checks that the rows cover every total of the dice exactly once; pending dice load with a warning; row `effects` must stay empty until an effect has engine meaning. The engine and the example pack ship no tables (content is D's).
 - Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review. Narration is in-theme for players: the table's lead-in (D's text) then the row, never dice or table names; the GM's line keeps the mechanics; a redacted roll shows players a redaction bar.
