@@ -24,7 +24,7 @@ FirestoreClient _client(
 );
 
 void main() {
-  _extra();
+  _moreTests();
   test('getDocument decodes fields and sends a fresh Bearer token', () async {
     final transport = FakeTransport([
       json(
@@ -313,17 +313,63 @@ void main() {
 
   test('path validation', () async {
     final client = _client(FakeTransport([]), CountingTokens());
-    expect(() => client.getDocument('a'), throwsArgumentError);
-    expect(() => client.getDocument('a//b'), throwsArgumentError);
-    expect(() => client.addDocument('a/b', {}), throwsArgumentError);
-    expect(
-      () => client.setDocument('a/b', {}, mustExist: true, ifUpdateToken: 'x'),
+    await expectLater(client.getDocument('a'), throwsArgumentError);
+    await expectLater(client.getDocument('a//b'), throwsArgumentError);
+    await expectLater(client.addDocument('a/b', {}), throwsArgumentError);
+    await expectLater(client.createDocument('a', {}), throwsArgumentError);
+    await expectLater(
+      client.setDocument('a/b', {}, mustExist: true, ifUpdateToken: 'x'),
       throwsArgumentError,
     );
   });
 }
 
-void _extra() {
+void _moreTests() {
+  test('wrong-shape 200 bodies become FirestoreException', () async {
+    final bodies = <Object>[
+      {'unexpected': 'map'},
+      {'name': '$_root/a/1', 'fields': 5},
+      {'name': '$_root/a/1', 'updateTime': 'nope'},
+    ];
+    for (final body in bodies) {
+      final client = _client(
+        FakeTransport([json(200, body)]),
+        CountingTokens(),
+      );
+      await expectLater(
+        client.getDocument('a/1'),
+        throwsA(isA<FirestoreException>()),
+        reason: '$body',
+      );
+    }
+    for (final body in <Object>[
+      [5],
+      [null],
+    ]) {
+      final client = _client(
+        FakeTransport([json(200, body)]),
+        CountingTokens(),
+      );
+      await expectLater(
+        client.runQuery(const FirestoreQuery('c')),
+        throwsA(isA<FirestoreException>()),
+        reason: '$body',
+      );
+    }
+    expect(
+      FirestoreException.fromResponse(400, {'message': 5, 'status': 7}).kind,
+      FirestoreErrorKind.invalidArgument,
+    );
+  });
+
+  test('index link loses trailing punctuation', () {
+    final e = FirestoreException.fromResponse(400, {
+      'status': 'FAILED_PRECONDITION',
+      'message': 'The query requires an index. Create it: https://x.y/z?c=1.',
+    });
+    expect(e.indexUrl, 'https://x.y/z?c=1');
+  });
+
   test(
     'query encodes OR, IN, array ops, NOT_EQUAL null, NaN, offset, select',
     () async {

@@ -16,13 +16,14 @@ import 'id_token_provider.dart';
 /// above this class. Every request asks [IdTokenProvider] for a token (FS2) and
 /// sends it as a Bearer header; Security Rules do the authorizing.
 class FirestoreClient {
-  /// Creates a client for [projectId]. [delay] replaces the real wait between
-  /// retries (tests).
+  /// Creates a client for [projectId].
   ///
-  /// Argument errors (bad paths, conflicting preconditions) surface as errors
-  /// of the returned future, so always `await` calls.
-  /// The project id is supplied at run time
-  /// and must never be written into committed files.
+  /// The project id is supplied at run time and must never be written into
+  /// committed files. [delay] replaces the real wait between retries (tests).
+  ///
+  /// Every method reports bad arguments (a malformed path, conflicting
+  /// preconditions) as an error of the returned future, so always `await`
+  /// calls. A token provider that throws is not wrapped and is not retried.
   FirestoreClient({
     required this.projectId,
     required this.tokenProvider,
@@ -79,10 +80,15 @@ class FirestoreClient {
   Future<FirestoreDocument> createDocument(
     String path,
     Map<String, Object?> data,
-  ) {
+  ) async {
     final segments = _segments(path, wantDocument: true);
     final parent = segments.sublist(0, segments.length - 2).join('/');
-    return _create(parent, segments[segments.length - 2], segments.last, data);
+    return await _create(
+      parent,
+      segments[segments.length - 2],
+      segments.last,
+      data,
+    );
   }
 
   /// Creates a document in the collection [collectionPath] with a
@@ -91,10 +97,10 @@ class FirestoreClient {
   Future<FirestoreDocument> addDocument(
     String collectionPath,
     Map<String, Object?> data,
-  ) {
+  ) async {
     final segments = _segments(collectionPath, wantDocument: false);
     final parent = segments.sublist(0, segments.length - 1).join('/');
-    return _create(parent, segments.last, null, data);
+    return await _create(parent, segments.last, null, data);
   }
 
   Future<FirestoreDocument> _create(
@@ -198,11 +204,9 @@ class FirestoreClient {
       body: {'structuredQuery': _encodeQuery(query)},
     );
     if (json is! List) throw _badShape('a list', json);
-    final results = json;
     return [
-      for (final r in results)
-        if ((r! as Map<String, Object?>)['document']
-            case final Map<String, Object?> doc)
+      for (final row in json)
+        if (_expectMap(row)['document'] case final Map<String, Object?> doc)
           _toDocument(doc),
     ];
   }
@@ -318,6 +322,16 @@ class FirestoreClient {
   // ---- encoding helpers --------------------------------------------------
 
   FirestoreDocument _toDocument(Map<String, Object?> json) {
+    try {
+      return _decodeDocument(json);
+    } on TypeError {
+      throw _badShape('a document', json);
+    } on FormatException {
+      throw _badShape('a document', json);
+    }
+  }
+
+  FirestoreDocument _decodeDocument(Map<String, Object?> json) {
     final name = json['name']! as String;
     final prefix = '${codec.documentsRoot}/';
     return FirestoreDocument(

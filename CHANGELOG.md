@@ -5,11 +5,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ## Unreleased
 
 ### Firestore REST client core (desktop)
-- `backend`: hand-written Firestore REST v1 client (`FirestoreClient`): get, create, add, set, patch with field mask, delete, preconditions (`mustExist`, `ifUpdateTime`) and `runQuery` (filters, order, limit, offset, cursors, select). It takes document paths from the caller, so the collection layout (S-7) stays outside it.
+- `backend`: hand-written Firestore REST v1 client (`FirestoreClient`): get, create, add, set, patch with field mask, delete, preconditions (`mustExist`, `ifUpdateToken`: the server's exact update time, `FirestoreDocument.updateToken`) and `runQuery` (filters, order, limit, offset, cursors, select). It takes document paths from the caller, so the collection layout (S-7) stays outside it.
 - `IdTokenProvider` interface: the client asks it for a token on every attempt and never keeps the string (FS2). `FirestoreValueCodec` maps Dart values to Firestore values and back (null, bool, int, double, String, DateTime, bytes, reference, geo point, list, map).
-- `FirestoreException` maps HTTP/RPC errors to kinds, including `missingIndex` with the console link. `FirestoreRetryPolicy` is pluggable; the default follows the 06-O1 proposal (401: refresh the token and retry once; 503/429/network: exponential backoff for idempotent calls only).
+- `FirestoreException` maps HTTP/RPC errors to kinds, including `missingIndex` with the console link. `FirestoreRetryPolicy` is pluggable; the default follows the 06-O1 proposal (401: refresh the token and retry once; 500/503/504/429/network: exponential backoff for idempotent calls only).
 - `FirebaseDartIdTokenProvider` (`package:backend/firebase_dart_auth.dart`) backs `IdTokenProvider` with the `firebase_dart` user. `firebase_dart` 1.6.2 added to `backend`, pinned (re-verified on pub.dev 2026-11-05).
 - Missing-index errors are only a `FAILED_PRECONDITION` that says the query requires an index; ruling recorded as FS2-i.
+- Query cursors include their position by default for both `startAt` and `endAt`.
 - `FirestoreTransport` is the network seam; `package:backend/firestore_io.dart` holds the `dart:io` implementation so the main library stays web-safe. No new dependencies.
 
 ### Docs: settled decisions folded into the spec

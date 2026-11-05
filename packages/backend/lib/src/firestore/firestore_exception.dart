@@ -71,14 +71,21 @@ class FirestoreException implements Exception {
     int httpStatus,
     Map<String, Object?>? error,
   ) {
-    final status = error?['status'] as String?;
-    final message = (error?['message'] as String?) ?? 'HTTP $httpStatus';
+    final status = error?['status'] is String
+        ? error!['status']! as String
+        : null;
+    final message =
+        (error?['message'] is String ? error!['message']! as String : null) ??
+        'HTTP $httpStatus';
     String? indexUrl;
     var kind = _kindFor(httpStatus, status);
     if (kind == FirestoreErrorKind.failedPrecondition &&
         message.contains('requires an index')) {
       kind = FirestoreErrorKind.missingIndex;
-      indexUrl = RegExp(r'https://\S+').firstMatch(message)?.group(0);
+      indexUrl = RegExp(r'https://\S+')
+          .firstMatch(message)
+          ?.group(0)
+          ?.replaceFirst(RegExp(r'[.,;)]+$'), '');
     }
     return FirestoreException(
       kind: kind,

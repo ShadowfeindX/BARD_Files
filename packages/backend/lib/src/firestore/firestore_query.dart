@@ -95,8 +95,9 @@ class QueryCursor {
   /// One value per `orderBy` term.
   final List<Object?> values;
 
-  /// Whether the results include the documents at this position (for both
-  /// `startAt` and `endAt`).
+  /// Whether the results include the documents at this position, for both
+  /// `startAt` and `endAt` (like the SDK's `startAt` / `endAt`; `false` gives
+  /// `startAfter` / `endBefore`).
   final bool inclusive;
 }
 
