@@ -16,7 +16,7 @@ The platform and stack chosen for the application; planned parts are labelled ([
 | Stack | Flutter / Dart only. |
 | Targets | v1: **Windows and Linux desktop**, plus the web player build; macOS and iOS are not in v1. Main app focuses on landscape medium/large screens. A companion phone app is in progress as a placeholder shell. The web build is a lightweight, **player-only** client for people who have not installed the app, without full feature parity; no GM hosting on web for now. |
 | Structure | Hybrid: ECS-style pure-Dart game domain, coarse actors for the session/runtime layer, event-sourced core (command → events → state). |
-| Repository | Pub workspace monorepo, `packages/` plus `apps/`. Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` and a theme-model package, proposed name `theme_core` (open: [T11](09-open-decisions.md#t11); not built), shared by the main app and the companion app; the functions app depends only on `protocol_envelope`. |
+| Repository | Pub workspace monorepo, `packages/` plus `apps/`. Packages `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, plus `content_core`, `backend` and `ui_kit` and a theme-model package, proposed name `theme_core` (open: [T11](09-open-decisions.md#t11); built on `feature/theme-core`: model, codec, validator and resolver only), shared by the main app and the companion app; the functions app depends only on `protocol_envelope`. |
 | Engine purity | The engine has no Flutter, Firebase or UI imports, and no wire-format concerns: the envelope and message types live in `protocol_envelope`, engine codecs in `protocol`. |
 | Authority | No server authority and no anti-cheat. Every client runs its own engine. In an episode the GM's client is canonical: players send requests, the GM engine resolves them and broadcasts events. |
 | Hosting | "Network-hosted" means the backend relays live play (Realtime Database) and keeps finished episodes at rest (Firestore) (planned; 10 §5 'RTDB live relay'). P2P, LAN, in-person and offline play must all work. A signed-in account works offline from a local cache (planned; 10 §5 'Offline account cache and session outbox'). |
@@ -84,7 +84,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   migrator/                   pure Dart. Major N → N+1 transforms on serialized data.
   content_core/               D's default rules pack as data under assets/. Pack today: a provisional copy of the example-core sample; D's pack is pending (10 §5 "Apply the target pack and engine values").
   backend/                    Flutter + Firebase adapters behind session/app interfaces (planned; scaffold only today, 10 §5).
-  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11; not built).
+  theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (name open: T11; model, codec, validator, resolver and built-in JSON built; colour advisories and effect safety not yet).
   ui_kit/                     Shared widgets, theme widgets and controller (planned; 10 §5 'Theme build'), perspective panels.
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
@@ -93,7 +93,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 /docs/                        developer guide, this spec
 ```
 
-`protocol_envelope` keeps wire-format concerns out of the engine and lets the functions app speak the protocol without the engine. A separate pure-Dart theme package (proposed name `theme_core`, open: [T11](09-open-decisions.md#t11)) lets the theme model grow after v1 without touching `ui_kit` ([07](07-apps.md#layering)); it is not built yet. The pack contents of `content_core` follow the shape in [02-rules-packs.md](02-rules-packs.md).
+`protocol_envelope` keeps wire-format concerns out of the engine and lets the functions app speak the protocol without the engine. A separate pure-Dart theme package (proposed name `theme_core`, open: [T11](09-open-decisions.md#t11)) lets the theme model grow after v1 without touching `ui_kit` ([07](07-apps.md#layering)); the model, codec, validator and resolver are built. The pack contents of `content_core` follow the shape in [02-rules-packs.md](02-rules-packs.md).
 
 ## Dependency rules
 
