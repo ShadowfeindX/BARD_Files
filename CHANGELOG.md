@@ -4,6 +4,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Firestore REST client core (desktop)
+- `backend`: hand-written Firestore REST v1 client (`FirestoreClient`): get, create, add, set, patch with field mask, delete, preconditions (`mustExist`, `ifUpdateTime`) and `runQuery` (filters, order, limit, offset, cursors, select). It takes document paths from the caller, so the collection layout (S-7) stays outside it.
+- `IdTokenProvider` interface: the client asks it for a token on every attempt and never keeps the string (FS2). `FirestoreValueCodec` maps Dart values to Firestore values and back (null, bool, int, double, String, DateTime, bytes, reference, geo point, list, map).
+- `FirestoreException` maps HTTP/RPC errors to kinds, including `missingIndex` with the console link. `FirestoreRetryPolicy` is pluggable; the default follows the 06-O1 proposal (401: refresh the token and retry once; 503/429/network: exponential backoff for idempotent calls only).
+- `FirestoreTransport` is the network seam; `package:backend/firestore_io.dart` holds the `dart:io` implementation so the main library stays web-safe. No new dependencies.
+
 ### Docs: settled decisions folded into the spec
 - Audited every decision R and D settled in the meetings of 2026-10-22, 2026-10-29 and 2026-11-03 against chapters 00 to 08, 11, 12, the README and the developer guide, and folded the missing ones into the chapters: Magic rulings (M3, focus item versus artifact), the full G1 to G19 detail, flashback (FB1) and human adversaries (HA1) in 01; a "Pack-side rulings by file" table in 02; settings resolution (R-A1, R-C1), names in the log (N1), death through the review gate (R7) and requests between sittings (Q5) in 04; Handler personas, anonymous browsing and campaign-level players and retention in 06; screens that follow the rulings in 07; the level rules, character kinds (SKALD), contact list at the campaign (Q7), debrief-only published missions (Q9) and campaign listings in 11; Q33 and Q9 corrections in 12. Rulings that need code are listed as Proposed rows in 01.
 - `10-waiting-on-d.md` replaces the seven `10-pending-*.md` files (the decision kit, D's responses and follow-up sheets, the notes for D and R-A2 explained). It keeps only what is still open: unanswered questions for D, D's homework, items marked Later, and R's open items, each with its default marked as an assumption.
