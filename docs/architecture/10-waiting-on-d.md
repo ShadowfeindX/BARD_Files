@@ -131,11 +131,11 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Apply the target pack and engine values (target values are in [02](02-rules-packs.md#pack-side-values-by-file)): the fumble basis and rounding (`difficulty.json`, `CheckOutcome.fumble`); the assistance cap and bonus (`helperAttribute`); rounding fields; `sanity_events.json` `pick`, `resistDc`, `halfRounding`, `fumbleExtra` and `disorders.json` `rollDie`; `meleeFloor` in `damage.json`; the explode flags in `damage.json` and `threats.json`, `proficiency.json` and `advancement.json` (today `null`); removal of the `chosenAttribute`/`fallback` and `sanityCheckOptions` placeholders in `occult.json`; the `luckAdvantage` placeholder; `occult.json` `sanityCheckOn`, `sanityPayers` and the `artifact` rename; `attributes.json` and `proficiency.json` creation profiles `agent` and `skald` (today one range); `combat.json` `actionsPerTurn`; skills (Eldritch Lore, Vehicle Modification, Advanced Alchemy, Explosive Disposal, Explosives added).
 - Rename the `occult.json` block `ritualDefaults.focusItem` to `artifact`, with a new `focusItem` left `null` (see [01](01-engine.md#planned-code-changes)).
 - Migrator package: steps, schemas, archives, fixtures and the `EpisodeMigrated` genesis event (the package is a stub today).
-- Backend adapters and the sembast `EventStore` (only `InMemoryEventStore` exists today), `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
+- Backend adapters other than the built `SembastEventStore`: `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
 - Theme build: `theme_core` and the `ui_kit` theme (a placeholder `BardTheme` exists today).
 - Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
 - GM pack authoring (entity templates in the GM's own packs): no pack editor exists today (see [02](02-rules-packs.md)).
-- Local log export and resume from export: export an episode's local log and open it on another device (no export exists today; see [04](04-session.md#reconnection-and-gm-continuity)).
+- Local log export beyond log and snapshot: the "save a report" bundle's extra contents and retention (the log + snapshot export is built; see [04](04-session.md#reconnection-and-gm-continuity)).
 - Physical dice feature (see [01](01-engine.md)).
 - Remaining engine systems: `CombatSystem` and the `encounter` state, `VehicleSystem`, `OccultSystem`, `InventorySystem`, `GmSystem` (see [01](01-engine.md#systems)). There is no outcome override of a resolved roll; consequence edits go through the review gate.
 - <a id="deep-link-join"></a>Deep-link join: wire `app_links` to `go_router` and register the `bard://join/<campaignId>?invite=<token>` scheme on Windows and Linux (the package is pinned, not wired; see [07](07-apps.md)). The link form follows from players being managed at campaign level. R (2026-11-04) keeps it as Proposed: the link worked on the local Windows app. Open: Linux and Android are not tested, and there is no spec yet for web invites.
@@ -143,7 +143,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Periodic full snapshots for fast joins: the `EventStore` methods to store and read them (see [04](04-session.md)).
 - RTDB live relay: event and request mirror, listeners, `RelayActor` wiring and per-audience batching (see [03](03-protocol.md#size), [06](06-accounts-backend.md)).
 - Offline account cache and session outbox: the local record of a signed-in account and the queue of requests made offline, replayed on reconnect (see [06](06-accounts-backend.md)).
-- Session actors: `StoreActor`, `RelayActor` and `SessionDirectory` (built today: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor`; see [04](04-session.md)).
+- Session actors: `RelayActor` and `SessionDirectory` (built today: `EpisodeHost`, `EpisodeParticipant`, `StoreActor`, `ConnectionActor`; see [04](04-session.md)).
 - Capability gate (`canHost`, `canEditPacks`) in the apps, and the sembast persistence the apps use (see [07](07-apps.md)).
 - Cloud Functions: badge login, roles, push, `archiveEpisode`, clean-up and the pack publishing helper (none exist yet; see [06](06-accounts-backend.md)).
 - App Check monitor-only on mobile and web (B4): `firebase_app_check` setup, no enforcement (see [06](06-accounts-backend.md#app-check)).

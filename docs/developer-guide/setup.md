@@ -37,7 +37,7 @@ cd apps/bard && flutter run -d linux    # or -d windows
 
 The root `pubspec.yaml` lists every member under `workspace:`. Packages follow [00-overview.md](../architecture/00-overview.md#repository-layout):
 
-- `packages/`: `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, `content_core`, `backend`, `ui_kit`.
+- `packages/`: `engine`, `protocol_envelope`, `protocol`, `session`, `migrator`, `content_core`, `backend`, `theme_core`, `ui_kit`.
 - `apps/`: `bard` (Windows and Linux desktop), `companion` (Android), `functions` (Dart Cloud Functions).
 - `tool/`: repository checks run by CI (a member too).
 - `firebase/`: RTDB rules and emulator checks. Standalone, not a workspace member.

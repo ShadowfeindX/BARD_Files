@@ -4,6 +4,16 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Event store: sembast `EventStore`, `StoreActor`, log export and resume
+- `backend`: `SembastEventStore`, the on-device `EventStore` on `sembast` 3.9.0 (pinned). One database file per episode, opened on demand. `append` writes events, text lines and the head snapshot in one transaction and a commit marker in a second; the first use of an episode deletes anything past the marker and readers never see past it ([V-31]). Layout version 1, refused if newer. No power-loss protection in v1. Spot check with a throwaway writer and checker (not committed): 25 `kill -9` runs on Linux, 0 reported commits lost, 0 inconsistent states; V-31's 100-kill runs used the same protocol.
+- `session`: `StoreActor` wraps any `EventStore` in one mailbox and paces the head-snapshot mirror. The interval is a constructor argument, default 5 minutes, changeable while running; `backend`'s `HostSettingsStore` keeps it as a per-machine host setting (S-5, R 2026-11-05; moved from 09 to the decision record); the mirror goes to a `HeadMirrorSink` the relay will supply, after an append once the interval has passed and on `mirrorHead(reason)` for pause, close and pre-migration.
+- `session`: `EpisodeExport`, `exportEpisode` and `importEpisode`: one file holding the log, the text lines, the latest head snapshot and the RNG draw count; imports only into an empty episode, validates a gap-free log and refuses a newer file layout. `EpisodeHost.open` resumes from an imported store.
+- `InMemoryEventStore.append` now refuses an empty batch, a mismatched head and misplaced text lines, as the sembast store does.
+- `SembastEventStore.health(episodeId)` returns a `StoreHealth` (last marker, event and text-line counts, events discarded when the file was opened, file size when a size reader is passed), for the saved report.
+- `packages/backend/tool/kill_probe/`: the `kill -9` writer, checker and `run.sh`, committed (run by hand; Linux 12 kills and Windows 25 kills on R's PC, 0 failures, process kills only). `SembastEventStore.rngDrawCount` also takes the head's own draw count, so a kill between the marker and the draw-count write cannot hand out a draw twice. New tests: torn commits (stale heads, lagging draw count, missing head), a failed open closes its database, `close()` waits for queued appends.
+- `StoredEvent`, `TextLogLine` and `HeadSnapshot` gain `toJson`/`fromJson`.
+- Docs: 04, 00 and 10 §5 mark the store, `StoreActor` and the export as built; developer guide `session.md` lists the new files.
+
 ### LAN transport (demo row 2)
 - `backend`: `LanHostTransport` and `LanClientTransport` over `dart:io` HTTP and WebSockets (S-6, no new package). Players join with `LanJoinInfo` (host, port, join code; the address `ws://host:port/join?code=CODE`, which is all the LAN QR carries); a wrong code or path is refused with HTTP 403/404 before a link opens and surfaces as `ConnectRefused`. `newJoinCode` and `lanAddresses` help the host screen.
 - Frame cap on the socket: `WebSocketFrameGuard` reads frame headers and closes the socket once one message passes `maxFrameBytes` (3 × `maxFrameLength`), including a message split over continuation frames, which `dart:io` does not limit. A received text frame over `maxFrameLength` is dropped and the link stays. Both are logged (`lan.oversize`). Compression is off; the client never uses an environment proxy.
@@ -16,6 +26,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Known/Open Issues
 - Tested over loopback only; machine-to-machine runs (Windows, and Linux under WSL2) are row 7. No end-to-end LAN test with a real host yet: the dependency rules keep the engine out of `backend` tests, so row 6 composes it in the app. `Backoff` has no jitter, and a link that is welcomed then dropped at once resets it.
 - The join code is 6 characters from a 31-letter alphabet (about 30 bits), with no limit on wrong attempts (each is logged as `lan.refused`). Enough for a LAN table; a lockout can follow if wanted.
+
+### Docs: record the LAN transport security gaps
+- `09-open-decisions.md`, Known issues, four entries found in PR #37 (LAN transport), each with its risk, where it is and a suggested fix. High, must fix before any internet-facing hosting: the 6-character join code (about 30 bits) can be guessed with no attempt limit (`newJoinCode`, `LanHostTransport._check`), and the host does not cap unauthenticated connections or set header and `hello` deadlines (`LanHostTransport.bind`, `_onRequest`). Medium: sends have no backpressure (`_WebSocketLink.send`). Low: reconnect backoff has no jitter and resets after any welcomed link (`Backoff.delayFor`, `Reconnector.run`). Developer guide `session.md`: a slow LAN link does not delay the loop (sends return at once; the cost is memory). No code change.
 
 ### Docs: record the diagnostic-log pseudonym weakness
 - `09-open-decisions.md`, Known issues: High, must fix before beta or any real-user data. The `Redactor` salt falls back to a time-seeded `Random` where `Random.secure()` is unavailable, ids are hashed with a 32-bit non-cryptographic hash that differs on JS, and report-bundle game and text logs carry plain ids. No code change.
@@ -53,6 +66,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Pack: new `tables/` folder, one random table per file (`id`, `name`, `dice`, optional `lead`, `rows` of `{from, to, text}`). The loader checks that the rows cover every total of the dice exactly once; pending dice load with a warning; row `effects` must stay empty until an effect has engine meaning. The engine and the example pack ship no tables (content is D's).
 - Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review. Narration is in-theme for players: the table's lead-in (D's text) then the row, never dice or table names; the GM's line keeps the mechanics; a redacted roll shows players a redaction bar.
 - Codecs: `rollTable` and `tableRolled` with v1 fixtures; the engine round-trip run includes a table roll.
+
+### Feature: theme_core package
+- New pure-Dart package `packages/theme_core` (workspace member, layer rule `theme_core: Dart SDK only`, no new dependencies): token registry (42 tokens, token set 1; alpha only on `highlight` and `sceneTint`), colour type with WCAG contrast, JSON codec with import validation (all problems with JSON paths, invalid themes rejected), resolver (own value, base chain, fallback built-in, loop, depth and missing-base checks, outdated-token report, flatten), variants, the player's appearance setting with System mode, and the agreed variant and System labels.
+- Built-in themes Phosphor, Manila and Night Desk as JSON assets (4 variants each), with `windowEdge` on every one. `paperStamp` is `#7E2A20` (a dried-ink red darker than `paperAlert`); the Handler takeover tokens are `hostileTakeover` and `onHostileTakeover`, with placeholder values.
+- Import size and chain depth are `ThemeLimits` parameters (1 MiB, 32).
+- Not included: the standard paper set constant, effect-safety substitution, "Add missing colours", CIEDE2000 advisories.
 
 ### Refactor: Operation renamed to Episode in code
 - Engine, session, protocol, envelope, migrator, `ui_kit` and `apps/bard`: the live-game unit is `Episode` (`EpisodeState`, `EpisodeSystem`, `StartEpisode`, `EpisodeStarted`, `EpisodeSettings`, `EpisodeHost`, `EpisodeParticipant`, `EpisodeService`, `SessionEpisodeService`, `episodeId`), with files and tests renamed to match. No behaviour change.
