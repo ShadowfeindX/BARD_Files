@@ -346,14 +346,15 @@ void main() {
       'a batch with a gap or overlap is refused and stores nothing',
       () async {
         final store = InMemoryEventStore();
-        const head = HeadSnapshot(seq: 0, state: {}, rngDrawCount: 0);
+        HeadSnapshot head(int seq) =>
+            HeadSnapshot(seq: seq, state: const {}, rngDrawCount: 0);
         await expectLater(
-          store.append('op', [stored(2)], const [], head),
+          store.append('op', [stored(2)], const [], head(2)),
           throwsStateError,
         );
-        await store.append('op', [stored(1)], const [], head);
+        await store.append('op', [stored(1)], const [], head(1));
         await expectLater(
-          store.append('op', [stored(1)], const [], head),
+          store.append('op', [stored(1)], const [], head(1)),
           throwsStateError,
         );
         expect(await store.read('op').length, 1);

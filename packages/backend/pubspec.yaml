@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   session: any
   protocol: any
+  # Pinned exactly (F5): the on-disk format must never change under a build.
+  sembast: 3.9.0
 
 dev_dependencies:
   flutter_lints: 6.0.0

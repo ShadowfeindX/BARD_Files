@@ -79,12 +79,6 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Options:** recommended: JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec. Alternative: generated Dart constants (no asset loading in the package, but a generation step that CLAUDE.md section 10 asks to avoid or document, and rules-like data in code). The controller lives in `ui_kit` as proposed. Open alternative: the controller could instead live in each app.
 - **Owner:** R. **Described in:** [07](07-apps.md#layering).
 
-### S-5 Head-snapshot mirror interval
-
-- **Undecided:** the default interval at which the host mirrors the head snapshot to the Realtime Database.
-- **Options:** proposed default 5 minutes, GM-configurable per episode; the snapshot is also mirrored on pause, on close and before migration.
-- **Owner:** R. **Described in:** [04](04-session.md#the-episode-loop-gm-canonical).
-
 ### S-6 Transport packages
 
 - **Undecided:** the packages for the LAN and P2P transports: `web_socket_channel`, `bonsoir`, `flutter_webrtc` (CLAUDE.md section 12). Not approved.
