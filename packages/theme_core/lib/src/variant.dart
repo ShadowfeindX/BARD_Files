@@ -1,24 +1,27 @@
 /// How a theme renders: the four variants of 07-apps.md (Theme document).
 enum ThemeVariant {
   /// The theme's default look. Every theme provides it.
-  normal('normal'),
+  normal('normal', 'Normal'),
 
   /// Result chips separated by lightness.
-  highContrast('highContrast'),
+  highContrast('highContrast', 'High contrast'),
 
   /// Result chips safe for protan and deutan vision.
-  redGreenSafe('redGreenSafe'),
+  redGreenSafe('redGreenSafe', 'Red-green safe'),
 
   /// Result chips safe for tritan vision.
-  blueYellowSafe('blueYellowSafe');
+  blueYellowSafe('blueYellowSafe', 'Blue-yellow safe');
 
-  const ThemeVariant(this.jsonKey);
+  const ThemeVariant(this.jsonKey, this.label);
 
   /// The key used in theme files.
   final String jsonKey;
 
-  /// Key for the drop-down label. The wording is D's to confirm (T7 e), so
-  /// the UI looks the text up by this key instead of the package holding it.
+  /// Drop-down label, as agreed by D on 2026-11-05 (T13). The UI may look
+  /// the text up by [labelKey] instead, for translation.
+  final String label;
+
+  /// Key for looking the label up in a string table.
   String get labelKey => 'themeVariant.$jsonKey';
 
   /// The variant with [jsonKey], or null.

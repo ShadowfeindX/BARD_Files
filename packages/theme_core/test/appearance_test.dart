@@ -95,8 +95,13 @@ void main() {
     expect(bad.variant, ThemeVariant.normal);
   });
 
-  test('variant label keys exist for the wording to fill in later', () {
+  test('variant labels are the ones D agreed', () {
     expect(ThemeVariant.highContrast.labelKey, 'themeVariant.highContrast');
+    expect(
+      [for (final v in ThemeVariant.values) v.label],
+      ['Normal', 'High contrast', 'Red-green safe', 'Blue-yellow safe'],
+    );
+    expect(systemThemeLabel, 'System');
   });
 }
 

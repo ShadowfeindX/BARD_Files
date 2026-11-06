@@ -4,6 +4,9 @@ import 'variant.dart';
 /// Id reserved for the selector's System option. It is never a document.
 const String systemThemeId = 'system';
 
+/// Selector label of the System option, as agreed by D on 2026-11-05 (T13).
+const String systemThemeLabel = 'System';
+
 /// Ids of the built-in themes.
 abstract final class BuiltInIds {
   /// Phosphor (dark green).

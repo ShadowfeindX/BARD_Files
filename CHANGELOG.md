@@ -7,9 +7,10 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Feature: theme_core package
 - New pure-Dart package `packages/theme_core` (workspace member, layer rule `theme_core: Dart SDK only`): token registry (42 tokens, token set 1; alpha only on `highlight` and `sceneTint`), colour type with WCAG contrast, JSON codec with import validation (all problems with JSON paths, invalid themes rejected), resolver (own value, base chain, fallback built-in, loop/depth/missing-base checks, outdated-token report, flatten), variants and the player's appearance setting with System mode.
 - Built-in themes Phosphor, Manila and Night Desk as JSON assets (4 variants each), with `windowEdge` on every one. Values are from the design study and the proposed `windowEdge` values (T11, open).
-- Import size and chain depth are `ThemeLimits` parameters (T3, ruled). Variant labels are string keys (T7 e, pending D).
+- Import size and chain depth are `ThemeLimits` parameters (T3, ruled). Variant labels (Normal, High contrast, Red-green safe, Blue-yellow safe) and the System label are the wording D agreed on 2026-11-05; they are also available by key.
 - `paperStamp` is `#7E2A20` in every built-in (R, 2026-11-05): a dried-ink red darker than `paperAlert` `#A8382B`, 7.01:1 on paper. The spec text in 07 is updated to match.
 - The Handler takeover tokens are named `hostileTakeover` and `onHostileTakeover` (R, 2026-11-05; the spec called them `intrusionGround` and `onIntrusionGround`). Values are still placeholders (T4).
+- D approved the palettes as shown and agreed T5 (file sharing only in v1) and the labels on 2026-11-05. R ruled on 2026-11-06 that Handler effects cannot be turned off: photosensitivity swaps flashing effects for safe alternatives, and reduced motion follows the platform. The spec and decision record (T13) are updated; the earlier proposed opt-out is dropped.
 - Not included: the standard paper set constant (Document mode, with T6), effect-safety substitution, "Add missing colours", CIEDE2000 advisories (T4).
 
 ### LAN transport (demo row 2)
