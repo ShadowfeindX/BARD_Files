@@ -4,6 +4,19 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### LAN transport (demo row 2)
+- `backend`: `LanHostTransport` and `LanClientTransport` over `dart:io` HTTP and WebSockets (S-6, no new package). Players join with `LanJoinInfo` (host, port, join code; the address `ws://host:port/join?code=CODE`, which is all the LAN QR carries); a wrong code or path is refused with HTTP 403/404 before a link opens and surfaces as `ConnectRefused`. `newJoinCode` and `lanAddresses` help the host screen.
+- Frame cap on the socket: `WebSocketFrameGuard` reads frame headers and closes the socket once one message passes `maxFrameBytes` (3 × `maxFrameLength`), including a message split over continuation frames, which `dart:io` does not limit. A received text frame over `maxFrameLength` is dropped and the link stays. Both are logged (`lan.oversize`). Compression is off; the client never uses an environment proxy.
+- `session`: `Liveness` pings in `ConnectionActor` (`EpisodeHost.listen(..., liveness:)`, `EpisodeParticipant(liveness:)`): a link silent past the timeout is closed and logged (`link.timeout`).
+- `session`: `Reconnector` with `Backoff` (500 ms doubling to 30 s): reconnects a participant and resumes from its last `seq`; stops on a readable refusal, `ConnectRefused` or an unreadable address, and `stop()` ends a pending connect or wait at once. `LanClientTransport` gives up a connect after 10 s. `EpisodeParticipant.linkDone` reports when a link ends and whether it had been welcomed. New diagnostic kinds: `link.closed`, `link.timeout`, `link.connectFailed`, `link.connectRefused`, `link.badAddress`, `link.retryIn` (participant; the host already had `link.closed`), `link.timeout` (host), `participant.error` (a handler failure other than a protocol error), `lan.refused`, `lan.upgradeFailed`, `lan.serverError`, `lan.oversize`, `lan.binaryFrame`, `lan.socketError` (LAN). A participant handles the end of a link in its mailbox, after the envelopes that link delivered, and ignores envelopes from a link a later connect replaced.
+
+### Bug Fixes
+- A malformed `welcome` or `refused` no longer leaves a participant half-connected: it drops the link (`hello.malformed`) so the reconnect loop tries again. A readable `refused` now closes the participant's link.
+
+### Known/Open Issues
+- Tested over loopback only; machine-to-machine runs (Windows, and Linux under WSL2) are row 7. No end-to-end LAN test with a real host yet: the dependency rules keep the engine out of `backend` tests, so row 6 composes it in the app. `Backoff` has no jitter, and a link that is welcomed then dropped at once resets it.
+- The join code is 6 characters from a 31-letter alphabet (about 30 bits), with no limit on wrong attempts (each is logged as `lan.refused`). Enough for a LAN table; a lockout can follow if wanted.
+
 ### Docs: record the diagnostic-log pseudonym weakness
 - `09-open-decisions.md`, Known issues: High, must fix before beta or any real-user data. The `Redactor` salt falls back to a time-seeded `Random` where `Random.secure()` is unavailable, ids are hashed with a 32-bit non-cryptographic hash that differs on JS, and report-bundle game and text logs carry plain ids. No code change.
 

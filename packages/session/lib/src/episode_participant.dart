@@ -46,6 +46,7 @@ final class EpisodeParticipant {
     this.engineVersion = engine_lib.engineVersion,
     String? sessionTag,
     this.diagnostics,
+    this.liveness,
   }) : _sessionTag =
            sessionTag ??
            DateTime.now().microsecondsSinceEpoch.toRadixString(36),
@@ -79,6 +80,11 @@ final class EpisodeParticipant {
   /// Records facts about the link and the sequence only, never contents.
   final DiagnosticLog? diagnostics;
 
+  /// Ping policy for each link, or null to send no pings. With a policy, a
+  /// host that stays silent past its timeout has its link closed, which ends
+  /// [linkDone].
+  final Liveness? liveness;
+
   /// Makes request ids unique across restarts of this participant; the host
   /// remembers ids per agent, so a restarted counter would collide.
   final String _sessionTag;
@@ -91,6 +97,7 @@ final class EpisodeParticipant {
   final StreamController<RequestRejected> _rejections =
       StreamController<RequestRejected>.broadcast();
   ConnectionActor? _connection;
+  Completer<bool> _linkDone = Completer<bool>()..complete(false);
   int _requestCounter = 0;
   int? _resyncFrom;
 
@@ -114,6 +121,12 @@ final class EpisodeParticipant {
   bool get joined => _joined;
   bool _joined = false;
 
+  /// Completes when the current link ends: closed by either side, silent
+  /// past the [liveness] timeout, or dropped after a malformed `welcome` or
+  /// `refused`. The value is true when the host had welcomed this
+  /// participant on that link. A reconnect loop waits on it.
+  Future<bool> get linkDone => _linkDone.future;
+
   /// Emits the new state after each applied batch.
   Stream<EpisodeState> get states => _states.stream;
 
@@ -134,13 +147,50 @@ final class EpisodeParticipant {
       ),
     );
     _connection = connection;
+    final done = Completer<bool>();
+    _linkDone = done;
     diagnostics?.record(DiagnosticCategory.network, 'link.connecting', {
       'lastSeq': _feed.lastSeq,
       'pending': _pending.length,
     });
+    // Both handlers go through the mailbox, so the end of a link is seen
+    // after every envelope it delivered, and an envelope from a link that a
+    // later connect replaced is ignored.
     connection.envelopes.listen(
-      (envelope) => _mailbox.run(() => _onEnvelope(envelope)),
+      (envelope) => unawaited(
+        _mailbox
+            .run(() async {
+              if (identical(_connection, connection)) {
+                await _onEnvelope(envelope);
+              }
+            })
+            .catchError(_onHandlerError),
+      ),
+      onDone: () => unawaited(
+        _mailbox.run(() {
+          final current = identical(_connection, connection);
+          final wasJoined = current && _joined;
+          if (current) _joined = false;
+          diagnostics?.record(DiagnosticCategory.network, 'link.closed', {
+            'wasJoined': wasJoined,
+            'lastSeq': _feed.lastSeq,
+          });
+          if (!done.isCompleted) done.complete(wasJoined);
+        }),
+      ),
     );
+    final policy = liveness;
+    if (policy != null) {
+      connection.keepAlive(
+        policy,
+        envelopeFor: _envelope,
+        onDead: () => diagnostics?.record(
+          DiagnosticCategory.network,
+          'link.timeout',
+          {'lastSeq': _feed.lastSeq},
+        ),
+      );
+    }
     await _send(
       Hello(
         agentId: agentId,
@@ -196,11 +246,14 @@ final class EpisodeParticipant {
         case Events(:final events):
           _applyFrame(events);
           if (_resyncFrom != null) await _requestResync();
-        case Refused(:final reason):
-          refusal = envelope.message as Refused;
+        case final Refused refused:
+          final reason = refused.reason;
+          refusal = refused;
           diagnostics?.record(DiagnosticCategory.error, 'hello.refused', {
             'reason': reason.name,
           });
+          // Nothing more can happen on a refused link.
+          await _connection?.close();
         case wire.Rejected(:final requestId, :final code, :final message):
           _pending.remove(requestId);
           diagnostics?.record(DiagnosticCategory.error, 'request.rejected', {
@@ -223,10 +276,31 @@ final class EpisodeParticipant {
         'type': e.runtimeType.toString(),
         'lastSeq': _feed.lastSeq,
       });
+      final type = envelope.messageType;
+      if (type == MessageType.welcome || type == MessageType.refused) {
+        // The handshake failed: a resync cannot help before a welcome, and a
+        // refusal we cannot read must not look like a join. Drop the link so
+        // the reconnect loop tries again after its backoff.
+        diagnostics?.record(DiagnosticCategory.error, 'hello.malformed', {
+          'type': envelope.type,
+        });
+        _joined = false;
+        await _connection?.close();
+        return;
+      }
       // A malformed host frame changes nothing; resync recovers any loss.
       await _requestResync(force: true);
     }
   }
+
+  /// Records a handler failure that is not a [ProtocolFormatException]
+  /// (for example, an event the local engine cannot apply), so it never
+  /// becomes an unhandled async error.
+  void _onHandlerError(Object error) => diagnostics?.record(
+    DiagnosticCategory.error,
+    'participant.error',
+    {'type': error.runtimeType.toString(), 'lastSeq': _feed.lastSeq},
+  );
 
   void _applyFrame(List<JsonMap> events) {
     final entries = [for (final e in events) EventEntry.fromJson(e, codec)];
@@ -264,18 +338,18 @@ final class EpisodeParticipant {
   Future<void> _sendRequest(String id) =>
       _send(Request(requestId: id, command: _pending[id]!));
 
+  Envelope _envelope(Message message) => Envelope.of(
+    message,
+    engineVersion: EngineVersion.parse(engineVersion),
+    episodeId: episodeId,
+    from: aliasId,
+  );
+
   Future<void> _send(Message message) async {
     final connection = _connection;
     if (connection == null) return;
     try {
-      await connection.send(
-        Envelope.of(
-          message,
-          engineVersion: EngineVersion.parse(engineVersion),
-          episodeId: episodeId,
-          from: aliasId,
-        ),
-      );
+      await connection.send(_envelope(message));
     } on StateError {
       diagnostics?.record(DiagnosticCategory.network, 'link.lost', {
         'wasJoined': _joined,

@@ -311,10 +311,13 @@ final class EpisodeHost {
   /// Emits the pending list whenever it changes.
   Stream<List<PendingBatch>> get pendingChanges => _pendingChanges.stream;
 
-  /// Starts accepting links from [transport].
-  void listen(Transport transport) {
+  /// Starts accepting links from [transport]. With [liveness], each link
+  /// is pinged and closed after the policy's timeout of silence.
+  void listen(Transport transport, {Liveness? liveness}) {
     diagnostics?.record(DiagnosticCategory.lifecycle, 'host.listening');
-    _listeners.add(transport.incoming().listen(_accept));
+    _listeners.add(
+      transport.incoming().listen((link) => _accept(link, liveness)),
+    );
   }
 
   /// Gives the GM's own command to the loop.
@@ -413,7 +416,7 @@ final class EpisodeHost {
 
   // ---- connections ------------------------------------------------------
 
-  void _accept(Link link) {
+  void _accept(Link link, Liveness? liveness) {
     if (_closed) {
       unawaited(link.close());
       return;
@@ -439,6 +442,22 @@ final class EpisodeHost {
         });
       },
     );
+    if (liveness != null) {
+      connection.actor.keepAlive(
+        liveness,
+        envelopeFor: (ping) => Envelope.of(
+          ping,
+          engineVersion: EngineVersion.parse(engine_lib.engineVersion),
+          episodeId: episodeId,
+          from: gmSender,
+        ),
+        onDead: () => diagnostics?.record(
+          DiagnosticCategory.network,
+          'link.timeout',
+          {'agentId': connection.identity?.agentId},
+        ),
+      );
+    }
   }
 
   Future<void> _onEnvelope(_Connection c, Envelope envelope) async {
