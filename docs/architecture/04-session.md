@@ -12,12 +12,12 @@ Actors are **not** isolates: they are single-threaded mailbox objects. Isolates 
 |---|---|---|
 | `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
 | `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
-| `ConnectionActor` | both ends, one per link | One transport link: framing (built); ping and backoff (planned; real transports); hands decoded messages to its owner |
+| `ConnectionActor` | both ends, one per link | One transport link: framing and liveness pings (built); hands decoded messages to its owner. Reconnect backoff is the participant's `Reconnector` (built) |
 | `StoreActor` (planned, 10 §5) | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
 | `RelayActor` (planned, 10 §5) | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` (planned, 10 §5) | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-As built: `EpisodeHost`, `EpisodeParticipant` and `ConnectionActor` (framing only; ping and backoff are planned with the real transports); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+As built: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor` (framing and liveness pings) and the participant's `Reconnector` (backoff, resume from `lastSeq`); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical)
 

@@ -15,6 +15,7 @@ export 'src/mailbox.dart';
 export 'src/episode_host.dart';
 export 'src/episode_participant.dart';
 export 'src/perspective.dart';
+export 'src/reconnector.dart';
 export 'src/report_bundle.dart';
 export 'src/transport.dart';
 export 'src/xoshiro_rng.dart';
