@@ -177,6 +177,32 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
 - If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export; 10 §5 'Local log export and resume from export').
 
+## Diagnostics
+
+A `DiagnosticLog` in the session layer records what the actors did, in order, apart from the game log. `EpisodeHost` and `EpisodeParticipant` take one optionally (`diagnostics:`); without one they record nothing. Each machine keeps its own log and keeps all of it for the life of the process. On the host machine a `DiagnosticFileSink` (in `backend`) also appends each entry to a `.jsonl` file beside the episode's store file, so the log survives a crash.
+
+An entry has a category (`lifecycle`, `network`, `request`, `store`, `error`), a dotted kind and a few fields. Entries describe the machinery and never contents: link opened or closed, hello joined or refused with a reason, a request committed, held or refused (command type and `seq`s only), a batch committed, a gap detected, a resync requested or served, a store write that failed, a malformed frame. Every entry passes through a `Redactor` first:
+
+- Message text, notes, names, join codes and auth proofs are replaced by `[redacted]`.
+- Agent, alias and request ids become a stable pseudonym such as `agent-3fa9c1d2`: the same id gives the same pseudonym within one log, and the salt differs between logs.
+- Any other string is cut to 80 characters; objects are not kept.
+
+**Report bundle.** `ReportBundleBuilder` turns a session into a `ReportBundle`, a set of named files, and `backend` writes it into a local folder (`bard-report-<episode>-<time>/`) that the tester sends by hand; nothing is uploaded. Each kind of log is its own file and none is merged into another:
+
+| File | Holds |
+|---|---|
+| `environment.json` | app, engine and protocol versions; OS; Flutter and Dart versions; the pack pin |
+| `settings.json` | settings in force (snapshot interval, auto-confirm, transport), redacted |
+| `diagnostic-log.jsonl` | the whole diagnostic log |
+| `network-trace.jsonl` | the `network` entries only: connect, disconnect, resync, gaps, with `seq`s |
+| `recent-errors.jsonl` | the last 50 `error` and `store` entries |
+| `store-health.json` | store health, when the store provides it |
+| `game-log.jsonl`, `text-log.jsonl`, `snapshot.json` | the episode's events, narrated lines and latest head snapshot, enough to reproduce the state |
+| `notes.json` | the Handler's NPC notes, only when the Handler ticks "include notes" |
+| `manifest.json` | what the bundle holds |
+
+The game log holds what players and the Handler did, with real agent and alias ids (the host needs them to resume), and the text log holds narrated lines and names. A bundle is for us and the tester, not for publishing. Only the diagnostic files are redacted.
+
 ## Offline and sync semantics
 
 Because the GM's log is the single ordered truth, there are no concurrent writers to merge. "Sync" is only:
