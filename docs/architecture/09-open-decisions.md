@@ -70,12 +70,6 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Options:** the grouping as proposed in the chapter.
 - **Owner:** R. **Described in:** [07](07-apps.md#perspective-panels).
 
-### S-4 How the built-in theme JSON ships
-
-- **Ruled:** R, 2026-11-05 ([T12](decision-record.md)): option 1. Nothing is open; this entry is kept only until the next pass over this file.
-- **Result:** JSON assets in `theme_core`, declared in its pubspec, loaded by `ui_kit` and passed to the codec; the controller lives in `ui_kit`.
-- **Owner:** R. **Described in:** [07](07-apps.md#layering).
-
 ### S-6 Transport packages
 
 - **Undecided:** the packages for the LAN and P2P transports: `web_socket_channel`, `bonsoir`, `flutter_webrtc` (CLAUDE.md section 12). Not approved.
