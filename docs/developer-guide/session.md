@@ -34,7 +34,7 @@
 - **Text log.** Each commit stores the engine `Narrator`'s lines as `gm`, `public`, `redacted` and `alias:<id>` variants.
 - **Authorization.** `DefaultAuthorizer(playerMay: ...)` lists the commands players may send.
 - **Diagnostics.** Pass `diagnostics: DiagnosticLog(...)` to `EpisodeHost.open` or `EpisodeParticipant`. To add a call point, call `diagnostics?.record(category, 'dotted.kind', {fields})` with facts about the machinery only (seqs, counts, reason codes). Never pass message text or notes; the `Redactor` hides the common field names (`text`, `notes`, `name`, `joinCode`, ...) and pseudonymises ids, but a new free-text field should be added to `Redactor.hiddenKeys`. In `backend`, `DiagnosticFileSink` persists the log and `writeReportBundle` saves a bundle to a folder.
-- **Transports.** Implement `Transport`/`Link`; frames are strings.
+- **Transports.** Implement `Transport`/`Link`; frames are strings. Cap what the transport buffers per frame at `maxFrameLength`; the codec refuses longer frames before parsing, but cannot stop a transport from buffering them.
 
 ## Open
 
@@ -45,6 +45,7 @@
 - Admission (invites, bans, locks, the anonymous alias map) lives in memory: a reopened host starts empty until the account layer repopulates it.
 - Frames are sent one link at a time inside the commit, so a slow link delays the loop.
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
+- A malformed `welcome` or `refused` only triggers a resync: the participant never learns it was refused, and after a malformed `welcome` it never counts itself joined, so queued requests are not sent. The LAN transport row (reconnect) should treat either as a reason to reconnect or report an error.
 - No participant-side narrator, ping scheduling, reconnect backoff or store yet.
 - Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
-- `hidden` entries keep `seq` consecutive per recipient; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
+- `hidden` entries keep `seq` consecutive per recipient (S-1 option A, ruled); an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.

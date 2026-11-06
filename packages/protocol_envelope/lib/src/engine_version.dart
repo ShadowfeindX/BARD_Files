@@ -5,8 +5,7 @@ import 'json.dart';
 ///
 /// Ordering follows Semantic Versioning 2.0.0 precedence, so a pre-release
 /// sorts before its release (`1.0.0-dev.1 < 1.0.0`). Build metadata (`+...`)
-/// and leading zeros are refused (Proposed: the spec does not fix the string
-/// format).
+/// and leading zeros are refused (03 §Message bodies).
 final class EngineVersion implements Comparable<EngineVersion> {
   /// Creates a version; all parts must be non-negative. [preRelease] holds the
   /// dot-separated pre-release identifiers, empty for a release.

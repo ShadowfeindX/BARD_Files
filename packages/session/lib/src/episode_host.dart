@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 // (private named parameters cannot be initializing formals)
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:engine/engine.dart' as engine_lib;
 import 'package:engine/engine.dart' hide engineVersion;
@@ -347,6 +348,10 @@ final class EpisodeHost {
         final events = edit == null
             ? batch.events
             : [for (final e in batch.events) _checkedEdit(e, edit(e))];
+        // An edit can lengthen an event (a new condition id, plus the
+        // original in `overriddenFrom`), so it is measured again.
+        final tooLarge = _oversized(events);
+        if (tooLarge != null) throw ArgumentError(tooLarge.message);
         final seqs = await _commit(events, batch._origin);
         diagnostics?.record(DiagnosticCategory.request, 'pending.confirmed', {
           'seqs': seqs,
@@ -575,6 +580,15 @@ final class EpisodeHost {
       );
       return;
     }
+    // Measured escaped: the id is echoed as `req` in event entries.
+    if (jsonEncode(requestId).length - 2 > maxRequestIdLength) {
+      await _reject(
+        c,
+        requestId,
+        const Refusal(SessionRejection.tooLarge, 'The request id is too long.'),
+      );
+      return;
+    }
     final key = _dedupeKey(who.agentId, requestId);
     if (_answered.containsKey(key)) {
       // At-least-once delivery: a retry never decides twice. A refused
@@ -662,6 +676,8 @@ final class EpisodeHost {
       case Rejected(:final reason):
         return Refusal(reason.code.name, reason.message);
       case Accepted(:final events):
+        final tooLarge = _oversized(events);
+        if (tooLarge != null) return tooLarge;
         final held = <Event>[];
         final now = <Event>[];
         final autoConfirm =
@@ -677,6 +693,26 @@ final class EpisodeHost {
         return Held(seqs);
     }
   }
+
+  /// A `tooLarge` refusal when any of [events] encodes longer than this
+  /// episode's event limit, else `null`. An event too large to send would
+  /// break every later resync, so it is refused before it reaches the log.
+  Refusal? _oversized(Iterable<Event> events) {
+    for (final event in events) {
+      final length = jsonEncode(codec.encodeEvent(event)).length;
+      if (length > _maxEventLength) {
+        return Refusal(
+          SessionRejection.tooLarge,
+          'An event of $length characters exceeds $_maxEventLength.',
+        );
+      }
+    }
+    return null;
+  }
+
+  /// [maxEventLength], lowered when this episode's measured header is
+  /// longer than [frameHeaderAllowance].
+  int get _maxEventLength => maxFrameLength - _frameHeaderLength - 1024;
 
   /// The log line for [event], one variant per audience (04 §Interfaces):
   /// `gm`, `public`, `redacted` and `alias:<id>`.
@@ -811,7 +847,8 @@ final class EpisodeHost {
     return entries;
   }
 
-  /// Sends the entries from [fromSeq] on, in frames of at most [_frameSize].
+  /// Sends the entries from [fromSeq] on, in frames of at most [_frameSize]
+  /// entries that stay under the frame limit ([splitEntries]).
   Future<void> _sendEntries(
     _Connection c,
     int fromSeq, {
@@ -837,20 +874,35 @@ final class EpisodeHost {
         ),
       );
     }
-    for (var i = 0; i < entries.length; i += _frameSize) {
-      final chunk = entries.sublist(
-        i,
-        i + _frameSize > entries.length ? entries.length : i + _frameSize,
-      );
-      await _send(
-        c,
-        Events([for (final e in chunk) e.toJson(codec)]),
-        seq: chunk.first.seq,
-      );
+    final frames = splitEntries(
+      [for (final e in entries) e.toJson(codec)],
+      maxCount: _frameSize,
+      headerLength: _frameHeaderLength,
+    );
+    for (final frame in frames) {
+      await _send(c, Events(frame));
     }
   }
 
   static const _frameSize = 200;
+
+  /// The envelope header plus the `{"events":[]}` wrapper, measured with
+  /// this episode's id, plus 64 for a `seq` of up to 20 digits; never less
+  /// than [frameHeaderAllowance].
+  late final int _frameHeaderLength = () {
+    final probe = jsonEncode(
+      Envelope.of(
+        Events(const [
+          {'seq': 1},
+        ]),
+        engineVersion: EngineVersion.parse(engine_lib.engineVersion),
+        episodeId: episodeId,
+        from: gmSender,
+      ).toJson(),
+    );
+    final measured = probe.length + 64;
+    return measured > frameHeaderAllowance ? measured : frameHeaderAllowance;
+  }();
 
   /// Length-prefixed, so agent ids containing `/` cannot collide.
   static String _dedupeKey(String agentId, String requestId) =>

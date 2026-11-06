@@ -4,6 +4,15 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Protocol: wire bodies and event entries ruled (O-03-1, S-1)
+- Envelope: the episode id key is now `ep` (was `op`). The v1 fixtures, tests and spec examples use `ep`.
+- `events`: every entry must carry an integer `seq` of at least 1, the entries must be consecutive, and the envelope `seq` must equal the first entry's `seq`; a frame that breaks this is a `ProtocolFormatException`, which makes a participant resync. `Envelope.of` takes the `seq` from the `Events` message. `Events.lastSeq(firstSeq)` is replaced by the `firstSeq` and `lastSeq` getters.
+- `welcome`: `events` entries follow the same rule, starting at `snapshot.seq + 1` when there is a snapshot; an empty `events` list is no longer written. `Welcome` is no longer a const constructor.
+- `refused`: `protocolMismatch`, `engineMajorMismatch` and `updateRequired` must carry `protocolMajor`, `engineMajor` and `requiredEngine` respectively. Extra fields are tolerated, so a refusal from a newer minor still decodes.
+- Frames: at most 1 Mi UTF-16 code units (`maxFrameLength`); `JsonEnvelopeCodec` refuses a longer frame before parsing it, and refuses to encode one. The host splits `events` frames by length as well as by count (`splitEntries`, with the envelope header measured per episode). The host refuses a command whose encoded event exceeds `maxEventLength` and a request id over 256 UTF-16 units JSON-encoded with the new `tooLarge` rejection code (a review edit that would make an event too large is refused and the batch stays pending); a participant's `request` throws `ArgumentError` for a request that would not fit in one frame.
+- Event entries: an entry has exactly one of `event`, `redacted: true` or `hidden: true`; anything else is a format error.
+- Docs: O-03-1 and S-1 moved from 09 to the decision record; the "Proposed" markers on the message bodies and entries are removed; the wire-names item in 10 and the README naming note follow R's ruling that names may change freely before beta.
+
 ### Diagnostic log and report bundle
 - `session`: `DiagnosticLog` with a `Redactor` (message text, notes, names and codes hidden; ids pseudonymised), kept separate from the game log. `EpisodeHost` takes an optional `diagnostics:` log with 16 call kinds (open, listen, link opened and closed, hello joined and refused, resync served, request committed, held and refused, review confirmed, batch committed, broadcast and store failures, protocol errors, close); `EpisodeParticipant` has 8 (connecting, welcomed, refused, rejected, gap detected, resync requested, link lost, protocol error).
 - `session`: `ReportBundleBuilder` and `ReportBundle`: environment, settings in force, diagnostic log, network trace, recent errors, the episode's game log, text log and latest snapshot, and an optional store-health file, each in its own file. NPC notes are left out unless "include notes" is ticked.
@@ -27,7 +36,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ### Refactor: Operation renamed to Episode in code
 - Engine, session, protocol, envelope, migrator, `ui_kit` and `apps/bard`: the live-game unit is `Episode` (`EpisodeState`, `EpisodeSystem`, `StartEpisode`, `EpisodeStarted`, `EpisodeSettings`, `EpisodeHost`, `EpisodeParticipant`, `EpisodeService`, `SessionEpisodeService`, `episodeId`), with files and tests renamed to match. No behaviour change.
-- The v1 wire names stay as they are (`startOperation`, `operationStarted`, the `operationId` field, the envelope's `op` key), because stored logs are frozen per engine major; they change only with a major bump through the migrator.
+- The v1 wire names stay as they are (`startOperation`, `operationStarted`, the `operationId` field, the envelope's `op` key), because stored logs are frozen per engine major; they change only with a major bump through the migrator. (Superseded on 2026-11-06: the envelope key is now `ep`, and the other names may change before beta; see the protocol entry above.)
 - The app's `New operation` button and dialog are now `New episode`.
 - RTDB: the live tree is `/episodes/$ep` and presence `/presence/$ep` in `firebase/database.rules.json` and its emulator suite (200 of 200, V-56).
 - The post-archive clean-up no longer deletes the phone box, which clears at operation end (R, 2026-11-03); the clean-up checks now expect `phone` beside the locked stub.
