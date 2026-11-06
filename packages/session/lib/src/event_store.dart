@@ -18,6 +18,20 @@ final class TextLogLine {
 
   /// Text per audience key.
   final Map<String, String> variants;
+
+  /// The line as JSON, for stores and exports. [time] is written in UTC.
+  JsonMap toJson() => {
+    'seq': seq,
+    'time': time.toUtc().toIso8601String(),
+    'variants': Map<String, String>.of(variants),
+  };
+
+  /// Reads a line written by [toJson].
+  factory TextLogLine.fromJson(Map<String, Object?> json) => TextLogLine(
+    seq: json['seq']! as int,
+    time: DateTime.parse(json['time']! as String),
+    variants: Map<String, String>.from(json['variants']! as Map),
+  );
 }
 
 /// An event as stored: encoded by the engine codec, so a store never needs to
@@ -52,6 +66,26 @@ final class StoredEvent {
 
   /// The request that caused the event.
   final String? requestId;
+
+  /// The event as JSON, for stores and exports. [time] is written in UTC.
+  JsonMap toJson() => {
+    'seq': seq,
+    'time': time.toUtc().toIso8601String(),
+    'engineVersion': engineVersion,
+    'event': event,
+    if (agentId != null) 'agentId': agentId,
+    if (requestId != null) 'requestId': requestId,
+  };
+
+  /// Reads an event written by [toJson].
+  factory StoredEvent.fromJson(Map<String, Object?> json) => StoredEvent(
+    seq: json['seq']! as int,
+    time: DateTime.parse(json['time']! as String),
+    engineVersion: json['engineVersion']! as String,
+    event: Map<String, Object?>.from(json['event']! as Map),
+    agentId: json['agentId'] as String?,
+    requestId: json['requestId'] as String?,
+  );
 }
 
 /// The state at [seq], written with every batch (P12).
@@ -79,15 +113,33 @@ final class HeadSnapshot {
   /// resumes at the larger of this and one past the highest id in the state,
   /// so an id is never reused even if its entity was removed.
   final int nextEntityNumber;
+
+  /// The snapshot as JSON, for stores and exports.
+  JsonMap toJson() => {
+    'seq': seq,
+    'state': state,
+    'rngDrawCount': rngDrawCount,
+    'nextEntityNumber': nextEntityNumber,
+  };
+
+  /// Reads a snapshot written by [toJson].
+  factory HeadSnapshot.fromJson(Map<String, Object?> json) => HeadSnapshot(
+    seq: json['seq']! as int,
+    state: Map<String, Object?>.from(json['state']! as Map),
+    rngDrawCount: json['rngDrawCount']! as int,
+    nextEntityNumber: json['nextEntityNumber'] as int? ?? 1,
+  );
 }
 
 /// Where a device keeps an episode's log (04 §Interfaces).
 ///
 /// `append` is one durable batch: after it returns, all of events, text and
-/// head are stored or none are. The sembast store (row 12) adds the commit
-/// marker behind this contract.
+/// head are stored or none are. The sembast store (`SembastEventStore` in
+/// `backend`) adds the commit marker behind this contract.
 abstract interface class EventStore {
-  /// Appends a batch. [events] continue the stored sequence without a gap.
+  /// Appends a batch. [events] continue the stored sequence without a gap and
+  /// are never empty; [head] is at the last event's `seq`; [text] lines lie in
+  /// the batch in increasing `seq` order. A breach throws and stores nothing.
   Future<void> append(
     String episodeId,
     List<StoredEvent> events,
@@ -127,6 +179,19 @@ final class InMemoryEventStore implements EventStore {
     HeadSnapshot head,
   ) async {
     final log = _events.putIfAbsent(episodeId, () => []);
+    if (events.isEmpty) {
+      throw ArgumentError.value(events, 'events', 'a batch needs an event');
+    }
+    if (head.seq != log.length + events.length) {
+      throw StateError('Head snapshot is not at the last event of the batch.');
+    }
+    var previousLine = log.length;
+    for (final line in text) {
+      if (line.seq <= previousLine || line.seq > head.seq) {
+        throw StateError('Text line seq ${line.seq} is outside the batch.');
+      }
+      previousLine = line.seq;
+    }
     var next = log.length + 1;
     for (final event in events) {
       if (event.seq != next++) {

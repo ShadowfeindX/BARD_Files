@@ -13,11 +13,11 @@ Actors are **not** isolates: they are single-threaded mailbox objects. Isolates 
 | `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
 | `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
 | `ConnectionActor` | both ends, one per link | One transport link: framing and liveness pings (built); hands decoded messages to its owner. Reconnect backoff is the participant's `Reconnector` (built) |
-| `StoreActor` (planned, 10 §5) | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
+| `StoreActor` | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface in one mailbox and paces the head-snapshot mirror |
 | `RelayActor` (planned, 10 §5) | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` (planned, 10 §5) | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-As built: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor` (framing and liveness pings) and the participant's `Reconnector` (backoff, resume from `lastSeq`); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+As built: `EpisodeHost`, `EpisodeParticipant`, `StoreActor`, `ConnectionActor` (framing and liveness pings) and the participant's `Reconnector` (backoff, resume from `lastSeq`); `RelayActor` and `SessionDirectory` are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical)
 
@@ -35,7 +35,7 @@ request(cmd) ──► EpisodeHost
                          GM confirms or edits; an edit is recorded on the event (`overriddenFrom`);
                          auto-confirm skips the wait when the episode's setting says so
                    5. assign seq (rolls at once; consequences only once confirmed); next = fold(evolve, events); narrate events
-                      store append (as built: EpisodeHost calls EventStore.append; StoreActor planned) (events + text lines + head snapshot of next)
+                      store append (EpisodeHost calls EventStore.append; a StoreActor can wrap the store) (events + text lines + head snapshot of next)
                          one transaction, then a commit marker in its own transaction
                    6. state = next
                    7. for each participant: filter by visibility → send `events`
@@ -50,8 +50,8 @@ In short: authorize → dedupe → decide → [rolls broadcast; consequences to 
 - **Auto-confirm** is a per-episode GM setting, separate from the setting for requests between sittings ([below](#settings-resolution)). It is an `EpisodeSettings` field, default off (Proposed; open: [auto-confirm default](10-waiting-on-d.md#auto-confirm-default)), set by the GM per episode. With it on, a pending batch is confirmed without waiting for the GM.
 - **Death goes through the gate.** A character reaching 0 Health dies as part of the confirmed damage batch, so the Handler can edit the damage before the death is recorded. The Handler's own `KillCharacter` command is not gated ([01](01-engine.md#rulebook-values-the-engine-uses), [planned code changes](01-engine.md#planned-code-changes)). (Planned; 01 'Death and control' row.)
 - **Text log and head snapshot.** Step 5 writes, in the same transaction as the events, (a) the narrated text lines for those events and (b) the **head snapshot**: the state at the new last `seq`, replacing the previous head. Narration and the head snapshot come after the GM confirms a consequence batch. Both exist because a major migration cannot use the old engine: the text log is what stays readable, and the head snapshot is the exact end state the migrator transforms ([05-migrator.md](05-migrator.md#archived-logs)). Planned: periodic full snapshots for fast joins (store methods to be added; 10 §5).
-- **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch (planned: the `sembast` 3.9.0 store, 10 §5; today only `InMemoryEventStore` exists), then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
-- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on a GM-configurable per-episode interval (proposed default 5 minutes; open: [S-5](09-open-decisions.md#s-5-head-snapshot-mirror-interval)), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). (Planned; 10 §5 'RTDB live relay'.) There is no web host (see [Play modes](#play-modes)), so autosave concerns non-web hosts only.
+- **Rolling autosave and durability.** Non-web hosts write events, text and head snapshot to the local store in one sembast transaction per batch (`SembastEventStore` in `backend`, on `sembast` 3.9.0), then a **commit marker** in its own transaction. On open, everything after the last marker is discarded. One transaction alone is not crash-atomic: 19 of 100 hard kills tore a batch, because sembast appends a transaction's records as separate lines with nothing marking the batch complete [V-31]. sembast 3.9.0 also calls no fsync, which matters for power loss, not for a process kill [V-31]. With the marker, 0 commits were lost over 100 kills on Linux and on Windows [V-31]. There is no power-loss or OS-crash protection in v1.
+- **Head snapshot mirror.** The head snapshot is mirrored to the Realtime Database on an interval that is a setting of the host machine (default 5 minutes; kept by `HostSettingsStore` in `backend`), and also on pause, on close and before migration. Event and text batches still go to the Realtime Database every batch (relay). (Planned; 10 §5 'RTDB live relay'.) As built, `StoreActor` takes the interval as a constructor argument (default 5 minutes, changeable while it runs) and a `HeadMirrorSink`; after an append it calls the sink once the interval has passed since the last mirror, and `mirrorHead(reason)` does it on demand. The sink itself is the relay's. There is no web host (see [Play modes](#play-modes)), so autosave concerns non-web hosts only.
 - **Every event kind has a narrator** from the release that introduces it. The narrator is an exhaustive `switch` over the sealed `Event` family, so a missing case is a compile error [V-16].
 - GM commands from the GM's own UI enter the same mailbox, so GM and player inputs are strictly ordered.
 - **Authorization** lives here, not in the engine: "only the GM may `RequireCheck`", "a player may only `RequestAction` for an alias they control", "anonymous accounts cannot host". The engine stays about rules; the session is about people.
@@ -83,7 +83,7 @@ Participants:
 ```
 `events` ──► EpisodeParticipant
                1. check seq continuity (gap → `resync`)
-               2. StoreActor.append (planned; local cache, for offline viewing)
+               2. StoreActor.append (local cache, for offline viewing)
                3. state = fold(evolve, events)
                4. notify listeners (view models)
 ```
@@ -104,11 +104,11 @@ abstract interface class Link {
   Future<void> close();
 }
 
-// As built in packages/session/lib/src/event_store.dart. Planned: a sembast 3.9.0
-// store behind this interface (10 §5); today only InMemoryEventStore exists.
+// As built in packages/session/lib/src/event_store.dart. Implementations:
+// InMemoryEventStore (session) and SembastEventStore (backend, sembast 3.9.0).
 abstract interface class EventStore {
   Future<void> append(String episodeId, List<StoredEvent> events,
-      List<TextLogLine> text, HeadSnapshot head);                     // planned sembast store: one transaction, then a commit marker
+      List<TextLogLine> text, HeadSnapshot head);                     // sembast store: one transaction, then a commit marker
   Stream<StoredEvent> read(String episodeId, {int fromSeq = 1});
   Stream<TextLogLine> readText(String episodeId, {int fromSeq = 1});
   Future<HeadSnapshot?> headSnapshot(String episodeId);               // state at last seq
@@ -133,7 +133,7 @@ abstract interface class Clock { DateTime now(); }
 
 Every interface has an in-memory implementation in `session` itself, used by tests and by single-device play.
 
-**Persistence.** Planned (10 §5; today only `InMemoryEventStore` exists): `EventStore` is implemented in `backend` with `sembast` 3.9.0, plus `sembast_web` 2.4.6+1 for web player caches. There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch in one transaction and then the commit marker in a second one; `open` discards everything after the last marker [V-31]. sembast is pinned exactly; the version is re-verified on pub.dev before it enters a pubspec.
+**Persistence.** `EventStore` is implemented in `backend` by `SembastEventStore` on `sembast` 3.9.0 (as built; `sembast_web` 2.4.6+1 for web player caches is planned). There is one database file per episode, opened on demand, plus a small account/cache database. sembast loads a whole database file into memory, which is why a long episode is not kept in the same file as account data. `append` writes the batch (events, text lines and the head snapshot, keyed by `seq`) in one transaction and then the commit marker in a second one, and stale older heads are deleted in a third, after the marker is durable; the first use of an episode discards everything after the last marker [V-31], and readers never see past it. sembast is pinned exactly.
 
 ### Event entries
 
@@ -175,7 +175,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 
 - A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only).
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
-- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export; 10 §5 'Local log export and resume from export').
+- If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only). A local log is exported as one file (`EpisodeExport`: every event, every text line, the latest head snapshot and the RNG draw count) and imported into an empty store on the other device (`exportEpisode`, `importEpisode`); `EpisodeHost.open` then resumes from it.
 
 ## Diagnostics
 

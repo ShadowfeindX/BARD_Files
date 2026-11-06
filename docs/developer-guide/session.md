@@ -11,7 +11,9 @@
 | `entries.dart` | Wire entries and `PerspectiveFeed` (applies entries in order, tolerates duplicates, reports gaps) |
 | `perspective.dart` | `Perspective` and `deliveryFor` (visibility to full/redacted/hidden) |
 | `identity.dart`, `authorizer.dart` | `Principal`, `IdentityVerifier`, `Admission`, `Authorizer`, `SessionRejection` codes |
-| `event_store.dart` | `EventStore` interface, `InMemoryEventStore` |
+| `event_store.dart` | `EventStore` interface, `InMemoryEventStore`, JSON forms of the stored types |
+| `store_actor.dart` | `StoreActor`: every store call through one mailbox; mirrors the head through a `HeadMirrorSink` once `snapshotInterval` has passed (default 5 minutes, from the host machine's `HostSettingsStore`) and on `mirrorHead` for pause, close and migration |
+| `episode_export.dart` | `EpisodeExport` (one file: log, text lines, latest head, RNG draw count), `exportEpisode`, `importEpisode` (into an empty store only) |
 | `transport.dart`, `in_memory_transport.dart`, `connection_actor.dart` | `Transport`/`Link`, `ConnectRefused`, the in-process network (with a frame filter for tests), envelope framing and `Liveness` pings |
 | `reconnector.dart` | `Reconnector` and `Backoff`: keeps a participant connected, resuming from its last `seq` |
 | `mailbox.dart`, `clock.dart` | The one-at-a-time queue, `Clock` and `FakeClock` |
@@ -64,3 +66,11 @@
 - No participant-side narrator or store yet.
 - Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
 - `hidden` entries keep `seq` consecutive per recipient (S-1 option A, ruled); an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
+
+## Store health
+
+`SembastEventStore.health(episodeId)` reports the commit marker, event and text-line counts, how many events recovery deleted when the file was opened, and the file size (pass `sizeOf:` to the constructor; the store itself does no file I/O). A non-zero discard count means the previous run ended in the middle of a batch. The saved report reads it.
+
+## Kill test for the sembast store
+
+`bash packages/backend/tool/kill_probe/run.sh [runs]` (from the repository root, Git Bash) compiles a writer and a checker, kills the writer with SIGKILL at random moments, and reopens the file after each kill. It fails if a batch the writer reported as committed is missing, the log has a gap, or text lines and head disagree with the events. It needs only Dart. It is run by hand, not by `check_all.sh`. Results so far: Linux, 25 kills (earlier throwaway script) and 12 kills (this script), 0 failures. Windows (R's PC, Git Bash, commit d59c5b7): 25 kills, 0 failures; `kill -9` reached the native process. These are process kills only: OS crash and power loss are not tested, and sembast calls no fsync [V-31]. The script stops with an error if the writer survives a kill.
