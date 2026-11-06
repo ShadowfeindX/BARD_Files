@@ -135,6 +135,12 @@ Not decisions; work still owed. T11 is under [Open for R (themes)](#open-for-r-t
 - **No Chrome widget tests.** CI runs the `engine` and `session` tests on Node.js as well as the VM. Nothing runs on Chrome, so `ui_kit` and `apps/bard` widget tests are unproven on the web.
 - **`check_all.sh` fails in a checkout with untracked Dart files.** Its `dart format .` step covers the whole folder, including untracked ones such as local probes. A clean clone passes on its first run (checked on Windows, 2026-11-04).
 - <a id="ui-style"></a>**UI style review.** The dossier look is not implemented and the UI style is in review, pending D's feedback (CLAUDE.md §12). `BardTheme` is a placeholder until then ([ui-kit notes](../ui-kit.md)).
+- <a id="redactor-salt"></a>**High: must fix before beta or any real-user data. Diagnostic-log pseudonyms depend on a guessable salt, and report bundles carry plain ids.** `Redactor` (`packages/session/lib/src/diagnostic_log.dart`, added by the diagnostic-log PR) turns `agentId`, `aliasId`, `requestId`, `entityId` and `from` values into `agent-3fa9c1d2`-style pseudonyms: a 32-bit FNV-1a hash of `salt|id`. The salt is never written to a bundle, so with a secure random salt the ids cannot be tested against guesses. Three weaknesses remain:
+  1. The salt comes from `Random.secure()`. Where that throws (seen on the Node.js test runtime) it falls back to a time-seeded `Random`, so the salt is guessable, and a 32-bit non-cryptographic hash over short or known ids can then be brute-forced to name agents and aliases.
+  2. The hash multiplies past 2^53, which loses precision on JS, so web and native may give different pseudonyms for one id.
+  3. `game-log.jsonl` and `text-log.jsonl` carry plain agent, request and alias ids (the text log as `alias:<id>` keys), whatever the redactor does. Numeric id values are also not pseudonymised.
+
+  Fix before beta: a keyed hash from an approved crypto source (a new dependency goes to R first), fail closed (hide the id) when no secure random is available, the same result on web and native, and a ruling on whether bundles may ever carry real ids. Proposed for the demo: the risk is acceptable because testers are known and the data is placeholder; this is not yet ruled by R. **Owner:** R. **Described in:** [04](04-session.md#diagnostics) (the link resolves once the diagnostic-log PR is merged).
 - **Session gaps.** `docs/developer-guide/session.md` lists the known gaps in the session layer.
 
 ## Held

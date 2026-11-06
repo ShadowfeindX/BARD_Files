@@ -4,6 +4,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Docs: record the diagnostic-log pseudonym weakness
+- `09-open-decisions.md`, Known issues: High, must fix before beta or any real-user data. The `Redactor` salt falls back to a time-seeded `Random` where `Random.secure()` is unavailable, ids are hashed with a 32-bit non-cryptographic hash that differs on JS, and report-bundle game and text logs carry plain ids. No code change.
+
 ### Protocol: wire bodies and event entries ruled (O-03-1, S-1)
 - Envelope: the episode id key is now `ep` (was `op`). The v1 fixtures, tests and spec examples use `ep`.
 - `events`: every entry must carry an integer `seq` of at least 1, the entries must be consecutive, and the envelope `seq` must equal the first entry's `seq`; a frame that breaks this is a `ProtocolFormatException`, which makes a participant resync. `Envelope.of` takes the `seq` from the `Events` message. `Events.lastSeq(firstSeq)` is replaced by the `firstSeq` and `lastSeq` getters.
