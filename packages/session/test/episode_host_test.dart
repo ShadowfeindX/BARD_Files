@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:engine/engine.dart';
 import 'package:protocol/protocol.dart' hide PackPin, Rejected;
@@ -39,6 +40,77 @@ void main() {
         isA<Refusal>().having((r) => r.code, 'code', 'notStarted'),
       );
       expect(await rig.store.read('op1').toList(), isEmpty);
+    });
+
+    test(
+      'an event too large for the wire is refused and stores nothing',
+      () async {
+        rig = await Rig.create();
+        await rig.start();
+        final result = await rig.host.submit(
+          rig.agent('x' * (maxEventLength + 1)),
+        );
+        expect(
+          result,
+          isA<Refusal>().having(
+            (r) => r.code,
+            'code',
+            SessionRejection.tooLarge,
+          ),
+        );
+        expect(rig.host.lastSeq, 1);
+        expect(await rig.store.read('op1').toList(), hasLength(1));
+      },
+    );
+
+    test('a request id over the limit is rejected as too large', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      final rejections = <RequestRejected>[];
+      ann.rejections.listen(rejections.add);
+      rig.network.filter = (toHost, frame) {
+        if (!toHost || !frame.contains('"type":"request"')) return [frame];
+        final json = jsonDecode(frame) as Map<String, Object?>;
+        final body = json['body']! as Map<String, Object?>;
+        body['requestId'] = 'r' * (maxRequestIdLength + 1);
+        return [jsonEncode(json)];
+      };
+      await ann.request(rig.agent('Hall', owner: 'hall'));
+      await pumpEventQueue();
+      expect(rig.host.lastSeq, 1);
+      expect(rejections.single.code, SessionRejection.tooLarge);
+    });
+
+    test('a request id is measured JSON-escaped', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      final rejections = <RequestRejected>[];
+      ann.rejections.listen(rejections.add);
+      rig.network.filter = (toHost, frame) {
+        if (!toHost || !frame.contains('"type":"request"')) return [frame];
+        final json = jsonDecode(frame) as Map<String, Object?>;
+        final body = json['body']! as Map<String, Object?>;
+        // Within the limit in characters, 6 times over it escaped.
+        body['requestId'] = '\u0001' * maxRequestIdLength;
+        return [jsonEncode(json)];
+      };
+      await ann.request(rig.agent('Hall', owner: 'hall'));
+      await pumpEventQueue();
+      expect(rig.host.lastSeq, 1);
+      expect(rejections.single.code, SessionRejection.tooLarge);
+    });
+
+    test('a request too large for one frame is refused locally', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      await expectLater(
+        ann.request(rig.agent('x' * maxFrameLength, owner: 'hall')),
+        throwsArgumentError,
+      );
+      expect(ann.pendingRequests, isEmpty);
     });
 
     test('a failed store write sends nothing and changes no state', () async {
@@ -523,6 +595,24 @@ void main() {
       },
     );
 
+    test('an edit too large for the wire is refused', () async {
+      rig = await Rig.create();
+      final agent = await setUpAgent();
+      await rig.host.submit(
+        ApplyCondition(entity: agent, condition: 'bleeding'),
+      );
+      expect(rig.host.pending, hasLength(1));
+      await expectLater(
+        rig.host.confirmPending(
+          edit: (e) =>
+              (e as ConditionApplied).withCondition('x' * maxEventLength),
+        ),
+        throwsArgumentError,
+      );
+      expect(rig.host.pending, hasLength(1), reason: 'still waiting');
+      expect(rig.host.lastSeq, 2);
+    });
+
     test('auto-confirm skips the wait', () async {
       rig = await Rig.create();
       await rig.start(
@@ -605,7 +695,7 @@ void main() {
         if (toHost || !first) return [frame];
         first = false;
         return [
-          '{"p":1,"e":"1.0.0","op":"op1","seq":2,"from":"gm",'
+          '{"p":1,"e":"1.0.0","ep":"ep1","seq":2,"from":"gm",'
               '"type":"events","body":{"events":[{"seq":2}]}}',
         ];
       };

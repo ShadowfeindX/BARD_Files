@@ -7,6 +7,7 @@ import 'package:protocol/protocol.dart' as wire show Rejected;
 
 import 'entries.dart';
 import 'connection_actor.dart';
+import 'diagnostic_log.dart';
 import 'mailbox.dart';
 import 'transport.dart';
 
@@ -44,6 +45,7 @@ final class EpisodeParticipant {
     this.anonymous = false,
     this.engineVersion = engine_lib.engineVersion,
     String? sessionTag,
+    this.diagnostics,
   }) : _sessionTag =
            sessionTag ??
            DateTime.now().microsecondsSinceEpoch.toRadixString(36),
@@ -72,6 +74,10 @@ final class EpisodeParticipant {
 
   /// This client's engine version, sent in every envelope.
   final String engineVersion;
+
+  /// Where this participant notes what it did (04 §Diagnostics), or null.
+  /// Records facts about the link and the sequence only, never contents.
+  final DiagnosticLog? diagnostics;
 
   /// Makes request ids unique across restarts of this participant; the host
   /// remembers ids per agent, so a restarted counter would collide.
@@ -119,8 +125,19 @@ final class EpisodeParticipant {
     await _connection?.close();
     _joined = false;
     refusal = null;
-    final connection = ConnectionActor(link);
+    final connection = ConnectionActor(
+      link,
+      onMalformed: (e) => diagnostics?.record(
+        DiagnosticCategory.error,
+        'protocol.error',
+        {'type': e.runtimeType.toString()},
+      ),
+    );
     _connection = connection;
+    diagnostics?.record(DiagnosticCategory.network, 'link.connecting', {
+      'lastSeq': _feed.lastSeq,
+      'pending': _pending.length,
+    });
     connection.envelopes.listen(
       (envelope) => _mailbox.run(() => _onEnvelope(envelope)),
     );
@@ -136,9 +153,23 @@ final class EpisodeParticipant {
   });
 
   /// Sends [command] as a request and returns its id.
+  ///
+  /// Throws [ArgumentError] when the request would not fit in one frame
+  /// ([maxFrameLength]); nothing is queued then.
   Future<String> request(Command command) => _mailbox.run(() async {
     final id = '$agentId-$_sessionTag-${++_requestCounter}';
-    _pending[id] = codec.encodeCommand(command);
+    final json = codec.encodeCommand(command);
+    // Checked here, not at send time, so a request that can never be sent is
+    // not queued and retried on every welcome.
+    const JsonEnvelopeCodec().encode(
+      Envelope.of(
+        Request(requestId: id, command: json),
+        engineVersion: EngineVersion.parse(engineVersion),
+        episodeId: episodeId,
+        from: aliasId,
+      ),
+    );
+    _pending[id] = json;
     if (_joined) await _sendRequest(id);
     return id;
   });
@@ -155,16 +186,27 @@ final class EpisodeParticipant {
       switch (envelope.message) {
         case Welcome():
           _joined = true;
+          diagnostics?.record(DiagnosticCategory.network, 'hello.welcomed', {
+            'lastSeq': _feed.lastSeq,
+            'resending': _pending.length,
+          });
           for (final id in _pending.keys.toList()) {
             await _sendRequest(id);
           }
         case Events(:final events):
           _applyFrame(events);
           if (_resyncFrom != null) await _requestResync();
-        case Refused():
+        case Refused(:final reason):
           refusal = envelope.message as Refused;
+          diagnostics?.record(DiagnosticCategory.error, 'hello.refused', {
+            'reason': reason.name,
+          });
         case wire.Rejected(:final requestId, :final code, :final message):
           _pending.remove(requestId);
+          diagnostics?.record(DiagnosticCategory.error, 'request.rejected', {
+            'requestId': requestId,
+            'reason': code,
+          });
           _rejections.add(RequestRejected(requestId, code, message));
         case Ping(:final nonce):
           await _send(Pong(nonce: nonce));
@@ -176,7 +218,11 @@ final class EpisodeParticipant {
             Pong():
           break;
       }
-    } on ProtocolFormatException {
+    } on ProtocolFormatException catch (e) {
+      diagnostics?.record(DiagnosticCategory.error, 'protocol.error', {
+        'type': e.runtimeType.toString(),
+        'lastSeq': _feed.lastSeq,
+      });
       // A malformed host frame changes nothing; resync recovers any loss.
       await _requestResync(force: true);
     }
@@ -196,6 +242,10 @@ final class EpisodeParticipant {
       case FeedResult.duplicate:
         break;
       case FeedResult.gap:
+        diagnostics?.record(DiagnosticCategory.network, 'gap.detected', {
+          'lastSeq': _feed.lastSeq,
+          'firstReceivedSeq': entries.isEmpty ? null : entries.first.seq,
+        });
         _resyncFrom = _feed.lastSeq;
     }
   }
@@ -204,6 +254,10 @@ final class EpisodeParticipant {
     final from = _resyncFrom ?? _feed.lastSeq;
     _resyncFrom = null;
     if (!force && _feed.lastSeq != from) return;
+    diagnostics?.record(DiagnosticCategory.network, 'resync.requested', {
+      'lastSeq': _feed.lastSeq,
+      'forced': force,
+    });
     await _send(Resync(_feed.lastSeq));
   }
 
@@ -223,6 +277,10 @@ final class EpisodeParticipant {
         ),
       );
     } on StateError {
+      diagnostics?.record(DiagnosticCategory.network, 'link.lost', {
+        'wasJoined': _joined,
+        'lastSeq': _feed.lastSeq,
+      });
       _joined = false;
     }
   }

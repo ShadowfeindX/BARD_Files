@@ -48,6 +48,12 @@ final class Rig {
   final List<EpisodeParticipant> participants = [];
   final List<Object> protocolErrors = [];
 
+  /// The host's diagnostic log, on in every rig.
+  final DiagnosticLog hostLog = DiagnosticLog(
+    clock: FakeClock(),
+    redactor: Redactor(salt: 'test'),
+  );
+
   static const codec = TestCodec();
 
   static Future<Rig> create({
@@ -85,6 +91,7 @@ final class Rig {
       ),
       rngFactory: (draws) => rng = CountingRng(draws),
       onProtocolError: protocolErrors.add,
+      diagnostics: hostLog,
     );
     host.listen(network.host(hostAddress));
   }
@@ -93,6 +100,7 @@ final class Rig {
     String agentId,
     String aliasId, {
     String? proof,
+    DiagnosticLog? log,
   }) async {
     final player = EpisodeParticipant(
       episodeId: 'op1',
@@ -101,6 +109,7 @@ final class Rig {
       engine: Engine(testPack()),
       codec: codec,
       authProof: proof ?? agentId,
+      diagnostics: log,
     );
     participants.add(player);
     await player.connect(await network.client().connect(hostAddress));

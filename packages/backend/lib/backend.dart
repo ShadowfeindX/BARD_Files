@@ -1,4 +1,8 @@
 /// Flutter and Firebase adapters behind the session and app interfaces.
 ///
-/// Stub created by the workspace scaffold; the owning workstream fills it in.
+/// The diagnostic file sink and the report bundle writer live here; the other
+/// adapters are filled in by their owning workstreams.
 library;
+
+export 'src/diagnostic_file_sink.dart';
+export 'src/report_bundle_writer.dart';

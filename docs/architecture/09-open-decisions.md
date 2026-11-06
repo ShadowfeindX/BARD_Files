@@ -31,12 +31,6 @@ Proposed in [07](07-apps.md#themes-and-player-appearance-settings), not ruled. T
 
 Proposals written into the chapters as structured designs, not yet ruled. Each has a stable id; the chapter that describes the proposal links here. Nothing built depends on them. Owner is the one who rules.
 
-### O-03-1 Protocol message bodies
-
-- **Undecided:** the field names of the message bodies (`hello`, `welcome`, `refused`, `request`, `rejected`, `events`, `resync`, `textlog`, `presence`, `ping`/`pong`), the refusal reason `anonymousAliasLimit`, and the engine version format (SemVer `major.minor.patch` with optional pre-release; no build metadata or leading zeros).
-- **Options:** one proposal, as written in the chapter. These are the only wire details the spec left open.
-- **Owner:** R. **Described in:** [03](03-protocol.md#message-bodies).
-
 ### O-05-1 Notice after migration
 
 - **Undecided:** the notice players see in the log after a migration, saying that history before it is archived text.
@@ -66,12 +60,6 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Undecided:** how a client picks up a changed claim.
 - **Options:** proposed: the roles function writes an inbox notice to `/inbox/$uid`; the client calls `getIdToken(true)` and reloads `Entitlements`. Untested whether a client without the notice picks the claim up when its token expires.
 - **Owner:** R. **Described in:** [06](06-accounts-backend.md#roles).
-
-### S-1 Event entry wrapper
-
-- **Undecided:** the wrapper for event entries: full, redacted and hidden entries per recipient, the JSON shapes, the `req` acknowledgement and resync on a gap.
-- **Options:** hidden entries for events a recipient cannot see (chosen in the proposal, so `seq` stays consecutive); or per-recipient gaps, which would break the consecutive-`seq` rule.
-- **Owner:** R. **Described in:** [04](04-session.md#event-entries); also referenced from [03](03-protocol.md).
 
 ### S-2 `SendPhoneMessage` names and fields
 

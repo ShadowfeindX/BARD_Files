@@ -30,7 +30,7 @@ The host checks a `hello` with `negotiateHello(...)`, which returns the
 
 | File | Holds |
 |---|---|
-| `src/envelope.dart` | `Envelope` (`p`, `e`, `op`, `seq`, `from`, `type`, `body`) |
+| `src/envelope.dart` | `Envelope` (`p`, `e`, `ep`, `seq`, `from`, `type`, `body`) |
 | `src/messages.dart` | `MessageType` and one class per message |
 | `src/refusal_reason.dart` | `RefusalReason` |
 | `src/negotiation.dart` | `negotiateHello` (03 §Version negotiation, rules 1 to 3) |

@@ -13,6 +13,10 @@ abstract final class SessionRejection {
 
   /// The sender has not completed a `hello`.
   static const notAdmitted = 'notAdmitted';
+
+  /// An event the command produced, or the request id, is too large for the
+  /// wire (04 §Event entries).
+  static const tooLarge = 'tooLarge';
 }
 
 /// Decides who may send what (04 §Authorization). Session rules, not engine
