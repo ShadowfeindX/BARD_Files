@@ -54,3 +54,7 @@ An advancement cost's `xp` may be a plain number instead of an expression; it is
 ## Content hash
 
 `computeContentHash` covers every file in path order, each in canonical JSON (keys sorted, whole numbers as integers, no whitespace), so reformatting does not change it. The manifest's own `contentHash` is left out; if the manifest has one, it must match. The result is `sha256:<hex>` (Proposed format). SHA-256 is written in the engine (`sha256.dart`) because the engine imports only the Dart SDK; standard test vectors run on the VM and Node.js.
+
+## The diagnostic pack (example only)
+
+`bash tool/build_diagnostic_pack.sh` generates `packages/content_core/assets/generated/diagnostic-demo/`: the core pack with a labelled PLACEHOLDER scenario laid over it, as example and diagnostic content for D to replace with the real scenario. The apps do not load it yet; only the engine test does. It is example and diagnostic content, never part of the final demo, and adds no rule or stat. How it is built, what it holds and how to delete it: `packages/content_core/diagnostic/README.md`.
