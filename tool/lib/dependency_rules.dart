@@ -67,6 +67,7 @@ const layerRules = <String, LayerRule>{
   'packages/engine': LayerRule(),
   'packages/migrator': LayerRule(devOnly: {'engine'}),
   'packages/content_core': LayerRule(),
+  'packages/theme_core': LayerRule(),
   'tool': LayerRule(allowed: {'yaml'}),
 };
 

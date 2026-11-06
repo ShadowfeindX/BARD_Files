@@ -50,6 +50,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review. Narration is in-theme for players: the table's lead-in (D's text) then the row, never dice or table names; the GM's line keeps the mechanics; a redacted roll shows players a redaction bar.
 - Codecs: `rollTable` and `tableRolled` with v1 fixtures; the engine round-trip run includes a table roll.
 
+### Feature: theme_core package
+- New pure-Dart package `packages/theme_core` (workspace member, layer rule `theme_core: Dart SDK only`, no new dependencies): token registry (42 tokens, token set 1; alpha only on `highlight` and `sceneTint`), colour type with WCAG contrast, JSON codec with import validation (all problems with JSON paths, invalid themes rejected), resolver (own value, base chain, fallback built-in, loop, depth and missing-base checks, outdated-token report, flatten), variants, the player's appearance setting with System mode, and the agreed variant and System labels.
+- Built-in themes Phosphor, Manila and Night Desk as JSON assets (4 variants each), with `windowEdge` on every one. `paperStamp` is `#7E2A20` (a dried-ink red darker than `paperAlert`); the Handler takeover tokens are `hostileTakeover` and `onHostileTakeover`, with placeholder values.
+- Import size and chain depth are `ThemeLimits` parameters (1 MiB, 32).
+- Not included: the standard paper set constant, effect-safety substitution, "Add missing colours", CIEDE2000 advisories.
+
 ### Refactor: Operation renamed to Episode in code
 - Engine, session, protocol, envelope, migrator, `ui_kit` and `apps/bard`: the live-game unit is `Episode` (`EpisodeState`, `EpisodeSystem`, `StartEpisode`, `EpisodeStarted`, `EpisodeSettings`, `EpisodeHost`, `EpisodeParticipant`, `EpisodeService`, `SessionEpisodeService`, `episodeId`), with files and tests renamed to match. No behaviour change.
 - The v1 wire names stay as they are (`startOperation`, `operationStarted`, the `operationId` field, the envelope's `op` key), because stored logs are frozen per engine major; they change only with a major bump through the migrator. (Superseded on 2026-11-06: the envelope key is now `ep`, and the other names may change before beta; see the protocol entry above.)
