@@ -182,10 +182,12 @@ const int frameHeaderAllowance = 4096;
 
 /// The longest encoded event the host commits, in UTF-16 code units. It
 /// leaves room for the entry's `seq`, flags and `req` (a request id is at
-/// most [maxRequestIdLength]), so any committed event fits in one frame.
+/// most [maxRequestIdLength] once JSON-encoded, so the entry's overhead is
+/// under 320), so any committed event fits in one frame.
 const int maxEventLength = maxFrameLength - frameHeaderAllowance - 1024;
 
-/// The longest request id the host accepts, in UTF-16 code units.
+/// The longest request id the host accepts, in UTF-16 code units of its
+/// JSON encoding without the quotes: an escaped control character counts 6.
 const int maxRequestIdLength = 256;
 
 /// Splits encoded [entries] into frames of at most [maxCount] entries whose

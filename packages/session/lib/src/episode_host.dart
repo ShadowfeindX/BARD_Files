@@ -332,6 +332,10 @@ final class EpisodeHost {
         final events = edit == null
             ? batch.events
             : [for (final e in batch.events) _checkedEdit(e, edit(e))];
+        // An edit can lengthen an event (a new condition id, plus the
+        // original in `overriddenFrom`), so it is measured again.
+        final tooLarge = _oversized(events);
+        if (tooLarge != null) throw ArgumentError(tooLarge.message);
         final seqs = await _commit(events, batch._origin);
         _pending.removeAt(0);
         _pendingChanges.add(pending);
@@ -511,7 +515,8 @@ final class EpisodeHost {
       );
       return;
     }
-    if (requestId.length > maxRequestIdLength) {
+    // Measured escaped: the id is echoed as `req` in event entries.
+    if (jsonEncode(requestId).length - 2 > maxRequestIdLength) {
       await _reject(
         c,
         requestId,
@@ -573,17 +578,8 @@ final class EpisodeHost {
       case Rejected(:final reason):
         return Refusal(reason.code.name, reason.message);
       case Accepted(:final events):
-        // An event too large to send would break every later resync, so it
-        // is refused before it reaches the log.
-        for (final event in events) {
-          final length = jsonEncode(codec.encodeEvent(event)).length;
-          if (length > maxEventLength) {
-            return Refusal(
-              SessionRejection.tooLarge,
-              'An event of $length characters exceeds $maxEventLength.',
-            );
-          }
-        }
+        final tooLarge = _oversized(events);
+        if (tooLarge != null) return tooLarge;
         final held = <Event>[];
         final now = <Event>[];
         final autoConfirm =
@@ -599,6 +595,26 @@ final class EpisodeHost {
         return Held(seqs);
     }
   }
+
+  /// A `tooLarge` refusal when any of [events] encodes longer than this
+  /// episode's event limit, else `null`. An event too large to send would
+  /// break every later resync, so it is refused before it reaches the log.
+  Refusal? _oversized(Iterable<Event> events) {
+    for (final event in events) {
+      final length = jsonEncode(codec.encodeEvent(event)).length;
+      if (length > _maxEventLength) {
+        return Refusal(
+          SessionRejection.tooLarge,
+          'An event of $length characters exceeds $_maxEventLength.',
+        );
+      }
+    }
+    return null;
+  }
+
+  /// [maxEventLength], lowered when this episode's measured header is
+  /// longer than [frameHeaderAllowance].
+  int get _maxEventLength => maxFrameLength - _frameHeaderLength - 1024;
 
   /// The log line for [event], one variant per audience (04 §Interfaces):
   /// `gm`, `public`, `redacted` and `alias:<id>`.
@@ -753,8 +769,8 @@ final class EpisodeHost {
   static const _frameSize = 200;
 
   /// The envelope header plus the `{"events":[]}` wrapper, measured with
-  /// this episode's id and a 20-digit `seq`, plus a margin; never less than
-  /// [frameHeaderAllowance].
+  /// this episode's id, plus 64 for a `seq` of up to 20 digits; never less
+  /// than [frameHeaderAllowance].
   late final int _frameHeaderLength = () {
     final probe = jsonEncode(
       Envelope.of(

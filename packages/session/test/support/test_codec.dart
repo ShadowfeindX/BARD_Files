@@ -93,6 +93,14 @@ final class TestCodec implements EngineCodec {
       'actor': _actor(event.actor),
       'visibility': _visibility(event.visibility),
     },
+    ConditionApplied() => {
+      'type': 'ConditionApplied',
+      'entity': event.entity.value,
+      'condition': event.condition,
+      'overriddenFrom': event.overriddenFrom,
+      'actor': _actor(event.actor),
+      'visibility': _visibility(event.visibility),
+    },
     _ => throw UnsupportedError('TestCodec: $event'),
   };
 
@@ -125,6 +133,13 @@ final class TestCodec implements EngineCodec {
       entity: EntityId(json['entity']! as String),
       amount: json['amount']! as int,
       overriddenFrom: json['overriddenFrom'] as int?,
+      actor: _readActor(json['actor']),
+      visibility: _readVisibility(json['visibility']),
+    ),
+    'ConditionApplied' => ConditionApplied(
+      entity: EntityId(json['entity']! as String),
+      condition: json['condition']! as String,
+      overriddenFrom: json['overriddenFrom'] as String?,
       actor: _readActor(json['actor']),
       visibility: _readVisibility(json['visibility']),
     ),

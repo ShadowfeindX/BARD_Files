@@ -66,6 +66,14 @@ RulesPack testPack({
       formula: Op(OpKind.mul, [Attr('WIS'), Attr('LCK')]),
     ),
   ],
+  conditions: const [
+    ConditionDef(
+      id: 'bleeding',
+      name: 'Bleeding',
+      kind: ConditionKind.condition,
+      description: '',
+    ),
+  ],
 );
 
 /// The example pack's attribute keys, in pack order.
