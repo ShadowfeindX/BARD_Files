@@ -1,0 +1,7 @@
+{
+  "id": "placeholder_clerk",
+  "name": "PLACEHOLDER Clerk",
+  "description": "PLACEHOLDER: a night clerk at the records annex who knows where the files are kept and wants to be left out of it. Generated example text, not D's content.",
+  "threatClass": "human:F",
+  "attributes": null
+}

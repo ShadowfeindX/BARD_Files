@@ -1,0 +1,7 @@
+{
+  "id": "placeholder_informant",
+  "name": "PLACEHOLDER Informant",
+  "description": "PLACEHOLDER: a nervous contact who reaches the agents by phone with a warning. Generated example text, not D's content.",
+  "threatClass": "human:F",
+  "attributes": null
+}

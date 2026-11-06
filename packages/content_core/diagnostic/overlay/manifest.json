@@ -1,0 +1,10 @@
+{
+  "id": "diagnostic-demo",
+  "name": "PLACEHOLDER Diagnostic Pack (generated example, not D's content)",
+  "version": "0.0.1",
+  "engineApi": 1,
+  "publisher": "diagnostic-generated",
+  "tier": "campaign",
+  "requires": [],
+  "verification": "pending"
+}
