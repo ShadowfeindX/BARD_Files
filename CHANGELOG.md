@@ -58,6 +58,10 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - New `decision-record.md` holds every settled ruling by R and D (moved out of `09-open-decisions.md`, which now lists only open, held, deferred and known-issue items). Chapters cite decision ids as plain tags and link to the record.
 - Developer guide: the pack shape is Fixed (P1).
 
+### Docs: theme rulings (T12, T13)
+- Decision record: new rows T12 (R, 2026-11-05: T3 safeguards 1 MiB and depth 32, the `windowEdge` values, the `theme_core` name, built-in themes as JSON assets with `ThemeController` in `ui_kit`, effect tokens option A with `hostileTakeover` and `onHostileTakeover` replacing the proposed `intrusionGround` names, the document token values with `paperStamp` `#7E2A20`) and T13 (D, 2026-11-05: palettes kept as shown, theme sharing outside the app only in v1, the variant, System and Document mode labels agreed; R, 2026-11-06: players cannot turn Handler effects off, photosensitivity swaps flashing effects for safe alternatives, reduced motion follows the platform).
+- Spec (07, 09, 10, `ui-kit.md`): the ruled items read as ruled; T5, T7 (e), T11 and S-4 leave the open lists; the proposed player opt-out is replaced by the photosensitivity rule. Open: where the photosensitivity setting is stored, and the per-effect alternatives.
+
 ### Random tables (R-B2)
 - Pack: new `tables/` folder, one random table per file (`id`, `name`, `dice`, optional `lead`, `rows` of `{from, to, text}`). The loader checks that the rows cover every total of the dice exactly once; pending dice load with a warning; row `effects` must stay empty until an effect has engine meaning. The engine and the example pack ship no tables (content is D's).
 - Engine: `RollTable` (GM, optional entity, chosen visibility) and `TableRolled` in a new `TableSystem`. The seeded RNG rolls the dice, the total picks the row, and the event records faces, sides, row text and draw range. A roll, never held for review. Narration is in-theme for players: the table's lead-in (D's text) then the row, never dice or table names; the GM's line keeps the mechanics; a redacted roll shows players a redaction bar.
