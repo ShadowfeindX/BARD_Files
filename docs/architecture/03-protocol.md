@@ -15,7 +15,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay (LA
 {
   "p": 1,
   "e": "1.4.0",
-  "op": "op_01J8Z3",
+  "ep": "ep_01J8Z3",
   "seq": 1042,
   "from": "gm",
   "type": "events",
@@ -27,13 +27,14 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay (LA
 |---|---|
 | `p` | protocol major |
 | `e` | sender's engine version |
-| `op` | episode id |
+| `ep` | episode id |
 | `seq` | GM-assigned sequence (events only) |
 | `from` | logical sender: an alias id or `gm` |
 | `type` | message type (table below) |
 | `body` | message-specific payload |
 
 - Encoding is JSON via `dart:convert` (no extra dependency). A binary codec can be added later behind the same `Codec` interface if size ever matters.
+- A frame is at most 1 Mi UTF-16 code units (`maxFrameLength`, 1,048,576). A longer frame is refused before it is parsed, so a peer cannot make a client parse an arbitrarily large frame; the sender refuses to encode one. The codec limits parsing only: each transport must also cap what it buffers per frame at the same limit (the LAN transport sets its socket limit to it). The host splits `events` frames by entry count and by length to stay under the limit ([04](04-session.md#event-entries)). Unknown fields in a body are ignored and never kept: decoders copy only the fields they know into typed values.
 - Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` with `dart:convert`, and there is no `build_runner`, consistent with CLAUDE.md §10's "no hidden code generation".
 
 ## Messages
@@ -57,24 +58,24 @@ A request that carries entered dice faces (physical dice) relies on the `source`
 
 ### Message bodies
 
-The table above names what each message carries; `packages/protocol_envelope` defines the field names below. Proposed (open: [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies)). Engine commands, events and state inside them are opaque JSON owned by `protocol`.
+The table above names what each message carries; `packages/protocol_envelope` defines the field names below. Engine commands, events and state inside them are opaque JSON owned by `protocol`.
 
 | Message | Body |
 |---|---|
 | `hello` | `agentId`, `aliasId?`, `kind?` (`full` default, or `anonymous`, as in 06's account model; advisory, the host decides from the verified identity), `authProof?`, `lastSeq` (0 if none) |
-| `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`) and `events?` (both allowed by the message; the session host sends neither yet and follows the welcome with `events` frames from the client's `lastSeq + 1`) |
-| `refused` | `reason`, `message?`, and one of `protocolMajor` / `engineMajor` / `requiredEngine` that matches the reason |
+| `welcome` | `settings`, `pack?` (`{id, version, contentHash}`), `snapshot?` (`{seq, state}`) and `events?` (entries with consecutive `seq`, from `snapshot.seq + 1` when there is a snapshot; both allowed by the message; the session host sends neither yet and follows the welcome with `events` frames from the client's `lastSeq + 1`) |
+| `refused` | `reason`, `message?`, and the field that matches the reason, required: `protocolMajor` on `protocolMismatch`, `engineMajor` on `engineMajorMismatch`, `requiredEngine` on `updateRequired`. Extra fields are tolerated, so a refusal from a newer minor still decodes |
 | `request` | `requestId`, `command` |
 | `rejected` | `requestId`, `code`, `message?` |
-| `events` | `events` (non-empty): one entry per event, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`. Entry shapes are in [04-session.md](04-session.md#event-entries) |
+| `events` | `events` (non-empty): one entry per event, each with an integer `seq`, in `seq` order with no `seq` missing. The envelope `seq` is the first entry's `seq`; a frame that breaks either rule is malformed. Entry shapes are in [04-session.md](04-session.md#event-entries) |
 | `resync` | `lastSeq` |
 | `textlog` | `archive` (archived episode id), `engineMajor`, `lines` (`[{seq, text}]`, the variant this recipient saw) |
 | `presence` | `status`: `online`, `away` or `typing` |
 | `ping` / `pong` | `nonce?` |
 
-Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and `anonymousAliasLimit` (built; open: [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies); a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
+Refusal reasons: `protocolMismatch`, `engineMajorMismatch`, `updateRequired`, `notInvited`, `aliasLocked`, `banned`, and `anonymousAliasLimit` (a second alias for an anonymous agent, [06](06-accounts-backend.md#account-model)). A reason added by a later minor decodes as `unknown` on older clients.
 
-The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros (proposed, part of [O-03-1](09-open-decisions.md#o-03-1-protocol-message-bodies)).
+The envelope header decodes without the body, and `type` stays a string, so a host can read a frame from another protocol major and still answer `refused(protocolMismatch)`. `seq` appears on `events` frames only. Engine versions are SemVer `major.minor.patch` with an optional pre-release (`1.0.0-dev.1`), ordered by SemVer precedence; no build metadata or leading zeros.
 
 ## Ordering and delivery
 

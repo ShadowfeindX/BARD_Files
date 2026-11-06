@@ -12,12 +12,12 @@ Actors are **not** isolates: they are single-threaded mailbox objects. Isolates 
 |---|---|---|
 | `EpisodeHost` | GM device | The canonical engine instance, RNG (the `xrandom` adapter, see below), `seq` counter, request dedupe, the GM review gate, visibility filtering, settings |
 | `EpisodeParticipant` | each player device (and GM's own player view if any) | A non-canonical engine instance fed by received events, pending requests, last seq |
-| `ConnectionActor` | both ends, one per link | One transport link: framing (built); ping and backoff (planned; real transports); hands decoded messages to its owner |
+| `ConnectionActor` | both ends, one per link | One transport link: framing and liveness pings (built); hands decoded messages to its owner. Reconnect backoff is the participant's `Reconnector` (built) |
 | `StoreActor` (planned, 10 §5) | each device | Appending events, writing snapshots, serving reads; wraps the `EventStore` interface |
 | `RelayActor` (planned, 10 §5) | GM device, network-hosted only | Mirrors the GM's log to the backend (Realtime Database, through the backend port) and receives requests from it |
 | `SessionDirectory` (planned, 10 §5) | each device | Which episodes exist locally, opening/closing them, routing messages to the right actor |
 
-As built: `EpisodeHost`, `EpisodeParticipant` and `ConnectionActor` (framing only; ping and backoff are planned with the real transports); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
+As built: `EpisodeHost`, `EpisodeParticipant`, `ConnectionActor` (framing and liveness pings) and the participant's `Reconnector` (backoff, resume from `lastSeq`); the other three actors are planned (10 §5). Supervision is simple (planned with `SessionDirectory`): `SessionDirectory` restarts a crashed `ConnectionActor`; a crashed `EpisodeHost` is reopened from the store (log, text and head snapshot up to the last commit marker), which is always safe because state is a fold of the log.
 
 ## The episode loop (GM canonical)
 
@@ -137,7 +137,7 @@ Every interface has an in-memory implementation in `session` itself, used by tes
 
 ### Event entries
 
-Proposed (open: [S-1](09-open-decisions.md#s-1-event-entry-wrapper)). The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
 
 | Entry | Sent when | JSON |
 |---|---|---|
@@ -145,7 +145,9 @@ Proposed (open: [S-1](09-open-decisions.md#s-1-event-entry-wrapper)). The engine
 | redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
 | hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
 
-A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds.
+An entry has exactly one of `event`, `redacted: true` or `hidden: true`; anything else is malformed. A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap or a malformed frame. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds. Showing that a GM event exists is accepted on the wire.
+
+The host sends at most 200 entries per `events` frame and starts a new frame early when the next entry would take the frame past the protocol's frame limit, less the measured envelope header ([03](03-protocol.md#envelope)). So that one entry always fits, the host refuses (`tooLarge`) a command whose encoded event would exceed `maxEventLength` (the frame limit less room for the header, `seq`, flags and `req`) before anything is stored, and rejects a request id longer than 256 UTF-16 units once JSON-encoded (an escaped control character counts 6). A Handler's edit of a held consequence is measured again and refused the same way, so the batch stays pending. A participant refuses locally a request that would not fit in one frame.
 
 Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
 
@@ -174,6 +176,32 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 - A participant reconnects with `resync(lastSeq)` and receives the missing events or a fresh snapshot (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only).
 - Requests sent while disconnected stay queued locally and are delivered on reconnect; dedupe makes this safe.
 - If the GM's device is lost mid-episode, the GM opens the episode on another device from the backend copy (network-hosted) or an exported log (local). There is no automatic GM failover: the GM is canonical by design, and handing canonicity to a player device would contradict that (planned; 10 §5 'RTDB live relay' and 'Periodic full snapshots for fast joins'; today resync sends entries only and there is no log export; 10 §5 'Local log export and resume from export').
+
+## Diagnostics
+
+A `DiagnosticLog` in the session layer records what the actors did, in order, apart from the game log. `EpisodeHost` and `EpisodeParticipant` take one optionally (`diagnostics:`); without one they record nothing. Each machine keeps its own log and keeps all of it for the life of the process. On the host machine a `DiagnosticFileSink` (in `backend`) also appends each entry to a `.jsonl` file beside the episode's store file, so the log survives a crash.
+
+An entry has a category (`lifecycle`, `network`, `request`, `store`, `error`), a dotted kind and a few fields. Entries describe the machinery and never contents: link opened or closed, hello joined or refused with a reason, a request committed, held or refused (command type and `seq`s only), a batch committed, a gap detected, a resync requested or served, a store write that failed, a malformed frame. Every entry passes through a `Redactor` first:
+
+- Message text, notes, names, join codes and auth proofs are replaced by `[redacted]`.
+- Agent, alias and request ids become a stable pseudonym such as `agent-3fa9c1d2`: the same id gives the same pseudonym within one log, and the salt differs between logs.
+- Any other string is cut to 80 characters; objects are not kept.
+
+**Report bundle.** `ReportBundleBuilder` turns a session into a `ReportBundle`, a set of named files, and `backend` writes it into a local folder (`bard-report-<episode>-<time>/`) that the tester sends by hand; nothing is uploaded. Each kind of log is its own file and none is merged into another:
+
+| File | Holds |
+|---|---|
+| `environment.json` | app, engine and protocol versions; OS; Flutter and Dart versions; the pack pin |
+| `settings.json` | settings in force (snapshot interval, auto-confirm, transport), redacted |
+| `diagnostic-log.jsonl` | the whole diagnostic log |
+| `network-trace.jsonl` | the `network` entries only: connect, disconnect, resync, gaps, with `seq`s |
+| `recent-errors.jsonl` | the last 50 `error` and `store` entries |
+| `store-health.json` | store health, when the store provides it |
+| `game-log.jsonl`, `text-log.jsonl`, `snapshot.json` | the episode's events, narrated lines and latest head snapshot, enough to reproduce the state |
+| `notes.json` | the Handler's NPC notes, only when the Handler ticks "include notes" |
+| `manifest.json` | what the bundle holds |
+
+The game log holds what players and the Handler did, with real agent and alias ids (the host needs them to resume), and the text log holds narrated lines and names. A bundle is for us and the tester, not for publishing. Only the diagnostic files are redacted.
 
 ## Offline and sync semantics
 

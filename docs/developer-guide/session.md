@@ -12,9 +12,11 @@
 | `perspective.dart` | `Perspective` and `deliveryFor` (visibility to full/redacted/hidden) |
 | `identity.dart`, `authorizer.dart` | `Principal`, `IdentityVerifier`, `Admission`, `Authorizer`, `SessionRejection` codes |
 | `event_store.dart` | `EventStore` interface, `InMemoryEventStore` |
-| `transport.dart`, `in_memory_transport.dart`, `connection_actor.dart` | `Transport`/`Link`, the in-process network (with a frame filter for tests), envelope framing |
+| `transport.dart`, `in_memory_transport.dart`, `connection_actor.dart` | `Transport`/`Link`, `ConnectRefused`, the in-process network (with a frame filter for tests), envelope framing and `Liveness` pings |
+| `reconnector.dart` | `Reconnector` and `Backoff`: keeps a participant connected, resuming from its last `seq` |
 | `mailbox.dart`, `clock.dart` | The one-at-a-time queue, `Clock` and `FakeClock` |
 | `xoshiro_rng.dart` | The production `Rng` |
+| `diagnostic_log.dart`, `report_bundle.dart` | `DiagnosticLog`, `Redactor`, `DiagnosticSink`; `ReportBundleBuilder` (see 04-session.md, Diagnostics) |
 
 ## Rules the host keeps
 
@@ -32,7 +34,19 @@
 - **What players receive.** `projectFor` shapes the copy of an event a player or the table gets: `overriddenFrom` is dropped and a multi-alias event is narrowed to the viewer's alias. The store and the GM keep the whole event. Add a case when a new event can address several aliases or carries GM-only detail.
 - **Text log.** Each commit stores the engine `Narrator`'s lines as `gm`, `public`, `redacted` and `alias:<id>` variants.
 - **Authorization.** `DefaultAuthorizer(playerMay: ...)` lists the commands players may send.
-- **Transports.** Implement `Transport`/`Link`; frames are strings.
+- **Diagnostics.** Pass `diagnostics: DiagnosticLog(...)` to `EpisodeHost.open` or `EpisodeParticipant`. To add a call point, call `diagnostics?.record(category, 'dotted.kind', {fields})` with facts about the machinery only (seqs, counts, reason codes). Never pass message text or notes; the `Redactor` hides the common field names (`text`, `notes`, `name`, `joinCode`, ...) and pseudonymises ids, but a new free-text field should be added to `Redactor.hiddenKeys`. In `backend`, `DiagnosticFileSink` persists the log and `writeReportBundle` saves a bundle to a folder.
+- **Transports.** Implement `Transport`/`Link`; frames are strings. Cap what the transport buffers per frame at `maxFrameLength`; the codec refuses longer frames before parsing, but cannot stop a transport from buffering them. Throw `ConnectRefused` from `connect` when retrying cannot help (a wrong join code). The LAN transport is in `backend` (see below).
+- **Liveness.** `host.listen(transport, liveness: Liveness(...))` and `EpisodeParticipant(liveness: ...)` ping every `interval` and close a link that has been silent for `timeout` (any frame counts). Off when null, as in most tests.
+- **Reconnect.** `Reconnector(participant:, transport:, address:).run()` connects, waits on `participant.linkDone`, and connects again after a `Backoff` wait (500 ms doubling to 30 s; back to 500 ms after a link that was welcomed). Each new link sends `hello` with `lastSeq`, so the host replays the gap and pending requests are re-sent (deduplicated by request id). It stops on `stop()` (which also ends a pending connect or backoff wait), a readable `refused`, `ConnectRefused`, or a `FormatException` for the address. A welcomed link resets the backoff even if it drops at once. `LanClientTransport` times a connect out after 10 s.
+
+## LAN transport (`backend`)
+
+`packages/backend/lib/src/lan/` holds the demo's LAN transport (S-6: `dart:io` HTTP server and WebSockets, no package).
+
+- **Joining.** `LanHostTransport.bind()` listens on every IPv4 interface at a free port with a new six-character join code; `joinInfo(host)` gives the `LanJoinInfo` (host, port, code) a player types or scans, as the address `ws://host:port/join?code=CODE`. That is all the LAN QR carries. `lanAddresses()` lists this machine's IPv4 addresses to show. A wrong path or code gets HTTP 404 or 403 before any link opens, which `LanClientTransport.connect` turns into `ConnectRefused`.
+- **Frame cap.** Each socket is read through a `WebSocketFrameGuard` (`frame_guard.dart`), because `dart:io` limits each WebSocket frame (`maxPayloadLength`) but joins a message's continuation frames with no total limit. The guard reads frame headers only and destroys the socket as soon as one message passes `maxFrameBytes` (3 × `maxFrameLength`, the most UTF-8 bytes a legal frame can take), before the bytes are buffered. A text frame that arrives but is longer than `maxFrameLength` UTF-16 units is dropped and the link stays open. Both are logged as `lan.oversize`. Compression is off (no inflate on the receiving side).
+- **Proxies.** The client connects directly (`findProxy` is `DIRECT`), whatever proxy the environment sets.
+
 
 ## Open
 
@@ -43,6 +57,10 @@
 - Admission (invites, bans, locks, the anonymous alias map) lives in memory: a reopened host starts empty until the account layer repopulates it.
 - Frames are sent one link at a time inside the commit, so a slow link delays the loop.
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
-- No participant-side narrator, ping scheduling, reconnect backoff or store yet.
+- A malformed `welcome` or `refused` drops the link (`hello.malformed`), so a `Reconnector` tries again after its backoff; a host that keeps sending a malformed refusal is retried at the 30 s cap, never reported as refused.
+- `Backoff` has no jitter: every participant of a restarted host retries on the same schedule. Fine for a LAN table; worth adding before the relay.
+- The LAN transport is tested over loopback only; the two- and three-machine runs are row 7. No end-to-end LAN test with a real `EpisodeHost` yet: the dependency rules (00-overview) keep the engine out of `backend`, tests included, so row 6 composes them in the app.
+- The join code has about 30 bits and no wrong-attempt limit; each wrong code is logged as `lan.refused`.
+- No participant-side narrator or store yet.
 - Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
-- `hidden` entries keep `seq` consecutive per recipient; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
+- `hidden` entries keep `seq` consecutive per recipient (S-1 option A, ruled); an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.

@@ -32,8 +32,9 @@ final class Envelope {
 
   /// Wraps [message] in an envelope for this protocol major.
   ///
-  /// [seq] is required for [Events] (the first event's `seq`) and refused for
-  /// every other message.
+  /// For [Events], the envelope `seq` is the first entry's `seq`: [seq] may
+  /// be left out, and when given it must equal [Events.firstSeq]. [seq] is
+  /// refused for every other message.
   factory Envelope.of(
     Message message, {
     required EngineVersion engineVersion,
@@ -41,15 +42,20 @@ final class Envelope {
     required String from,
     int? seq,
     int protocol = protocolMajor,
-  }) => Envelope(
-    protocol: protocol,
-    engineVersion: engineVersion,
-    episodeId: episodeId,
-    seq: seq,
-    from: from,
-    type: message.type.wire,
-    body: message.toBody(),
-  );
+  }) {
+    if (message is Events && seq != null && seq != message.firstSeq) {
+      throw ArgumentError.value(seq, 'seq', 'must be the first entry seq');
+    }
+    return Envelope(
+      protocol: protocol,
+      engineVersion: engineVersion,
+      episodeId: episodeId,
+      seq: message is Events ? message.firstSeq : seq,
+      from: from,
+      type: message.type.wire,
+      body: message.toBody(),
+    );
+  }
 
   /// Decodes an envelope from decoded JSON.
   factory Envelope.fromJson(Object? json) {
@@ -70,7 +76,7 @@ final class Envelope {
     return Envelope._(
       protocol: protocol,
       engineVersion: EngineVersion.parse(reqString(map, 'e')),
-      episodeId: reqString(map, 'op'),
+      episodeId: reqString(map, 'ep'),
       seq: seq,
       from: reqString(map, 'from'),
       type: type,
@@ -96,7 +102,7 @@ final class Envelope {
   /// `e`: the sender's engine version.
   final EngineVersion engineVersion;
 
-  /// `op`: episode id (the v1 wire key).
+  /// `ep`: episode id.
   final String episodeId;
 
   /// `seq`: the first event's `seq`; present on `events` frames only.
@@ -124,14 +130,20 @@ final class Envelope {
     if (known == MessageType.events && seq == null) {
       throw const ProtocolFormatException('"seq" is required on events');
     }
-    return Message.fromBody(known, body);
+    final message = Message.fromBody(known, body);
+    if (message is Events && message.firstSeq != seq) {
+      throw const ProtocolFormatException(
+        'envelope "seq" must be the first entry\'s "seq"',
+      );
+    }
+    return message;
   }
 
   /// Encodes this envelope as JSON-compatible data.
   JsonMap toJson() => {
     'p': protocol,
     'e': engineVersion.toString(),
-    'op': episodeId,
+    'ep': episodeId,
     if (seq != null) 'seq': seq,
     'from': from,
     'type': type,

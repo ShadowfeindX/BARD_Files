@@ -37,7 +37,7 @@ enum MessageType {
   /// Both ways: liveness probe.
   ping('ping'),
 
-  /// Both ways: liveness reply. Proposed: an optional `nonce`, as on [Ping].
+  /// Both ways: liveness reply, echoing the ping's optional `nonce`.
   pong('pong');
 
   const MessageType(this.wire);
@@ -128,8 +128,7 @@ final class Hello extends Message {
   /// The alias (character) the agent joins as; null for a GM or a spectator.
   final String? aliasId;
 
-  /// Proposed field: full account or anonymous guest. Advisory; see
-  /// [AgentKind].
+  /// Full account or anonymous guest. Advisory; see [AgentKind].
   final AgentKind kind;
 
   /// Auth proof, if any. Opaque here; the session and backend define it.
@@ -205,29 +204,54 @@ final class Snapshot {
 
 /// GM to client: accepted.
 ///
-/// Carries a [snapshot], or [events] from the client's `lastSeq + 1`, or a
-/// snapshot followed by events from `snapshot.seq + 1`. Proposed: the body
-/// layout (03 names the contents but not the field names).
+/// May carry a [snapshot], or [events] from the client's `lastSeq + 1`, or a
+/// snapshot followed by events from `snapshot.seq + 1`. The session host
+/// sends neither today and follows the welcome with [Events] frames.
 final class Welcome extends Message {
-  /// Creates a welcome.
-  const Welcome({
+  /// Creates a welcome. [events] must have consecutive `seq` values,
+  /// starting at `snapshot.seq + 1` when there is a [snapshot].
+  Welcome({
     required this.settings,
     this.pack,
     this.snapshot,
     this.events = const [],
-  });
+  }) {
+    final problem = _welcomeEventsProblem(snapshot, events);
+    if (problem != null) throw ArgumentError.value(events, 'events', problem);
+  }
 
   /// Decodes a welcome body.
-  factory Welcome.fromBody(JsonMap body) => Welcome(
-    settings: reqMap(body, 'settings'),
-    pack: optMap(body, 'pack') == null
+  factory Welcome.fromBody(JsonMap body) {
+    final snapshot = optMap(body, 'snapshot') == null
         ? null
-        : PackPin.fromJson(reqMap(body, 'pack')),
-    snapshot: optMap(body, 'snapshot') == null
-        ? null
-        : Snapshot.fromJson(reqMap(body, 'snapshot')),
-    events: body['events'] == null ? const [] : reqMapList(body, 'events'),
-  );
+        : Snapshot.fromJson(reqMap(body, 'snapshot'));
+    final events = body['events'] == null
+        ? const <JsonMap>[]
+        : reqMapList(body, 'events');
+    final problem = _welcomeEventsProblem(snapshot, events);
+    if (problem != null) throw ProtocolFormatException(problem);
+    return Welcome(
+      settings: reqMap(body, 'settings'),
+      pack: optMap(body, 'pack') == null
+          ? null
+          : PackPin.fromJson(reqMap(body, 'pack')),
+      snapshot: snapshot,
+      events: events,
+    );
+  }
+
+  static String? _welcomeEventsProblem(
+    Snapshot? snapshot,
+    List<JsonMap> events,
+  ) {
+    if (events.isEmpty) return null;
+    final problem = _entrySeqProblem(events);
+    if (problem != null) return problem;
+    if (snapshot != null && events.first['seq'] != snapshot.seq + 1) {
+      return 'welcome events must start at snapshot seq + 1';
+    }
+    return null;
+  }
 
   /// Episode settings visible to the client (opaque).
   final JsonMap settings;
@@ -238,7 +262,8 @@ final class Welcome extends Message {
   /// A filtered snapshot, when the client cannot catch up from events.
   final Snapshot? snapshot;
 
-  /// Filtered events (opaque), in `seq` order.
+  /// Event entries for this recipient (shapes in 04 §Event entries), in
+  /// `seq` order.
   final List<JsonMap> events;
 
   @override
@@ -249,13 +274,22 @@ final class Welcome extends Message {
     'settings': settings,
     if (pack != null) 'pack': pack!.toJson(),
     if (snapshot != null) 'snapshot': snapshot!.toJson(),
-    'events': events,
+    if (events.isNotEmpty) 'events': events,
   };
 }
 
 /// GM to client: the `hello` was refused.
+///
+/// The three version reasons must carry the field that matches them:
+/// `protocolMajor` on [RefusalReason.protocolMismatch], `engineMajor` on
+/// [RefusalReason.engineMajorMismatch] and `requiredEngine` on
+/// [RefusalReason.updateRequired]. Other fields are decoded but not
+/// required, so a refusal from a newer minor that adds fields still decodes
+/// (a client meets that case on `updateRequired`). A reason from a newer
+/// minor ([RefusalReason.unknown]) is not checked.
 final class Refused extends Message {
-  /// Creates a refusal.
+  /// Creates a refusal. The version field matching [reason] must be set (see
+  /// the class documentation).
   const Refused({
     required this.reason,
     this.message,
@@ -263,18 +297,38 @@ final class Refused extends Message {
     this.episodeEngineMajor,
     this.requiredEngineVersion,
     this.unrecognizedCode,
-  });
+  }) : assert(
+         (reason != RefusalReason.protocolMismatch ||
+                 hostProtocolMajor != null) &&
+             (reason != RefusalReason.engineMajorMismatch ||
+                 episodeEngineMajor != null) &&
+             (reason != RefusalReason.updateRequired ||
+                 requiredEngineVersion != null),
+         'the version field matching the reason is required',
+       );
 
   /// Decodes a refusal body.
   factory Refused.fromBody(JsonMap body) {
     final code = reqString(body, 'reason');
     final reason = RefusalReason.fromWire(code);
     final required = optString(body, 'requiredEngine');
+    final protocol = optInt(body, 'protocolMajor');
+    final engineMajor = optInt(body, 'engineMajor');
+    final missing = switch (reason) {
+      RefusalReason.protocolMismatch when protocol == null => 'protocolMajor',
+      RefusalReason.engineMajorMismatch when engineMajor == null =>
+        'engineMajor',
+      RefusalReason.updateRequired when required == null => 'requiredEngine',
+      _ => null,
+    };
+    if (missing != null) {
+      throw ProtocolFormatException('"$missing" is required on refused($code)');
+    }
     return Refused(
       reason: reason,
       message: optString(body, 'message'),
-      hostProtocolMajor: optInt(body, 'protocolMajor'),
-      episodeEngineMajor: optInt(body, 'engineMajor'),
+      hostProtocolMajor: protocol,
+      episodeEngineMajor: engineMajor,
       requiredEngineVersion: required == null
           ? null
           : EngineVersion.parse(required),
@@ -288,14 +342,13 @@ final class Refused extends Message {
   /// Optional human-readable detail (not for logic).
   final String? message;
 
-  /// Proposed: the GM's protocol major, on [RefusalReason.protocolMismatch].
+  /// The GM's protocol major, on [RefusalReason.protocolMismatch].
   final int? hostProtocolMajor;
 
-  /// Proposed: the episode's engine major, on
-  /// [RefusalReason.engineMajorMismatch].
+  /// The episode's engine major, on [RefusalReason.engineMajorMismatch].
   final int? episodeEngineMajor;
 
-  /// Proposed: the minimum engine version, on [RefusalReason.updateRequired].
+  /// The minimum engine version, on [RefusalReason.updateRequired].
   final EngineVersion? requiredEngineVersion;
 
   /// The raw reason string when [reason] is [RefusalReason.unknown].
@@ -356,7 +409,7 @@ final class Rejected extends Message {
   final String requestId;
 
   /// Machine-readable reason, from the engine's rejection or the session's
-  /// authorization (Proposed: the code vocabulary lives with those layers).
+  /// authorization; those layers own the code vocabulary.
   final String code;
 
   /// Optional human-readable detail.
@@ -373,13 +426,19 @@ final class Rejected extends Message {
   };
 }
 
-/// GM to clients: events with consecutive `seq`, already filtered for the
-/// recipient. The envelope's `seq` is the first event's `seq` (Proposed: 03
-/// does not say which event the envelope `seq` names).
+/// GM to clients: one entry per event, already filtered for the recipient.
+///
+/// Each entry is a JSON object with an integer `seq` (its other fields are
+/// the entry shapes of 04 §Event entries, read by `session`). The entries are
+/// in `seq` order with none missing, and the envelope's `seq` is the first
+/// entry's `seq`.
 final class Events extends Message {
-  /// Creates an events message; [events] must not be empty.
+  /// Creates an events message; [events] must not be empty and their `seq`
+  /// values must be consecutive.
   Events(this.events) {
     if (events.isEmpty) throw ArgumentError.value(events, 'events', 'empty');
+    final problem = _entrySeqProblem(events);
+    if (problem != null) throw ArgumentError.value(events, 'events', problem);
   }
 
   /// Decodes an events body.
@@ -388,14 +447,19 @@ final class Events extends Message {
     if (events.isEmpty) {
       throw const ProtocolFormatException('"events" must not be empty');
     }
+    final problem = _entrySeqProblem(events);
+    if (problem != null) throw ProtocolFormatException(problem);
     return Events(events);
   }
 
-  /// The events (opaque engine JSON), in `seq` order.
+  /// The entries, in `seq` order.
   final List<JsonMap> events;
 
-  /// The `seq` of the last event, given the envelope's [firstSeq].
-  int lastSeq(int firstSeq) => firstSeq + events.length - 1;
+  /// The `seq` of the first entry (the envelope's `seq`).
+  int get firstSeq => events.first['seq']! as int;
+
+  /// The `seq` of the last entry.
+  int get lastSeq => events.last['seq']! as int;
 
   @override
   MessageType get type => MessageType.events;
@@ -444,8 +508,7 @@ final class TextLine {
 
 /// GM to client: archived text from an earlier engine major (P12).
 ///
-/// Proposed: the body layout; 03 gives only the purpose. The line shape
-/// matches the RTDB `textlog` node (`{seq, text}`).
+/// The line shape matches the RTDB `textlog` node (`{seq, text}`).
 final class TextLog extends Message {
   /// Creates a text log message.
   const TextLog({
@@ -519,7 +582,7 @@ final class Presence extends Message {
   JsonMap toBody() => {'status': status.name};
 }
 
-/// Both ways: liveness probe. Proposed: an optional [nonce] the pong echoes.
+/// Both ways: liveness probe, with an optional [nonce] the pong echoes.
 final class Ping extends Message {
   /// Creates a ping.
   const Ping({this.nonce});
@@ -553,4 +616,21 @@ final class Pong extends Message {
 
   @override
   JsonMap toBody() => {if (nonce != null) 'nonce': nonce};
+}
+
+/// Checks that every entry has an integer `seq` of at least 1 and that the
+/// values are consecutive. Returns what is wrong, or null.
+String? _entrySeqProblem(List<JsonMap> entries) {
+  int? previous;
+  for (final entry in entries) {
+    final seq = entry['seq'];
+    if (seq is! int || seq < 1) {
+      return 'every entry needs an integer "seq" >= 1';
+    }
+    if (previous != null && seq != previous + 1) {
+      return 'entry seqs must be consecutive ($previous then $seq)';
+    }
+    previous = seq;
+  }
+  return null;
 }

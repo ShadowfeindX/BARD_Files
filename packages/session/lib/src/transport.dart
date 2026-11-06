@@ -25,3 +25,17 @@ abstract interface class Transport {
   /// Opens a link to a host (client side).
   Future<Link> connect(Address address);
 }
+
+/// Thrown by [Transport.connect] when the host turned the link down before
+/// any session message (for example, a wrong join code). Trying again with
+/// the same address will not help, so a reconnect loop stops on it.
+final class ConnectRefused implements Exception {
+  /// Creates the error.
+  const ConnectRefused(this.reason);
+
+  /// A short machine-readable reason, such as `joinCode`.
+  final String reason;
+
+  @override
+  String toString() => 'ConnectRefused: $reason';
+}
