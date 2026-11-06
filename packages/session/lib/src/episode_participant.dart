@@ -136,9 +136,23 @@ final class EpisodeParticipant {
   });
 
   /// Sends [command] as a request and returns its id.
+  ///
+  /// Throws [ArgumentError] when the request would not fit in one frame
+  /// ([maxFrameLength]); nothing is queued then.
   Future<String> request(Command command) => _mailbox.run(() async {
     final id = '$agentId-$_sessionTag-${++_requestCounter}';
-    _pending[id] = codec.encodeCommand(command);
+    final json = codec.encodeCommand(command);
+    // Checked here, not at send time, so a request that can never be sent is
+    // not queued and retried on every welcome.
+    const JsonEnvelopeCodec().encode(
+      Envelope.of(
+        Request(requestId: id, command: json),
+        engineVersion: EngineVersion.parse(engineVersion),
+        episodeId: episodeId,
+        from: aliasId,
+      ),
+    );
+    _pending[id] = json;
     if (_joined) await _sendRequest(id);
     return id;
   });

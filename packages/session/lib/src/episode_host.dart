@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 // (private named parameters cannot be initializing formals)
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:engine/engine.dart' as engine_lib;
 import 'package:engine/engine.dart' hide engineVersion;
@@ -510,6 +511,14 @@ final class EpisodeHost {
       );
       return;
     }
+    if (requestId.length > maxRequestIdLength) {
+      await _reject(
+        c,
+        requestId,
+        const Refusal(SessionRejection.tooLarge, 'The request id is too long.'),
+      );
+      return;
+    }
     final key = _dedupeKey(who.agentId, requestId);
     if (_answered.containsKey(key)) {
       // At-least-once delivery: a retry never decides twice. A refused
@@ -564,6 +573,17 @@ final class EpisodeHost {
       case Rejected(:final reason):
         return Refusal(reason.code.name, reason.message);
       case Accepted(:final events):
+        // An event too large to send would break every later resync, so it
+        // is refused before it reaches the log.
+        for (final event in events) {
+          final length = jsonEncode(codec.encodeEvent(event)).length;
+          if (length > maxEventLength) {
+            return Refusal(
+              SessionRejection.tooLarge,
+              'An event of $length characters exceeds $maxEventLength.',
+            );
+          }
+        }
         final held = <Event>[];
         final now = <Event>[];
         final autoConfirm =
@@ -720,15 +740,35 @@ final class EpisodeHost {
         ),
       );
     }
-    final frames = splitEntries([
-      for (final e in entries) e.toJson(codec),
-    ], maxCount: _frameSize);
+    final frames = splitEntries(
+      [for (final e in entries) e.toJson(codec)],
+      maxCount: _frameSize,
+      headerLength: _frameHeaderLength,
+    );
     for (final frame in frames) {
       await _send(c, Events(frame));
     }
   }
 
   static const _frameSize = 200;
+
+  /// The envelope header plus the `{"events":[]}` wrapper, measured with
+  /// this episode's id and a 20-digit `seq`, plus a margin; never less than
+  /// [frameHeaderAllowance].
+  late final int _frameHeaderLength = () {
+    final probe = jsonEncode(
+      Envelope.of(
+        Events(const [
+          {'seq': 1},
+        ]),
+        engineVersion: EngineVersion.parse(engine_lib.engineVersion),
+        episodeId: episodeId,
+        from: gmSender,
+      ).toJson(),
+    );
+    final measured = probe.length + 64;
+    return measured > frameHeaderAllowance ? measured : frameHeaderAllowance;
+  }();
 
   /// Length-prefixed, so agent ids containing `/` cannot collide.
   static String _dedupeKey(String agentId, String requestId) =>

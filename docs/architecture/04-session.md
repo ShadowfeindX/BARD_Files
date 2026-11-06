@@ -147,7 +147,7 @@ The engine event does not carry its own `seq`, and a recipient must see every `s
 
 An entry has exactly one of `event`, `redacted: true` or `hidden: true`; anything else is malformed. A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap or a malformed frame. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds. Showing that a GM event exists is accepted on the wire.
 
-The host sends at most 200 entries per `events` frame and starts a new frame early when the next entry would take the frame past the protocol's frame limit ([03](03-protocol.md#envelope)); entries are bounded (a phone message is at most 2,000 UTF-16 units), so one entry always fits.
+The host sends at most 200 entries per `events` frame and starts a new frame early when the next entry would take the frame past the protocol's frame limit, less the measured envelope header ([03](03-protocol.md#envelope)). So that one entry always fits, the host refuses (`tooLarge`) a command whose encoded event would exceed `maxEventLength` (the frame limit less room for the header, `seq`, flags and `req`) before anything is stored, and rejects a request id longer than 256 UTF-16 units. A participant refuses locally a request that would not fit in one frame.
 
 Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
 

@@ -32,7 +32,7 @@
 - **What players receive.** `projectFor` shapes the copy of an event a player or the table gets: `overriddenFrom` is dropped and a multi-alias event is narrowed to the viewer's alias. The store and the GM keep the whole event. Add a case when a new event can address several aliases or carries GM-only detail.
 - **Text log.** Each commit stores the engine `Narrator`'s lines as `gm`, `public`, `redacted` and `alias:<id>` variants.
 - **Authorization.** `DefaultAuthorizer(playerMay: ...)` lists the commands players may send.
-- **Transports.** Implement `Transport`/`Link`; frames are strings.
+- **Transports.** Implement `Transport`/`Link`; frames are strings. Cap what the transport buffers per frame at `maxFrameLength`; the codec refuses longer frames before parsing, but cannot stop a transport from buffering them.
 
 ## Open
 

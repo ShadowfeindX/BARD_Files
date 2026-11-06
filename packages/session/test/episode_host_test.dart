@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:engine/engine.dart';
 import 'package:protocol/protocol.dart' hide PackPin, Rejected;
@@ -39,6 +40,57 @@ void main() {
         isA<Refusal>().having((r) => r.code, 'code', 'notStarted'),
       );
       expect(await rig.store.read('op1').toList(), isEmpty);
+    });
+
+    test(
+      'an event too large for the wire is refused and stores nothing',
+      () async {
+        rig = await Rig.create();
+        await rig.start();
+        final result = await rig.host.submit(
+          rig.agent('x' * (maxEventLength + 1)),
+        );
+        expect(
+          result,
+          isA<Refusal>().having(
+            (r) => r.code,
+            'code',
+            SessionRejection.tooLarge,
+          ),
+        );
+        expect(rig.host.lastSeq, 1);
+        expect(await rig.store.read('op1').toList(), hasLength(1));
+      },
+    );
+
+    test('a request id over the limit is rejected as too large', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      final rejections = <RequestRejected>[];
+      ann.rejections.listen(rejections.add);
+      rig.network.filter = (toHost, frame) {
+        if (!toHost || !frame.contains('"type":"request"')) return [frame];
+        final json = jsonDecode(frame) as Map<String, Object?>;
+        final body = json['body']! as Map<String, Object?>;
+        body['requestId'] = 'r' * (maxRequestIdLength + 1);
+        return [jsonEncode(json)];
+      };
+      await ann.request(rig.agent('Hall', owner: 'hall'));
+      await pumpEventQueue();
+      expect(rig.host.lastSeq, 1);
+      expect(rejections.single.code, SessionRejection.tooLarge);
+    });
+
+    test('a request too large for one frame is refused locally', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      await expectLater(
+        ann.request(rig.agent('x' * maxFrameLength, owner: 'hall')),
+        throwsArgumentError,
+      );
+      expect(ann.pendingRequests, isEmpty);
     });
 
     test('a failed store write sends nothing and changes no state', () async {

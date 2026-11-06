@@ -34,7 +34,7 @@ One protocol serves every transport: in-process, LAN, P2P, and backend relay (LA
 | `body` | message-specific payload |
 
 - Encoding is JSON via `dart:convert` (no extra dependency). A binary codec can be added later behind the same `Codec` interface if size ever matters.
-- A frame is at most 1 Mi UTF-16 code units (`maxFrameLength`, 1,048,576). A longer frame is refused before it is parsed, so a peer cannot make a client parse or hold an arbitrarily large frame; the sender refuses to encode one. The host splits `events` frames by entry count and by length to stay under the limit ([04](04-session.md#event-entries)). Unknown fields in a body are ignored and never kept: decoders copy only the fields they know into typed values.
+- A frame is at most 1 Mi UTF-16 code units (`maxFrameLength`, 1,048,576). A longer frame is refused before it is parsed, so a peer cannot make a client parse an arbitrarily large frame; the sender refuses to encode one. The codec limits parsing only: each transport must also cap what it buffers per frame at the same limit (the LAN transport sets its socket limit to it). The host splits `events` frames by entry count and by length to stay under the limit ([04](04-session.md#event-entries)). Unknown fields in a body are ignored and never kept: decoders copy only the fields they know into typed values.
 - Every engine command and event has a stable `type` string and a versioned JSON shape defined next to its Dart class. Codecs are hand-written `toJson` / `fromJson` with `dart:convert`, and there is no `build_runner`, consistent with CLAUDE.md §10's "no hidden code generation".
 
 ## Messages

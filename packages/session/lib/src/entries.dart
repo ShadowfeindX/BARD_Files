@@ -176,20 +176,33 @@ final class PerspectiveFeed {
   }
 }
 
-/// Room left in every frame for the envelope header and the `events` key.
+/// Room left in every frame for the envelope header and the `events` key,
+/// unless the caller measures the header itself (see [splitEntries]).
 const int frameHeaderAllowance = 4096;
 
+/// The longest encoded event the host commits, in UTF-16 code units. It
+/// leaves room for the entry's `seq`, flags and `req` (a request id is at
+/// most [maxRequestIdLength]), so any committed event fits in one frame.
+const int maxEventLength = maxFrameLength - frameHeaderAllowance - 1024;
+
+/// The longest request id the host accepts, in UTF-16 code units.
+const int maxRequestIdLength = 256;
+
 /// Splits encoded [entries] into frames of at most [maxCount] entries whose
-/// JSON stays within [maxLength] minus [frameHeaderAllowance], keeping
-/// order. An entry too large for any frame throws [ArgumentError]: entries
-/// are bounded (a phone message is at most 2,000 UTF-16 units), so this is
-/// a bug, not a peer's doing.
+/// JSON stays within [maxLength] minus [headerLength], keeping order.
+///
+/// [headerLength] is the room kept for the envelope header and the
+/// `{"events":[]}` wrapper; the host passes its measured header. An entry
+/// too large for any frame throws [ArgumentError]: the host refuses events
+/// longer than [maxEventLength] before committing them, so this is a bug,
+/// not a peer's doing.
 List<List<JsonMap>> splitEntries(
   List<JsonMap> entries, {
   required int maxCount,
   int maxLength = maxFrameLength,
+  int headerLength = frameHeaderAllowance,
 }) {
-  final budget = maxLength - frameHeaderAllowance;
+  final budget = maxLength - headerLength;
   final frames = <List<JsonMap>>[];
   var current = <JsonMap>[];
   var used = 0;
