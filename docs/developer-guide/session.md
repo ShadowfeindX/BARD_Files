@@ -55,7 +55,7 @@
 - `projectFor` covers the events that can address several aliases today (`BroadcastDelivered`, `CheckRequired`, `CheckResolved`) and the three that carry `overriddenFrom`; a new event with either property needs a case.
 - The host never decodes a stored snapshot: it replays the log. Snapshots for fast joins come later.
 - Admission (invites, bans, locks, the anonymous alias map) lives in memory: a reopened host starts empty until the account layer repopulates it.
-- Frames are sent one link at a time inside the commit, so a slow link delays the loop.
+- Frames are sent one link at a time inside the commit, so a slow link delays the loop. Exception, the LAN transport: `_WebSocketLink.send` queues the frame in the socket and returns at once, so a slow LAN link does not delay the loop; the cost is memory instead, because nothing limits that queue ([09, LAN sends have no backpressure](../architecture/09-open-decisions.md#lan-backpressure)).
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
 - A malformed `welcome` or `refused` drops the link (`hello.malformed`), so a `Reconnector` tries again after its backoff; a host that keeps sending a malformed refusal is retried at the 30 s cap, never reported as refused.
 - `Backoff` has no jitter: every participant of a restarted host retries on the same schedule. Fine for a LAN table; worth adding before the relay.

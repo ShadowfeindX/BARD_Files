@@ -17,6 +17,9 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Tested over loopback only; machine-to-machine runs (Windows, and Linux under WSL2) are row 7. No end-to-end LAN test with a real host yet: the dependency rules keep the engine out of `backend` tests, so row 6 composes it in the app. `Backoff` has no jitter, and a link that is welcomed then dropped at once resets it.
 - The join code is 6 characters from a 31-letter alphabet (about 30 bits), with no limit on wrong attempts (each is logged as `lan.refused`). Enough for a LAN table; a lockout can follow if wanted.
 
+### Docs: record the LAN transport security gaps
+- `09-open-decisions.md`, Known issues, four entries found in PR #37 (LAN transport), each with its risk, where it is and a suggested fix. High, must fix before any internet-facing hosting: the 6-character join code (about 30 bits) can be guessed with no attempt limit (`newJoinCode`, `LanHostTransport._check`), and the host does not cap unauthenticated connections or set header and `hello` deadlines (`LanHostTransport.bind`, `_onRequest`). Medium: sends have no backpressure (`_WebSocketLink.send`). Low: reconnect backoff has no jitter and resets after any welcomed link (`Backoff.delayFor`, `Reconnector.run`). Developer guide `session.md`: a slow LAN link does not delay the loop (sends return at once; the cost is memory). No code change.
+
 ### Docs: record the diagnostic-log pseudonym weakness
 - `09-open-decisions.md`, Known issues: High, must fix before beta or any real-user data. The `Redactor` salt falls back to a time-seeded `Random` where `Random.secure()` is unavailable, ids are hashed with a 32-bit non-cryptographic hash that differs on JS, and report-bundle game and text logs carry plain ids. No code change.
 
