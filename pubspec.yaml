@@ -16,6 +16,7 @@ workspace:
   - packages/migrator
   - packages/content_core
   - packages/backend
+  - packages/theme_core
   - packages/ui_kit
   - apps/bard
   - apps/companion
