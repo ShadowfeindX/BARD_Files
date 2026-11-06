@@ -43,6 +43,7 @@
 - Admission (invites, bans, locks, the anonymous alias map) lives in memory: a reopened host starts empty until the account layer repopulates it.
 - Frames are sent one link at a time inside the commit, so a slow link delays the loop.
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
+- A malformed `welcome` or `refused` only triggers a resync: the participant never learns it was refused, and after a malformed `welcome` it never counts itself joined, so queued requests are not sent. The LAN transport row (reconnect) should treat either as a reason to reconnect or report an error.
 - No participant-side narrator, ping scheduling, reconnect backoff or store yet.
 - Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
-- `hidden` entries keep `seq` consecutive per recipient; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
+- `hidden` entries keep `seq` consecutive per recipient (S-1 option A, ruled); an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.

@@ -172,6 +172,20 @@ void main() {
 
   group('entries on the wire', () {
     const codec = TestCodecForEntries();
+    test('use the ruled JSON shapes', () {
+      expect(const HiddenEntry(4).toJson(codec.codec), {
+        'seq': 4,
+        'hidden': true,
+      });
+      expect(const RedactedEntry(3, requestId: 'r3').toJson(codec.codec), {
+        'seq': 3,
+        'redacted': true,
+        'req': 'r3',
+      });
+      final full = FullEntry(1, agentCreated('e1', const Public()));
+      expect(full.toJson(codec.codec).keys, ['seq', 'event']);
+    });
+
     test('round trip, with and without a request ack', () {
       final entries = <EventEntry>[
         FullEntry(1, agentCreated('e1', const Public()), requestId: 'r1'),
@@ -207,6 +221,12 @@ void main() {
         {'seq': 1},
         {'seq': 1, 'event': 'x'},
         {'seq': 1, 'event': <String, Object?>{}, 'req': 3},
+        {'seq': 1, 'event': null},
+        {'seq': 1, 'redacted': false},
+        {'seq': 1, 'hidden': 'yes'},
+        {'seq': 1, 'redacted': true, 'hidden': true},
+        {'seq': 1, 'hidden': true, 'event': <String, Object?>{}},
+        {'seq': 1, 'redacted': true, 'event': <String, Object?>{}},
       ]) {
         expect(
           () => EventEntry.fromJson(bad, codec.codec),

@@ -10,7 +10,7 @@ const v140 = EngineVersion(1, 4, 0);
 Envelope wrap(Message m, {int? seq}) => Envelope.of(
   m,
   engineVersion: v140,
-  episodeId: 'op_1',
+  episodeId: 'ep_1',
   from: gmSender,
   seq: seq,
 );
@@ -83,24 +83,94 @@ void main() {
       final json = jsonDecode(
         codec.encode(wrap(const Ping(), seq: null)),
       ) as Map<String, Object?>;
-      expect(json.keys, ['p', 'e', 'op', 'from', 'type', 'body']);
+      expect(json.keys, ['p', 'e', 'ep', 'from', 'type', 'body']);
+      expect(json['ep'], 'ep_1');
       expect(json['p'], 1);
       expect(json['e'], '1.4.0');
     });
 
     test('seq belongs to events only', () {
       expect(() => wrap(const Ping(), seq: 3), throwsArgumentError);
-      expect(() => wrap(Events([{}])), throwsArgumentError);
-      expect(() => wrap(Events([{}]), seq: 0), throwsArgumentError);
-      final frame = codec.encode(wrap(Events([{}]), seq: 7));
+      final frame = codec.encode(
+        wrap(
+          Events([
+            {'seq': 7},
+          ]),
+        ),
+      );
       expect(codec.decode(frame).seq, 7);
+      expect(
+        () => Envelope(
+          protocol: 1,
+          engineVersion: v140,
+          episodeId: 'ep_1',
+          from: gmSender,
+          type: 'events',
+          body: const {},
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('the envelope seq of events is the first entry seq', () {
+      final events = Events([
+        {'seq': 7},
+        {'seq': 8},
+      ]);
+      expect(wrap(events).seq, 7);
+      expect(wrap(events, seq: 7).seq, 7);
+      expect(() => wrap(events, seq: 8), throwsArgumentError);
+      final mismatched = Envelope(
+        protocol: 1,
+        engineVersion: v140,
+        episodeId: 'ep_1',
+        from: gmSender,
+        type: 'events',
+        seq: 6,
+        body: events.toBody(),
+      );
+      expect(
+        () => codec.decode(codec.encode(mismatched)).message,
+        throwsA(isA<ProtocolFormatException>()),
+      );
+    });
+
+    test('events entries need consecutive integer seqs', () {
+      for (final bad in [
+        <JsonMap>[{}],
+        [
+          {'seq': 0},
+        ],
+        [
+          {'seq': '3'},
+        ],
+        [
+          {'seq': 3},
+          {'seq': 5},
+        ],
+        [
+          {'seq': 4},
+          {'seq': 3},
+        ],
+        [
+          {'seq': 3},
+          {'seq': 3},
+        ],
+      ]) {
+        expect(() => Events(bad), throwsArgumentError, reason: '$bad');
+        expect(
+          () => Events.fromBody({'events': bad}),
+          throwsA(isA<ProtocolFormatException>()),
+          reason: '$bad',
+        );
+      }
     });
 
     test('decodes the header of a frame from another protocol major', () {
       final frame = jsonEncode({
         'p': 2,
         'e': '2.0.0',
-        'op': 'op_1',
+        'ep': 'ep_1',
         'from': 'alias_1',
         'type': 'someFutureType',
         'body': {'anything': 1},
@@ -118,7 +188,7 @@ void main() {
       expect(() => codec.decode('{'), throwsA(isA<ProtocolFormatException>()));
       expect(() => codec.decode('[]'), throwsA(isA<ProtocolFormatException>()));
       expect(() => codec.decode(42), throwsA(isA<ProtocolFormatException>()));
-      for (final key in ['p', 'e', 'op', 'from', 'type']) {
+      for (final key in ['p', 'e', 'ep', 'from', 'type']) {
         expect(
           () => codec.decode(jsonEncode(without(key))),
           throwsA(isA<ProtocolFormatException>()),
@@ -148,7 +218,7 @@ void main() {
       final frame = jsonEncode({
         'p': 1,
         'e': '1.4.0',
-        'op': 'o',
+        'ep': 'o',
         'seq': 5,
         'from': 'gm',
         'type': 'ping',
@@ -164,7 +234,7 @@ void main() {
       final frame = jsonEncode({
         'p': 2,
         'e': '2.0.0',
-        'op': 'o',
+        'ep': 'o',
         'from': 'a',
         'type': 'events',
       });
@@ -192,7 +262,7 @@ void main() {
           Envelope(
             protocol: 1,
             engineVersion: v140,
-            episodeId: 'op_1',
+            episodeId: 'ep_1',
             from: 'gm',
             type: type,
             body: body,
@@ -271,11 +341,11 @@ void main() {
 
     test('welcome', () {
       final m = roundTrip(
-        const Welcome(
-          settings: {'autoConfirm': true},
-          pack: PackPin(id: 'core', version: '0.1.0', contentHash: 'h'),
-          snapshot: Snapshot(seq: 5, state: {'a': 1}),
-          events: [
+        Welcome(
+          settings: const {'autoConfirm': true},
+          pack: const PackPin(id: 'core', version: '0.1.0', contentHash: 'h'),
+          snapshot: const Snapshot(seq: 5, state: {'a': 1}),
+          events: const [
             {'seq': 6},
           ],
         ),
@@ -290,42 +360,182 @@ void main() {
     });
 
     test('welcome without snapshot or events', () {
-      final m = roundTrip(const Welcome(settings: {})) as Welcome;
+      final welcome = Welcome(settings: const {});
+      expect(welcome.toBody(), {'settings': <String, Object?>{}});
+      final m = roundTrip(welcome) as Welcome;
       expect(m.snapshot, isNull);
       expect(m.pack, isNull);
       expect(m.events, isEmpty);
     });
 
-    test('refused', () {
+    test('malformed welcome events are format errors', () {
+      for (final events in <Object?>[
+        'x',
+        [1],
+        [
+          {'seq': '3'},
+        ],
+        [
+          {'seq': 0},
+        ],
+        [<String, Object?>{}],
+      ]) {
+        expect(
+          () => Welcome.fromBody({
+            'settings': <String, Object?>{},
+            'events': events,
+          }),
+          throwsA(isA<ProtocolFormatException>()),
+          reason: '$events',
+        );
+      }
+    });
+
+    test('welcome events are consecutive and follow the snapshot', () {
+      expect(
+        () => Welcome(
+          settings: const {},
+          snapshot: const Snapshot(seq: 5, state: {}),
+          events: const [
+            {'seq': 7},
+          ],
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => Welcome(
+          settings: const {},
+          events: const [
+            {'seq': 2},
+            {'seq': 4},
+          ],
+        ),
+        throwsArgumentError,
+      );
+      for (final body in [
+        {
+          'settings': <String, Object?>{},
+          'snapshot': {'seq': 5, 'state': <String, Object?>{}},
+          'events': [
+            {'seq': 7},
+          ],
+        },
+        {
+          'settings': <String, Object?>{},
+          'events': [
+            {'seq': 2},
+            {'seq': 4},
+          ],
+        },
+      ]) {
+        expect(
+          () => Welcome.fromBody(body),
+          throwsA(isA<ProtocolFormatException>()),
+        );
+      }
       final m = roundTrip(
+        Welcome(
+          settings: const {},
+          events: const [
+            {'seq': 3},
+            {'seq': 4},
+          ],
+        ),
+      ) as Welcome;
+      expect(m.events.map((e) => e['seq']), [3, 4]);
+    });
+
+    test('refused carries the version field that matches its reason', () {
+      final update = roundTrip(
         const Refused(
           reason: RefusalReason.updateRequired,
           message: 'update',
-          hostProtocolMajor: 1,
-          episodeEngineMajor: 1,
           requiredEngineVersion: EngineVersion(1, 5, 0),
         ),
       ) as Refused;
-      expect(m.reason, RefusalReason.updateRequired);
-      expect(m.message, 'update');
-      expect(m.hostProtocolMajor, 1);
-      expect(m.episodeEngineMajor, 1);
-      expect(m.requiredEngineVersion, const EngineVersion(1, 5, 0));
+      expect(update.reason, RefusalReason.updateRequired);
+      expect(update.message, 'update');
+      expect(update.requiredEngineVersion, const EngineVersion(1, 5, 0));
+      expect(update.hostProtocolMajor, isNull);
+      expect(update.episodeEngineMajor, isNull);
+
+      final protocol = roundTrip(
+        const Refused(
+          reason: RefusalReason.protocolMismatch,
+          hostProtocolMajor: 1,
+        ),
+      ) as Refused;
+      expect(protocol.hostProtocolMajor, 1);
+
+      final major = roundTrip(
+        const Refused(
+          reason: RefusalReason.engineMajorMismatch,
+          episodeEngineMajor: 2,
+        ),
+      ) as Refused;
+      expect(major.episodeEngineMajor, 2);
     });
 
-    test('every refusal reason survives the wire', () {
+    test('refused without its matching version field is refused', () {
+      for (final body in [
+        {'reason': 'protocolMismatch'},
+        {'reason': 'engineMajorMismatch'},
+        {'reason': 'updateRequired'},
+        {'reason': 'protocolMismatch', 'protocolMajor': '1'},
+        {'reason': 'updateRequired', 'requiredEngine': 15},
+      ]) {
+        expect(
+          () => Refused.fromBody(body),
+          throwsA(isA<ProtocolFormatException>()),
+          reason: '$body',
+        );
+      }
+      expect(
+        () => Refused(reason: RefusalReason.protocolMismatch),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('refused tolerates extra fields from a newer minor', () {
+      final m = Refused.fromBody({
+        'reason': 'updateRequired',
+        'requiredEngine': '1.5.0',
+        'engineMajor': 1,
+      });
+      expect(m.requiredEngineVersion, const EngineVersion(1, 5, 0));
+      expect(m.episodeEngineMajor, 1);
+      expect(
+        Refused.fromBody({'reason': 'banned', 'protocolMajor': 1}).reason,
+        RefusalReason.banned,
+      );
+    });
+
+    test('every other refusal reason survives the wire with no field', () {
       for (final reason in RefusalReason.values) {
-        if (reason == RefusalReason.unknown) continue;
+        if (const {
+          RefusalReason.unknown,
+          RefusalReason.protocolMismatch,
+          RefusalReason.engineMajorMismatch,
+          RefusalReason.updateRequired,
+        }.contains(reason)) {
+          continue;
+        }
         final m = roundTrip(Refused(reason: reason)) as Refused;
         expect(m.reason, reason);
       }
+    });
+
+    test('a newer reason is not checked for version fields', () {
+      final m = Refused.fromBody({'reason': 'quotaExceeded', 'engineMajor': 3});
+      expect(m.reason, RefusalReason.unknown);
+      expect(m.episodeEngineMajor, 3);
     });
 
     test('a refusal reason from a newer minor decodes as unknown', () {
       final envelope = Envelope(
         protocol: 1,
         engineVersion: v140,
-        episodeId: 'op_1',
+        episodeId: 'ep_1',
         from: 'gm',
         type: 'refused',
         body: {'reason': 'quotaExceeded'},
@@ -367,7 +577,8 @@ void main() {
       final m = envelope.message as Events;
       expect(envelope.seq, 10);
       expect(m.events.map((e) => e['seq']), [10, 11, 12]);
-      expect(m.lastSeq(envelope.seq!), 12);
+      expect(m.firstSeq, 10);
+      expect(m.lastSeq, 12);
     });
 
     test('resync, textlog, presence, ping, pong', () {
@@ -375,12 +586,12 @@ void main() {
 
       final log = roundTrip(
         const TextLog(
-          archiveEpisodeId: 'op_0',
+          archiveEpisodeId: 'ep_0',
           engineMajor: 0,
           lines: [TextLine(seq: 1, text: 'Hall rolls.')],
         ),
       ) as TextLog;
-      expect(log.archiveEpisodeId, 'op_0');
+      expect(log.archiveEpisodeId, 'ep_0');
       expect(log.engineMajor, 0);
       expect(log.lines.single.text, 'Hall rolls.');
 

@@ -18,8 +18,7 @@ enum RefusalReason {
   /// The agent is banned from this episode.
   banned('banned'),
 
-  /// Proposed (06 §Account model, anonymous one-alias rule, Session): an anonymous agent
-  /// presented a second alias.
+  /// An anonymous agent presented a second alias (06 §Account model).
   anonymousAliasLimit('anonymousAliasLimit'),
 
   /// Decode only: a reason added by a newer minor. The negotiation functions

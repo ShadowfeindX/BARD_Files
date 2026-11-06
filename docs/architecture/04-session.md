@@ -137,7 +137,7 @@ Every interface has an in-memory implementation in `session` itself, used by tes
 
 ### Event entries
 
-Proposed (open: [S-1](09-open-decisions.md#s-1-event-entry-wrapper)). The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
+The engine event does not carry its own `seq`, and a recipient must see every `seq` to check continuity while some events are not theirs. So the host wraps each event for each recipient (`packages/session/lib/src/entries.dart`):
 
 | Entry | Sent when | JSON |
 |---|---|---|
@@ -145,7 +145,7 @@ Proposed (open: [S-1](09-open-decisions.md#s-1-event-entry-wrapper)). The engine
 | redacted | visibility `redacted` | `{"seq": n, "redacted": true}` |
 | hidden | `gm`, or `aliases[...]` without the recipient | `{"seq": n, "hidden": true}` |
 
-A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds.
+An entry has exactly one of `event`, `redacted: true` or `hidden: true`; anything else is malformed. A participant applies entries only in `seq` order, skips ones it has, and sends `resync(lastSeq)` on a gap or a malformed frame. Redacted and hidden entries advance `lastSeq` without evolving state. The hidden entry shows a player that a GM-only event exists (not what it is), so every recipient sees every `seq` and the consecutive-`seq` check holds. Showing that a GM event exists is accepted on the wire.
 
 Authorization uses the identity verified at `hello` (`IdentityVerifier`), never the envelope `from` or the hello's `kind`.
 

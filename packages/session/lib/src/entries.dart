@@ -1,13 +1,16 @@
 import 'package:engine/engine.dart';
 import 'package:protocol/protocol.dart';
 
-/// One event as a recipient receives it (the items of an `events` body).
+/// One event as a recipient receives it (the items of an `events` body,
+/// 04 §Event entries).
 ///
-/// Proposed wire shape, since the engine event does not carry its own `seq`:
+/// The engine event does not carry its own `seq`, so the host wraps it:
 /// `{"seq": n, "event": {...}}` for [FullEntry], `{"seq": n, "redacted":
 /// true}` for [RedactedEntry], `{"seq": n, "hidden": true}` for
-/// [HiddenEntry]. A full entry sent to the agent whose request caused it
-/// also carries `"req": "<requestId>"`, which acknowledges the request.
+/// [HiddenEntry]. Every recipient gets an entry for every `seq`, so `seq`
+/// stays consecutive and a gap is always a real loss. Any entry sent to the
+/// agent whose request caused it also carries `"req": "<requestId>"`, which
+/// acknowledges the request.
 sealed class EventEntry {
   const EventEntry(this.seq, {this.requestId});
 
@@ -23,6 +26,9 @@ sealed class EventEntry {
   JsonMap toJson(EngineCodec codec);
 
   /// Decodes an entry; throws [ProtocolFormatException] when malformed.
+  ///
+  /// An entry has exactly one of `event` (an object), `redacted: true` or
+  /// `hidden: true`.
   static EventEntry fromJson(JsonMap json, EngineCodec codec) {
     final seq = json['seq'];
     if (seq is! int || seq < 1) {
@@ -32,17 +38,32 @@ sealed class EventEntry {
     if (req != null && req is! String) {
       throw const ProtocolFormatException('entry "req" must be a string');
     }
-    if (json['redacted'] == true) {
-      return RedactedEntry(seq, requestId: req as String?);
+    for (final flag in const ['redacted', 'hidden']) {
+      if (json.containsKey(flag) && json[flag] != true) {
+        throw ProtocolFormatException('entry "$flag" must be true');
+      }
     }
-    if (json['hidden'] == true) {
-      return HiddenEntry(seq, requestId: req as String?);
+    final kinds = [
+      for (final key in const ['event', 'redacted', 'hidden'])
+        if (json.containsKey(key)) key,
+    ];
+    if (kinds.length != 1) {
+      throw const ProtocolFormatException(
+        'entry needs exactly one of "event", "redacted" or "hidden"',
+      );
+    }
+    final requestId = req as String?;
+    switch (kinds.single) {
+      case 'redacted':
+        return RedactedEntry(seq, requestId: requestId);
+      case 'hidden':
+        return HiddenEntry(seq, requestId: requestId);
     }
     final event = json['event'];
     if (event is! Map<String, Object?>) {
-      throw const ProtocolFormatException('entry has no "event"');
+      throw const ProtocolFormatException('entry "event" must be an object');
     }
-    return FullEntry(seq, codec.decodeEvent(event), requestId: req as String?);
+    return FullEntry(seq, codec.decodeEvent(event), requestId: requestId);
   }
 }
 

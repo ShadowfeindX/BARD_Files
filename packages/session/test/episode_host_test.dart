@@ -605,7 +605,7 @@ void main() {
         if (toHost || !first) return [frame];
         first = false;
         return [
-          '{"p":1,"e":"1.0.0","op":"op1","seq":2,"from":"gm",'
+          '{"p":1,"e":"1.0.0","ep":"ep1","seq":2,"from":"gm",'
               '"type":"events","body":{"events":[{"seq":2}]}}',
         ];
       };

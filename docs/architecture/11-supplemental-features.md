@@ -18,7 +18,7 @@ D ruled the game's levels on 2026-10-22, replacing R's 2026-10-20 terms (which m
 | Campaign | A series of operations managed by a GM. |
 | Handler | The GM role in an operation. A paid account tier (see [Clearance tiers](#clearance-tiers)). The rulebook calls the GM the Handler; D uses both (the GM runs a campaign; D wrote that Handler personas are created per campaign, FD-X4). A GM may have a different handler persona per operation. This spec writes GM unless the persona is meant. "Tier" in this chapter always means an account tier, not a content tier as in [02](02-rules-packs.md#content-kinds-and-tiers). |
 
-Every level is archived. Chapters 01 to 08 and the developer guide say "episode" for the unit of live play; code identifiers and the RTDB live tree were renamed to Episode on 2026-11-03 (v1 wire names kept, see the [README](README.md) naming note). Chapter 12 splits the Firestore `operations` node into an `episodes/{episodeId}` record and the operation record, with a `campaigns/{campaignId}` document (R, 2026-11-03).
+Every level is archived. Chapters 01 to 08 and the developer guide say "episode" for the unit of live play; code identifiers and the RTDB live tree were renamed to Episode on 2026-11-03 (the envelope key is `ep`; the remaining wire names may change before beta, see the [README](README.md) naming note). Chapter 12 splits the Firestore `operations` node into an `episodes/{episodeId}` record and the operation record, with a `campaigns/{campaignId}` document (R, 2026-11-03).
 
 **What each level holds and how it ends** (D, 2026-10-22 and 2026-10-29; R, 2026-11-03):
 
