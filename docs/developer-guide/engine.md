@@ -31,7 +31,7 @@ switch (decision) {
 | `expr/condition.dart` | Comparison conditions for the stat-gated broadcast. |
 | `narrator/` | `Narrator`: plain-text log lines per event, with GM, player and redacted lines. |
 | `systems/` | One class per system. Each decides its own command sub-family and applies its own event sub-family. |
-| `expr/` | Dice expressions and formulas: nodes, evaluator with breakdown, JSON form, approved `var` keys. |
+| `expr/` | Dice expressions and formulas: nodes, evaluator with breakdown, JSON form, allowed `var` keys. |
 | `pack/` | `RulesPack`; `files/` holds one parser plus value types per pack file; `load/` holds `loadPack`, the issue log, the pending-D marker and the content hash. See [packs.md](packs.md). |
 
 All state is immutable. `ImmutableMap` is copy-on-write; it can be swapped for a structurally shared map later without changing its API.
@@ -63,7 +63,7 @@ GM:      ClearCondition                                        → ConditionClea
 - A check totals `primary die + attribute score + proficiency dice + modifiers` (§2, G16). At or above the DC is a success; short by at most the pack's `partialSuccessWithin` is a partial success; otherwise a failure. Fumbles (G1) and Luck advantage (G2) stay off until D rules. Assistance and opposed checks are not built yet.
 - With `autoResolveChecks` on, `RequireCheck` emits `CheckRequired` and `CheckResolved` together.
 - `CheckResolved` carries the whole `CheckBreakdown` (every face, explosions included), the DC, the outcome, its `DrawRange` and `source` (`rng`; `entered` is reserved, concern 7).
-- `Consequence` marks the events the session holds for GM review (F2): today `DamageApplied`, `SanityLost` and `ConditionApplied`. F2 also covers "any category value"; no such event exists yet. `withAmount` (damage, sanity; refuses a negative amount) and `ConditionApplied.withCondition` give the edited event with the original in `overriddenFrom`. `CheckResolved` is never a consequence. Amounts are GM-entered for now; damage dice, DR and sanity bands come with the vitals rules.
+- `Consequence` marks the events the session holds for GM review: today `DamageApplied`, `SanityLost` and `ConditionApplied`. The review gate also covers "any category value"; no such event exists yet. `withAmount` (damage, sanity; refuses a negative amount) and `ConditionApplied.withCondition` give the edited event with the original in `overriddenFrom`. `CheckResolved` is never a consequence. Amounts are GM-entered for now; damage dice, DR and sanity bands come with the vitals rules.
 - Check dice (the pack's primary die and tier bonuses) may not divide or read `var` values: a division by zero depends on the faces, so it could only fail after drawing. The one failure still possible after drawing is a total past `maxSafeInteger`, which real dice cannot reach; `Engine.decide` throws a `StateError` rather than return a rejection that drew.
 - `CheckResolved.enteredBy` is reserved with `source` (concern 7: who entered physical faces) and is always `null`.
 - `Vitals` stores losses (`damageTaken`, `sanityLost`), not current values, so maximums stay derived. `DerivedStats(pack).vitals(state, entity)` gives the current values, unclamped.
@@ -71,12 +71,12 @@ GM:      ClearCondition                                        → ConditionClea
 
 ## Stat-gated broadcast
 
-`BroadcastToQualifying(text, condition)` (11 §Messaging, approved by R) sends `text` only to aliases whose agent meets `condition`. The GM's engine decides, never the UI. It emits:
+`BroadcastToQualifying(text, condition)` (11 §Messaging) sends `text` only to aliases whose agent meets `condition`. The GM's engine decides, never the UI. It emits:
 
 - `BroadcastEvaluated`, always GM-only: the text, the condition and every alias's `BroadcastCandidate` (the values compared and whether they passed; `null` when the agent lacks a score, which does not qualify).
 - `BroadcastDelivered`, `AliasesOnly` with the qualifying aliases, carrying only the text. Left out when nobody qualifies.
 
-Both events, two rather than one, are ruled by R (2026-10-21). Players never see who else received a broadcast (R, 2026-10-21): the event's `AliasesOnly` lists every recipient for the host's filter, and the session strips the list before a player's copy goes out.
+There are always two events, never one combined event. Players never see who else received a broadcast: the event's `AliasesOnly` lists every recipient for the host's filter, and the session strips the list before a player's copy goes out.
 
 Each alias's agent is tested in creation order (an alias plays at most one); GM-controlled entities never receive it. `engine.broadcastPreview(state, condition)` is the GM's preview of the same result without sending. A broadcast does not change state.
 
@@ -103,9 +103,9 @@ Packs write data-only trees (P4); there is no scripting:
 ```
 
 - `op` is one of `add sub mul div min max floor`. `sub` and `div` take two arguments, `floor` one, the rest one or more.
-- `explode` may be `true`, `false`, `null` or left out. `null` or absent means "not ruled" (G3) and rolls like `false`: R's setup decision 1 (2026-10-21) keeps a feature off while its value is pending D, so only the primary d6, marked `true`, explodes.
+- `explode` may be `true`, `false`, `null` or left out. `null` or absent means "pending" (G3) and rolls like `false`: a feature stays off while its value is pending D, so only the primary d6, marked `true`, explodes.
 - Every number must be finite and at most 2^53 - 1 in size (`maxSafeInteger`), in the pack and in every result, because larger ones differ between the VM and the web. `Attr` keys may not be empty and `Var` keys must be in `VarKeys.all`.
-- `decodeExpr` refuses unknown keys, so authoring annotations must be stripped first. It also refuses any `var` key not passed in `allowedVars`; each approved key (`VarKeys`) belongs to one placement. A new key or placement goes to R first.
+- `decodeExpr` refuses unknown keys, so authoring annotations must be stripped first. It also refuses any `var` key not passed in `allowedVars`; each allowed key (`VarKeys`) belongs to one placement. A new key or placement goes to R first.
 - `evaluate` returns a `Term` tree: the value plus every die face, so the UI shows the breakdown without recomputing. `evaluateFormula` refuses dice. Whole results and constants are always `int`, so encoded numbers are the same on the VM and the web.
 - Nodes roll depth first, left to right; the same tree draws from the RNG in the same order every time.
 
@@ -116,8 +116,6 @@ Packs write data-only trees (P4); there is no scripting:
 - The known-seed vectors in `packages/session/test/xoshiro_rng_test.dart` come from the reference C implementation. The program is kept in the project's shared library folder (`probes/xoshiro128pp-vectors/`), not in this repository, since the stack is Dart only. CI runs the vectors and the engine tests on the VM and on Node.js (`dart test -p node`). Locally, `dart test -p chrome` also passes (as root, Chromium needs a wrapper that adds `--no-sandbox`).
 
 ## Invariants later work must keep
-
-From the gate review of the engine core (2026-10-21):
 
 - **RNG draw count.** Each rolling event (`RollingEvent`) records the range of draws it used, and `Engine.evolve` sets `RngState.drawCount` to the end of that range when it is past the current count, in one place for every rolling event. It never adds to it and never moves it back (a held batch confirmed after later rolls has a lower range). A rejected command leaves the count where it was: the check system validates everything (pending check, scores, tiers, the values its dice read, and that the RNG is not behind the state's count, else `rngOutOfSync`) before its first draw. The RNG may be ahead of the state (draws of a batch still held for review, or recorded before a crash; the host reopens at the larger count): those draws are never handed out again. `Engine.decide` throws a `StateError` if a rejection drew anyway, since that would be a bug. Tests: `check_system_test.dart`, group "draw-count invariant".
 - **Entity ids.** `SequentialIdSource` restarts at `start`. The production `IdSource` in the session must never hand out an id already in the log after a crash and reopen. It derives the next id from state, or stores its counter with the commit marker.
@@ -133,14 +131,14 @@ From the gate review of the engine core (2026-10-21):
 - `engineVersion` `1.0.0-dev.1`: major 1 matches `engineApi` 1, which the provisional pack declares (the scaffold had 0.0.0).
 - Seeds stay in `session`, not in engine state: state keeps only `RngState.drawCount`, so nothing broadcast can carry the seed. `CheckResolved` is the first event that advances it.
 - The check flow: command and event names and fields; `CheckSpec`, `CheckBreakdown`, `DrawRange`; `Difficulty` as a pack category or a fixed DC (the fixed form also covers Cat-Ω values the Handler sets, G12, and the book's old named DCs, G13); `rngOutOfSync`, `unknownRequest`, `unknownCheck` and `unavailable` rejection codes; a request is seen by the GM and the player who sent it.
-- `maxEnteredValue` (2^31 - 1): the largest magnitude accepted for a number the GM types (a fixed DC, a modifier, a damage or sanity amount, a review edit), checked before any draw so every sum stays within the range the VM and the web agree on (gate review of row 5).
+- `maxEnteredValue` (2^31 - 1): the largest magnitude accepted for a number the GM types (a fixed DC, a modifier, a damage or sanity amount, a review edit), checked before any draw so every sum stays within the range the VM and the web agree on.
 - A skill with no recorded tier on the entity adds no proficiency dice (the pack's `untrained` tier also has no bonus).
 - GM-entered consequences with a `visibility` the GM chooses (default `Public`); `ConditionApplied` is a consequence, `ConditionCleared` is not (it is a direct GM edit). Players do not see that a value was edited in review, only the final value.
 - The engine does not check that an alias owns the entity it acts for; authorization is the session's (04). Applying an active condition again, or clearing one that is not active, is rejected. A consequence's `check` id is recorded, not checked.
 - `Vitals` stores losses rather than current values; `Conditions` holds only ids for now. `DerivedKeys.health` and `DerivedKeys.sanity` (`health`, `sanity`) are engine vocabulary the vitals view reads.
-- Stat-gated broadcast: event and value-type names, the `compare` JSON form and its six operators, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. No length limit on the text (none is ruled). The two-event shape is ruled (R, 2026-10-21), not Proposed.
-- Random tables (R-B2, agreed by R 2026-11-03 as an Opus row): the `tables/` pack folder (`id`, `name`, `dice` as a plain dice node without explode, optional `lead`, `rows` of `{from, to, text}`), `RollTable` and `TableRolled`, and `TableSystem`. The loader requires the rows to cover every total of the dice exactly once; a table with pending dice loads (warning) but refuses to roll (`unavailable`). Row `effects` must be an empty list until an effect has engine meaning. `TableRolled` carries the faces, sides, lead and row text so logs read without the pack; players' narration is in-theme only (the lead, then the row; ruled by R 2026-11-03), the GM's line is mechanical, and a redacted roll shows players `tableRedaction` (a redaction bar); it is a `RollingEvent`, never a consequence. Names and the JSON shape are Proposed.
+- Stat-gated broadcast: event and value-type names, the `compare` JSON form and its six operators, and `MessagingSystem` handling it. Combinators (and, or, not) are not built. No length limit is set on the text. The two-event shape is in the [decision record](../architecture/decision-record.md#structure-and-engine).
+- Random tables: the `tables/` pack folder (`id`, `name`, `dice` as a plain dice node without explode, optional `lead`, `rows` of `{from, to, text}`), `RollTable` and `TableRolled`, and `TableSystem`. The loader requires the rows to cover every total of the dice exactly once; a table with pending dice loads (warning) but refuses to roll (`unavailable`). Row `effects` must be an empty list until an effect has engine meaning. `TableRolled` carries the faces, sides, lead and row text so logs read without the pack; players' narration is in-theme only (the lead, then the row), the GM's line is mechanical, and a redacted roll shows players `tableRedaction` (a redaction bar); it is a `RollingEvent`, never a consequence. Names and the JSON shape are Proposed.
 - The narrator's English wording and line shapes. 01 says narration uses the pack's `strings/`, which has no narration templates yet; moving the wording there is open.
 - `SkillDef.category` and `SkillDef.attribute` are nullable because the provisional pack leaves some unset (G15).
 - An alias plays at most one agent in an episode (11 §Terminology: an alias is one character); a second `CreateAgent` for the same alias is rejected with `aliasTaken`.
-- Not checked yet because the rule is not ruled (G19, parked for D): whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.
+- Not checked yet because the rule is open with D (G19): whether creation scores must total exactly 20 or at most 20, and whether the 3 Proficient + 1 Expert allotment is exact.

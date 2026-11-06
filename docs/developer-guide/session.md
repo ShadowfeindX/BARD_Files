@@ -64,8 +64,8 @@
 - The LAN transport is tested over loopback only; the two- and three-machine runs are row 7. No end-to-end LAN test with a real `EpisodeHost` yet: the dependency rules (00-overview) keep the engine out of `backend`, tests included, so row 6 composes them in the app.
 - The join code has about 30 bits and no wrong-attempt limit; each wrong code is logged as `lan.refused`.
 - No participant-side narrator or store yet.
-- Co-recipients stay hidden (R, 2026-10-21): `projectFor` narrows `BroadcastDelivered` to the viewer.
-- `hidden` entries keep `seq` consecutive per recipient (S-1 option A, ruled); an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
+- Co-recipients stay hidden: `projectFor` narrows `BroadcastDelivered` to the viewer.
+- `hidden` entries keep `seq` consecutive per recipient; an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
 
 ## Store health
 
@@ -73,4 +73,4 @@
 
 ## Kill test for the sembast store
 
-`bash packages/backend/tool/kill_probe/run.sh [runs]` (from the repository root, Git Bash) compiles a writer and a checker, kills the writer with SIGKILL at random moments, and reopens the file after each kill. It fails if a batch the writer reported as committed is missing, the log has a gap, or text lines and head disagree with the events. It needs only Dart. It is run by hand, not by `check_all.sh`. Results so far: Linux, 25 kills (earlier throwaway script) and 12 kills (this script), 0 failures. Windows (R's PC, Git Bash, commit d59c5b7): 25 kills, 0 failures; `kill -9` reached the native process. These are process kills only: OS crash and power loss are not tested, and sembast calls no fsync [V-31]. The script stops with an error if the writer survives a kill.
+`bash packages/backend/tool/kill_probe/run.sh [runs]` (from the repository root, Git Bash) compiles a writer and a checker, kills the writer with SIGKILL at random moments, and reopens the file after each kill. It fails if a batch the writer reported as committed is missing, the log has a gap, or text lines and head disagree with the events. It needs only Dart. It is run by hand, not by `check_all.sh`. Results so far: Linux, 25 kills (a throwaway script) and 12 kills (this script), 0 failures. Windows (R's PC, Git Bash, commit d59c5b7): 25 kills, 0 failures; `kill -9` reached the native process. These are process kills only: OS crash and power loss are not tested, and sembast calls no fsync [V-31]. The script stops with an error if the writer survives a kill.
