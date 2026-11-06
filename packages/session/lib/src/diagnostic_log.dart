@@ -154,7 +154,14 @@ final class Redactor {
   }
 
   static String _randomSalt() {
-    final random = Random.secure();
+    // Random.secure() throws on some JS hosts (node); a pseudonym salt does
+    // not need to be secret, only different between logs.
+    Random random;
+    try {
+      random = Random.secure();
+    } on Object {
+      random = Random(DateTime.now().microsecondsSinceEpoch);
+    }
     return List.generate(
       8,
       (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
