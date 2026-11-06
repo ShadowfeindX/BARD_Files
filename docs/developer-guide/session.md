@@ -15,6 +15,7 @@
 | `transport.dart`, `in_memory_transport.dart`, `connection_actor.dart` | `Transport`/`Link`, the in-process network (with a frame filter for tests), envelope framing |
 | `mailbox.dart`, `clock.dart` | The one-at-a-time queue, `Clock` and `FakeClock` |
 | `xoshiro_rng.dart` | The production `Rng` |
+| `diagnostic_log.dart`, `report_bundle.dart` | `DiagnosticLog`, `Redactor`, `DiagnosticSink`; `ReportBundleBuilder` (see 04-session.md, Diagnostics) |
 
 ## Rules the host keeps
 
@@ -32,6 +33,7 @@
 - **What players receive.** `projectFor` shapes the copy of an event a player or the table gets: `overriddenFrom` is dropped and a multi-alias event is narrowed to the viewer's alias. The store and the GM keep the whole event. Add a case when a new event can address several aliases or carries GM-only detail.
 - **Text log.** Each commit stores the engine `Narrator`'s lines as `gm`, `public`, `redacted` and `alias:<id>` variants.
 - **Authorization.** `DefaultAuthorizer(playerMay: ...)` lists the commands players may send.
+- **Diagnostics.** Pass `diagnostics: DiagnosticLog(...)` to `EpisodeHost.open` or `EpisodeParticipant`. To add a call point, call `diagnostics?.record(category, 'dotted.kind', {fields})` with facts about the machinery only (seqs, counts, reason codes). Never pass message text or notes; the `Redactor` hides the common field names (`text`, `notes`, `name`, `joinCode`, ...) and pseudonymises ids, but a new free-text field should be added to `Redactor.hiddenKeys`. In `backend`, `DiagnosticFileSink` persists the log and `writeReportBundle` saves a bundle to a folder.
 - **Transports.** Implement `Transport`/`Link`; frames are strings.
 
 ## Open

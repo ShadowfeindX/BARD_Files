@@ -10,6 +10,7 @@ import 'package:protocol/protocol.dart' as wire show PackPin, Rejected;
 import 'authorizer.dart';
 import 'clock.dart';
 import 'connection_actor.dart';
+import 'diagnostic_log.dart';
 import 'entries.dart';
 import 'event_store.dart';
 import 'identity.dart';
@@ -139,6 +140,7 @@ final class EpisodeHost {
     required this.admission,
     required this.narrator,
     required this.onProtocolError,
+    required this.diagnostics,
     required Rng rng,
     required _CountingIds ids,
     required EpisodeState state,
@@ -172,6 +174,7 @@ final class EpisodeHost {
     required IdentityVerifier verifier,
     Admission? admission,
     void Function(Object error)? onProtocolError,
+    DiagnosticLog? diagnostics,
   }) async {
     if (!gm.isGm || gm.isAnonymous) {
       throw ArgumentError.value(
@@ -203,6 +206,13 @@ final class EpisodeHost {
     final draws = persisted > state.rng.drawCount
         ? persisted
         : state.rng.drawCount;
+    diagnostics?.record(DiagnosticCategory.lifecycle, 'host.opened', {
+      'events': stored.length,
+      'lastSeq': stored.isEmpty ? 0 : stored.last.seq,
+      'hasSnapshot': head != null,
+      'rngDraws': draws,
+      'resumed': stored.isNotEmpty,
+    });
     return EpisodeHost._(
       episodeId: episodeId,
       gm: gm,
@@ -215,6 +225,7 @@ final class EpisodeHost {
       admission: admission ?? RosterAdmission(),
       narrator: Narrator(engine.pack),
       onProtocolError: onProtocolError,
+      diagnostics: diagnostics,
       rng: rngFactory(draws),
       ids: _CountingIds(
         [
@@ -262,6 +273,10 @@ final class EpisodeHost {
   /// Hears about frames dropped as malformed.
   final void Function(Object error)? onProtocolError;
 
+  /// Where the host notes what it did (04 §Diagnostics), or null for none.
+  /// Records facts about the machinery only, never message contents.
+  final DiagnosticLog? diagnostics;
+
   final Rng _rng;
   final _CountingIds _ids;
   final Mailbox _mailbox = Mailbox();
@@ -297,6 +312,7 @@ final class EpisodeHost {
 
   /// Starts accepting links from [transport].
   void listen(Transport transport) {
+    diagnostics?.record(DiagnosticCategory.lifecycle, 'host.listening');
     _listeners.add(transport.incoming().listen(_accept));
   }
 
@@ -332,6 +348,11 @@ final class EpisodeHost {
             ? batch.events
             : [for (final e in batch.events) _checkedEdit(e, edit(e))];
         final seqs = await _commit(events, batch._origin);
+        diagnostics?.record(DiagnosticCategory.request, 'pending.confirmed', {
+          'seqs': seqs,
+          'edited': edit != null,
+          'stillPending': _pending.length - 1,
+        });
         _pending.removeAt(0);
         _pendingChanges.add(pending);
         return seqs;
@@ -368,6 +389,10 @@ final class EpisodeHost {
   /// Closes every link and view. The store is left as it is.
   Future<void> close() => _mailbox.run(() async {
     _closed = true;
+    diagnostics?.record(DiagnosticCategory.lifecycle, 'host.closed', {
+      'lastSeq': lastSeq,
+      'links': _connections.length,
+    });
     for (final l in _listeners) {
       await l.cancel();
     }
@@ -389,16 +414,25 @@ final class EpisodeHost {
       return;
     }
     final connection = _Connection(
-      ConnectionActor(link, onMalformed: onProtocolError),
+      ConnectionActor(link, onMalformed: _protocolError),
     );
     _connections.add(connection);
+    diagnostics?.record(DiagnosticCategory.network, 'link.opened', {
+      'links': _connections.length,
+    });
     connection.actor.envelopes.listen(
       (envelope) => unawaited(
         _mailbox
             .run(() => _onEnvelope(connection, envelope))
-            .catchError((Object e) => onProtocolError?.call(e)),
+            .catchError((Object e) => _protocolError(e)),
       ),
-      onDone: () => _connections.remove(connection),
+      onDone: () {
+        _connections.remove(connection);
+        diagnostics?.record(DiagnosticCategory.network, 'link.closed', {
+          'joined': connection.perspective != null,
+          'links': _connections.length,
+        });
+      },
     );
   }
 
@@ -418,6 +452,11 @@ final class EpisodeHost {
           await _onRequest(c, requestId, command);
         case Resync(:final lastSeq):
           if (c.perspective == null) return;
+          diagnostics?.record(DiagnosticCategory.network, 'resync.served', {
+            'agentId': c.identity?.agentId,
+            'fromSeq': lastSeq + 1,
+            'hostLastSeq': this.lastSeq,
+          });
           await _sendEntries(c, lastSeq + 1, welcome: false);
         case Ping(:final nonce):
           await _send(c, Pong(nonce: nonce));
@@ -433,9 +472,24 @@ final class EpisodeHost {
           break;
       }
     } on ProtocolFormatException catch (e) {
-      onProtocolError?.call(e);
+      _protocolError(e);
     }
   }
+
+  /// Reports a dropped frame or a failed handler to the diagnostic log, then
+  /// to the owner's callback.
+  void _protocolError(Object error) {
+    diagnostics?.record(DiagnosticCategory.error, 'protocol.error', {
+      'type': error.runtimeType.toString(),
+    });
+    onProtocolError?.call(error);
+  }
+
+  void _helloRefused(String reason) => diagnostics?.record(
+    DiagnosticCategory.error,
+    'hello.refused',
+    {'reason': reason},
+  );
 
   Future<void> _onHello(_Connection c, Envelope envelope) async {
     final refusal = negotiateHello(
@@ -446,12 +500,14 @@ final class EpisodeHost {
       requiredEngine: _log.isEmpty ? null : _requiredEngine,
     );
     if (refusal != null) {
+      _helloRefused(refusal.reason.name);
       await _send(c, refusal);
       return;
     }
     final hello = envelope.message as Hello;
     final identity = await verifier.verify(hello);
     if (identity == null) {
+      _helloRefused('unverified');
       await _send(
         c,
         const Refused(
@@ -465,6 +521,7 @@ final class EpisodeHost {
     if (identity.isGm != (identity.agentId == gm.agentId) ||
         (identity.isGm && identity.isAnonymous) ||
         (!identity.isGm && identity.aliasId == null)) {
+      _helloRefused('identityMismatch');
       await _send(
         c,
         const Refused(
@@ -476,6 +533,7 @@ final class EpisodeHost {
     }
     final denied = admission.check(identity);
     if (denied != null) {
+      _helloRefused(denied.name);
       await _send(c, Refused(reason: denied));
       return;
     }
@@ -484,6 +542,13 @@ final class EpisodeHost {
     c.perspective = identity.isGm
         ? const GmPerspective()
         : PlayerPerspective(AliasId(alias!));
+    diagnostics?.record(DiagnosticCategory.network, 'hello.joined', {
+      'agentId': identity.agentId,
+      'role': identity.isGm ? 'gm' : 'player',
+      'clientLastSeq': hello.lastSeq,
+      'hostLastSeq': lastSeq,
+      'links': _connections.length,
+    });
     await _sendEntries(c, hello.lastSeq + 1, welcome: true);
   }
 
@@ -532,8 +597,41 @@ final class EpisodeHost {
       command,
       _Origin(who.agentId, requestId),
     );
+    _recordOutcome(who, requestId, command, result);
     _answered[key] = result is Refusal ? result : null;
     if (result is Refusal) await _reject(c, requestId, result);
+  }
+
+  /// One entry per request: what was asked (the command's type only), and
+  /// whether it was committed, held for review or refused.
+  void _recordOutcome(
+    Principal who,
+    String requestId,
+    Command command,
+    SubmitResult result,
+  ) {
+    final fields = <String, Object?>{
+      'agentId': who.agentId,
+      'requestId': requestId,
+      'command': command.runtimeType.toString(),
+    };
+    switch (result) {
+      case Committed(:final seqs):
+        diagnostics?.record(DiagnosticCategory.request, 'request.committed', {
+          ...fields,
+          'seqs': seqs,
+        });
+      case Held(:final committedSeqs):
+        diagnostics?.record(DiagnosticCategory.request, 'request.held', {
+          ...fields,
+          'seqs': committedSeqs,
+        });
+      case Refusal(:final code):
+        diagnostics?.record(DiagnosticCategory.error, 'request.refused', {
+          ...fields,
+          'reason': code,
+        });
+    }
   }
 
   Future<void> _reject(_Connection c, String requestId, Refusal r) => _send(
@@ -630,23 +728,38 @@ final class EpisodeHost {
     }
     // Stored before broadcast: if this throws, nothing was sent and the
     // in-memory state is untouched.
-    await store.append(
-      episodeId,
-      stored,
-      text,
-      HeadSnapshot(
-        seq: seq,
-        state: codec.encodeState(next),
-        rngDrawCount: _rng.drawCount,
-        nextEntityNumber: _ids.nextNumber,
-      ),
-    );
+    try {
+      await store.append(
+        episodeId,
+        stored,
+        text,
+        HeadSnapshot(
+          seq: seq,
+          state: codec.encodeState(next),
+          rngDrawCount: _rng.drawCount,
+          nextEntityNumber: _ids.nextNumber,
+        ),
+      );
+    } on Object catch (e) {
+      diagnostics?.record(DiagnosticCategory.store, 'store.append.failed', {
+        'firstSeq': stored.first.seq,
+        'lastSeq': seq,
+        'type': e.runtimeType.toString(),
+      });
+      rethrow;
+    }
     _persistedDraws = _rng.drawCount;
     _state = next;
     _log.addAll(committed);
     final written = EngineVersion.parse(engine_lib.engineVersion);
     if (_requiredEngine < written) _requiredEngine = written;
     final first = committed.first.seq;
+    diagnostics?.record(DiagnosticCategory.request, 'batch.committed', {
+      'firstSeq': first,
+      'lastSeq': seq,
+      'count': committed.length,
+      'links': _connections.length,
+    });
     // The batch is committed; a link that fails now must not undo it or stop
     // the others, and recovers by resync.
     for (final c in _connections.toList()) {
@@ -654,6 +767,11 @@ final class EpisodeHost {
       try {
         await _sendEntries(c, first, welcome: false, upTo: seq);
       } on Object catch (e) {
+        diagnostics?.record(DiagnosticCategory.error, 'broadcast.failed', {
+          'agentId': c.identity?.agentId,
+          'upToSeq': seq,
+          'type': e.runtimeType.toString(),
+        });
         onProtocolError?.call(e);
         _connections.remove(c);
       }
