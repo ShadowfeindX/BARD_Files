@@ -214,6 +214,34 @@ void main() {
       );
     });
 
+    test('frames over the length limit are refused before parsing', () {
+      expect(maxFrameLength, 1024 * 1024);
+      const small = JsonEnvelopeCodec(maxLength: 200);
+      final frame = small.encode(wrap(const Ping(nonce: 'n')));
+      expect(small.decode(frame).messageType, MessageType.ping);
+      final big = codec.encode(wrap(Ping(nonce: 'x' * 300)));
+      expect(() => small.decode(big), throwsA(isA<ProtocolFormatException>()));
+      // Not even valid JSON: refused on length alone, before parsing.
+      expect(
+        () => small.decode('{' * 201),
+        throwsA(
+          isA<ProtocolFormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('longer than 200'),
+          ),
+        ),
+      );
+      expect(
+        () => small.encode(wrap(Ping(nonce: 'x' * 300))),
+        throwsArgumentError,
+      );
+      expect(
+        () => codec.decode(' ' * (maxFrameLength + 1)),
+        throwsA(isA<ProtocolFormatException>()),
+      );
+    });
+
     test('seq on a non-events frame is refused when decoding', () {
       final frame = jsonEncode({
         'p': 1,

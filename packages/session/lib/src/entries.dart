@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:engine/engine.dart';
 import 'package:protocol/protocol.dart';
 
@@ -172,4 +174,39 @@ final class PerspectiveFeed {
     }
     return FeedResult.applied;
   }
+}
+
+/// Room left in every frame for the envelope header and the `events` key.
+const int frameHeaderAllowance = 4096;
+
+/// Splits encoded [entries] into frames of at most [maxCount] entries whose
+/// JSON stays within [maxLength] minus [frameHeaderAllowance], keeping
+/// order. An entry too large for any frame throws [ArgumentError]: entries
+/// are bounded (a phone message is at most 2,000 UTF-16 units), so this is
+/// a bug, not a peer's doing.
+List<List<JsonMap>> splitEntries(
+  List<JsonMap> entries, {
+  required int maxCount,
+  int maxLength = maxFrameLength,
+}) {
+  final budget = maxLength - frameHeaderAllowance;
+  final frames = <List<JsonMap>>[];
+  var current = <JsonMap>[];
+  var used = 0;
+  for (final entry in entries) {
+    // +1 for the comma between entries.
+    final size = jsonEncode(entry).length + 1;
+    if (size > budget) {
+      throw ArgumentError.value(entry['seq'], 'entry', 'too large for a frame');
+    }
+    if (current.length == maxCount || used + size > budget) {
+      frames.add(current);
+      current = [];
+      used = 0;
+    }
+    current.add(entry);
+    used += size;
+  }
+  if (current.isNotEmpty) frames.add(current);
+  return frames;
 }

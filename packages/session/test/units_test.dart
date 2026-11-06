@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:engine/engine.dart';
+import 'package:protocol/protocol.dart' as wire;
 import 'package:session/session.dart';
 import 'package:test/test.dart';
 
@@ -167,6 +168,56 @@ void main() {
       expect(feed.lastSeq, 4);
       expect(feed.opaqueSeqs, [2, 3]);
       expect(feed.state.stores.entities, hasLength(2));
+    });
+  });
+
+  group('splitEntries', () {
+    List<wire.JsonMap> entries(int n, {int text = 0}) => [
+      for (var i = 1; i <= n; i++)
+        {'seq': i, 'hidden': true, 'pad': 'x' * text},
+    ];
+
+    test('splits by count, keeping order', () {
+      final frames = splitEntries(entries(450), maxCount: 200);
+      expect(frames.map((f) => f.length), [200, 200, 50]);
+      expect(frames.expand((f) => f).map((e) => e['seq']), [
+        for (var i = 1; i <= 450; i++) i,
+      ]);
+    });
+
+    test('splits by length so every frame fits the codec limit', () {
+      const limit = frameHeaderAllowance + 1000;
+      final frames = splitEntries(
+        entries(20, text: 200),
+        maxCount: 200,
+        maxLength: limit,
+      );
+      expect(frames.length, greaterThan(1));
+      const codec = wire.JsonEnvelopeCodec(maxLength: limit);
+      for (final frame in frames) {
+        final envelope = wire.Envelope.of(
+          wire.Events(frame),
+          engineVersion: const wire.EngineVersion(1, 0, 0),
+          episodeId: 'ep_1',
+          from: wire.gmSender,
+        );
+        expect(
+          codec.decode(codec.encode(envelope)).message,
+          isA<wire.Events>(),
+        );
+      }
+    });
+
+    test('an entry too large for any frame is a bug', () {
+      expect(
+        () => splitEntries(
+          entries(1, text: 2000),
+          maxCount: 200,
+          maxLength: frameHeaderAllowance + 100,
+        ),
+        throwsArgumentError,
+      );
+      expect(splitEntries(const [], maxCount: 200), isEmpty);
     });
   });
 

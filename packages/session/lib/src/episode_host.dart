@@ -693,7 +693,8 @@ final class EpisodeHost {
     return entries;
   }
 
-  /// Sends the entries from [fromSeq] on, in frames of at most [_frameSize].
+  /// Sends the entries from [fromSeq] on, in frames of at most [_frameSize]
+  /// entries that stay under the frame limit ([splitEntries]).
   Future<void> _sendEntries(
     _Connection c,
     int fromSeq, {
@@ -719,16 +720,11 @@ final class EpisodeHost {
         ),
       );
     }
-    for (var i = 0; i < entries.length; i += _frameSize) {
-      final chunk = entries.sublist(
-        i,
-        i + _frameSize > entries.length ? entries.length : i + _frameSize,
-      );
-      await _send(
-        c,
-        Events([for (final e in chunk) e.toJson(codec)]),
-        seq: chunk.first.seq,
-      );
+    final frames = splitEntries([
+      for (final e in entries) e.toJson(codec),
+    ], maxCount: _frameSize);
+    for (final frame in frames) {
+      await _send(c, Events(frame));
     }
   }
 
