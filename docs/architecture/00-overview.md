@@ -85,7 +85,7 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
   content_core/               D's default rules pack as data under assets/. Pack today: a provisional copy of the example-core sample; D's pack is pending (10 §5 "Apply the target pack and engine values").
   backend/                    Flutter + Firebase adapters behind session/app interfaces (planned; scaffold only today, 10 §5).
   theme_core/                 pure Dart, SDK only. Theme model, codec, validator, resolver, colour math, built-in themes as JSON assets (model, codec, validator, resolver and built-in JSON built; colour advisories and effect safety not yet).
-  ui_kit/                     Shared widgets, theme widgets and controller (planned; 10 §5 'Theme build'), perspective panels.
+  ui_kit/                     Shared widgets, the theme controller and selector (built; the editor and document mode are planned, 10 §5 'Theme build'), perspective panels.
 /apps/
   bard/                       main Flutter app (GM + player, landscape medium/large)
   companion/                  phone Flutter app (player-first)
@@ -100,8 +100,8 @@ Uses a Dart pub workspace: one shared dependency resolution for every package [V
 Arrows mean "may import" under `dependencies`. Anything not drawn is forbidden and should be enforced by a CI check on each `pubspec.yaml`. `dev_dependencies` (test-only) follow the same table except for the single exception listed below it, and the analysis and test tooling (`flutter_lints`, `test`, `flutter_test`), which every package may use. The repository tooling package `tool/` may use `yaml` only. The check is `tool/bin/check_dependency_rules.dart` ([developer guide](../developer-guide/setup.md#the-checks)).
 
 ```
-apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, theme_core (planned), signals_flutter, go_router, app_links
-ui_kit                    ──► signals_flutter, theme_core (planned; Flutter widgets and theme widgets; the theme model is in theme_core)
+apps/bard, apps/companion ──► session, protocol, engine, backend, ui_kit, content_core, theme_core, signals_flutter, go_router, app_links
+ui_kit                    ──► signals_flutter, theme_core (Flutter widgets and theme widgets; the theme model is in theme_core)
 apps/functions            ──► protocol_envelope, firebase_functions, firebase_admin_sdk*   (never protocol, never the engine)
 backend                   ──► session (interfaces), protocol, firebase_dart, hive (pinned; planned), flutter_secure_storage, sembast (pinned; the `EventStore`, built) + sembast_web (pinned; planned), FlutterFire (`firebase_core`, plus only where needed, e.g. `cloud_firestore` on web); desktop Firestore through a hand-written REST client
 session                   ──► protocol, engine, xrandom (pinned; Rng adapter)

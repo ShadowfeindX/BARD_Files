@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
+import 'shell_window.dart';
+
 /// Whose view of the episode a panel shows (07 §Perspective panels).
 enum PerspectiveKind {
   /// The GM's full view.
@@ -58,39 +60,23 @@ class PerspectivePanel<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Chip(label: Text(kindLabel(kind))),
-                const SizedBox(width: 8),
-                Expanded(child: Text(title, style: text.titleMedium)),
-                ...actions,
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: SignalBuilder(
-              builder: (context) {
-                final list = items.value;
-                if (list.isEmpty) {
-                  return Center(child: Text(emptyText));
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: list.length,
-                  itemBuilder: (context, i) => itemBuilder(context, list[i]),
-                );
-              },
-            ),
-          ),
-        ],
+    return ShellWindow(
+      expand: true,
+      title: title,
+      leading: Chip(label: Text(kindLabel(kind))),
+      actions: actions,
+      child: SignalBuilder(
+        builder: (context) {
+          final list = items.value;
+          if (list.isEmpty) {
+            return Center(child: Text(emptyText));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: list.length,
+            itemBuilder: (context, i) => itemBuilder(context, list[i]),
+          );
+        },
       ),
     );
   }

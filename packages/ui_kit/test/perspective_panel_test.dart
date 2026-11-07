@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+
+import 'support.dart';
+
 import 'package:ui_kit/ui_kit.dart';
 
 Widget _panel(Signal<List<String>> items, {PerspectiveKind? kind}) {
   return MaterialApp(
-    theme: BardTheme.dark(),
+    theme: testTheme(),
     home: Scaffold(
       body: SizedBox(
         height: 400,

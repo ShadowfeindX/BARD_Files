@@ -10,6 +10,7 @@ class AgentSheet {
     required this.attributes,
     required this.health,
     required this.sanity,
+    this.conditions = const [],
   });
 
   /// Stable id used in commands.
@@ -26,6 +27,9 @@ class AgentSheet {
 
   /// Current Sanity, from the read model.
   final int sanity;
+
+  /// The conditions the agent has, from the read model.
+  final List<ConditionOption> conditions;
 }
 
 /// Where an action request stands.
@@ -76,6 +80,7 @@ class ReviewItem {
     required this.label,
     required this.amount,
     this.originalAmount,
+    this.condition,
   });
 
   /// Review id used in commands.
@@ -92,6 +97,10 @@ class ReviewItem {
 
   /// The amount first proposed, when the GM edited it.
   final int? originalAmount;
+
+  /// Name of the condition being applied, or null for an amount
+  /// consequence. A condition has no amount to edit.
+  final String? condition;
 }
 
 /// A line in a perspective log.
@@ -102,13 +111,17 @@ sealed class LogEntry {
 /// Narrated text.
 class TextEntry extends LogEntry {
   /// Creates a text line. [gmNote] marks private GM notes for styling.
-  const TextEntry(this.text, {this.gmNote = false});
+  const TextEntry(this.text, {this.gmNote = false, this.whisper = false});
 
   /// The line.
   final String text;
 
   /// Whether this is a private GM note.
   final bool gmNote;
+
+  /// Whether this is a stat-gated whisper the viewer received. The dossier
+  /// raises an alert for it outside the phone (DEC-17).
+  final bool whisper;
 }
 
 /// A resolved check shown with its dice breakdown.
@@ -156,6 +169,18 @@ class DifficultyOption {
 
   /// Target number for the category.
   final int dc;
+}
+
+/// A pack condition the GM can apply.
+class ConditionOption {
+  /// Creates an option.
+  const ConditionOption({required this.id, required this.name});
+
+  /// Pack condition id.
+  final String id;
+
+  /// Display name.
+  final String name;
 }
 
 /// An attribute the GM can score when creating an agent.

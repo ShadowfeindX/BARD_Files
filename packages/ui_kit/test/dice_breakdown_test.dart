@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:theme_core/theme_core.dart';
+
+import 'support.dart';
+
 import 'package:ui_kit/ui_kit.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-  theme: BardTheme.light(),
+  theme: testTheme(themeId: BuiltInIds.manila),
   home: Scaffold(body: child),
 );
 
@@ -68,7 +72,7 @@ void main() {
 
   for (final entry in {
     CheckOutcomeKind.success: 'Success',
-    CheckOutcomeKind.partial: 'Partial success',
+    CheckOutcomeKind.partial: 'Partial Success',
     CheckOutcomeKind.failure: 'Failure',
   }.entries) {
     testWidgets('labels outcome ${entry.key.name}', (t) async {

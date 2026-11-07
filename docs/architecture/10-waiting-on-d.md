@@ -132,7 +132,7 @@ Not built; R sequences them (R9). Each is Proposed work, not a decision.
 - Rename the `occult.json` block `ritualDefaults.focusItem` to `artifact`, with a new `focusItem` left `null` (see [01](01-engine.md#planned-code-changes)).
 - Migrator package: steps, schemas, archives, fixtures and the `EpisodeMigrated` genesis event (the package is a stub today).
 - Backend adapters other than the built `SembastEventStore`: `hive` token storage, `flutter_secure_storage` and the Firestore REST client.
-- Theme build: `theme_core` and the `ui_kit` theme (a placeholder `BardTheme` exists today).
+- Theme build: `theme_core` is built; `ui_kit` has the controller, the token mapping and the selector. The editor, custom themes, import and export and document mode are not built.
 - Engine deprecation records: the schema directory `packages/engine/schema/` and its CI check (validated pack-side today).
 - GM pack authoring (entity templates in the GM's own packs): no pack editor exists today (see [02](02-rules-packs.md)).
 - Local log export beyond log and snapshot: the "save a report" bundle's extra contents and retention (the log + snapshot export is built; see [04](04-session.md#reconnection-and-gm-continuity)).

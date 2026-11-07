@@ -17,6 +17,7 @@ dependencies:
   backend: any
   ui_kit: any
   content_core: any
+  theme_core: any
   signals_flutter: 7.1.0
   go_router: 18.1.1
   app_links: 7.2.2
