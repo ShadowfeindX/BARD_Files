@@ -7,7 +7,7 @@
 | File | Holds |
 |---|---|
 | `episode_host.dart` | `EpisodeHost`: authorize, dedupe, decide, hold consequences for review, stamp `seq`, store, filter, broadcast. `submit` (GM), `confirmPending`, `openView`, `listen` |
-| `episode_participant.dart` | `EpisodeParticipant`: non-canonical engine, requests with retry, resync on gaps |
+| `episode_participant.dart` | `EpisodeParticipant`: non-canonical engine, requests with retry, resync on gaps; `entries` emits each applied batch's new entries so an app can narrate its own log |
 | `entries.dart` | Wire entries and `PerspectiveFeed` (applies entries in order, tolerates duplicates, reports gaps) |
 | `perspective.dart` | `Perspective` and `deliveryFor` (visibility to full/redacted/hidden) |
 | `identity.dart`, `authorizer.dart` | `Principal`, `IdentityVerifier`, `Admission`, `Authorizer`, `SessionRejection` codes |
@@ -48,6 +48,7 @@
 - **Joining.** `LanHostTransport.bind()` listens on every IPv4 interface at a free port with a new six-character join code; `joinInfo(host)` gives the `LanJoinInfo` (host, port, code) a player types or scans, as the address `ws://host:port/join?code=CODE`. That is all the LAN QR carries. `lanAddresses()` lists this machine's IPv4 addresses to show. A wrong path or code gets HTTP 404 or 403 before any link opens, which `LanClientTransport.connect` turns into `ConnectRefused`.
 - **Frame cap.** Each socket is read through a `WebSocketFrameGuard` (`frame_guard.dart`), because `dart:io` limits each WebSocket frame (`maxPayloadLength`) but joins a message's continuation frames with no total limit. The guard reads frame headers only and destroys the socket as soon as one message passes `maxFrameBytes` (3 × `maxFrameLength`, the most UTF-8 bytes a legal frame can take), before the bytes are buffered. A text frame that arrives but is longer than `maxFrameLength` UTF-16 units is dropped and the link stays open. Both are logged as `lan.oversize`. Compression is off (no inflate on the receiving side).
 - **Proxies.** The client connects directly (`findProxy` is `DIRECT`), whatever proxy the environment sets.
+- **Closing.** `close()` closes the HTTP server and the server socket under it (`HttpServer.listenOn` never closes a socket it was given), so a restarted host can bind the same port at once.
 
 
 ## Open
@@ -61,9 +62,10 @@
 - `Welcome` carries no events; the host sends them in `events` frames right after it.
 - A malformed `welcome` or `refused` drops the link (`hello.malformed`), so a `Reconnector` tries again after its backoff; a host that keeps sending a malformed refusal is retried at the 30 s cap, never reported as refused.
 - `Backoff` has no jitter: every participant of a restarted host retries on the same schedule. Fine for a LAN table; worth adding before the relay.
-- The LAN transport is tested over loopback only; the two- and three-machine runs are row 7. No end-to-end LAN test with a real `EpisodeHost` yet: the dependency rules (00-overview) keep the engine out of `backend`, tests included, so row 6 composes them in the app.
+- The LAN transport is tested over loopback only; the two- and three-machine runs are row 7. The end-to-end loopback tests with a real `EpisodeHost` live in the app (`apps/bard/test/lan_play_test.dart`), because the dependency rules (00-overview) keep the engine out of `backend`, tests included.
 - The join code has about 30 bits and no wrong-attempt limit; each wrong code is logged as `lan.refused`.
-- No participant-side narrator or store yet.
+- `PerspectiveFeed.apply` is not atomic: if `evolve` throws partway through a batch, `lastSeq` has moved past the earlier entries, the result is never `applied`, and `entries` never emits them, so those lines are missing from a player's log until a fresh join. Error path only.
+- A participant keeps no store: its log lives in memory and is rebuilt from the host on the next join. The app narrates it from `entries` (see the app guide).
 - Co-recipients stay hidden: `projectFor` narrows `BroadcastDelivered` to the viewer.
 - `hidden` entries keep `seq` consecutive per recipient; an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
 

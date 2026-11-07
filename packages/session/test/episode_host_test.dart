@@ -168,6 +168,21 @@ void main() {
       expect(ann.lastSeq, 2);
     });
 
+    test('each applied batch emits its new entries, hidden ones too', () async {
+      rig = await Rig.create();
+      await rig.start();
+      final ann = await rig.join('ann', 'hall');
+      final seen = <List<int>>[];
+      ann.entries.listen((batch) => seen.add([for (final e in batch) e.seq]));
+      await rig.host.submit(rig.agent('Secret NPC')); // GM-only
+      await rig.host.submit(rig.agent('Hall', owner: 'hall'));
+      await pumpEventQueue();
+      expect(seen, [
+        [2],
+        [3],
+      ]);
+    });
+
     test('the pack and settings come with the welcome', () async {
       rig = await Rig.create();
       await rig.start();

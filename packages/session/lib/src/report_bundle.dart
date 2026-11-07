@@ -114,6 +114,8 @@ final class ReportBundle {
 /// * `store-health.json`: when a [storeHealth] provider is given
 /// * `game-log.jsonl`, `text-log.jsonl`, `snapshot.json`: from the store
 /// * `notes.json`: only when the Handler ticked "include notes"
+/// * any [extraFiles] the caller adds, such as a joined player's
+///   `received-entries.jsonl`
 /// * `manifest.json`: what is in the bundle and why
 abstract final class ReportBundleBuilder {
   /// The version of this layout, written to the manifest.
@@ -126,7 +128,8 @@ abstract final class ReportBundleBuilder {
   /// [Redactor.hiddenKeys]: pass a host address under `address`. [storeHealth] and
   /// [notes] are providers so that nothing is read unless it is wanted:
   /// [notes] (Handler-written text) is called only when [includeNotes] is
-  /// true, and is otherwise never touched.
+  /// true, and is otherwise never touched. [extraFiles] are added as they
+  /// are; a name the builder uses throws [ArgumentError].
   static Future<ReportBundle> build({
     required String episodeId,
     required EventStore store,
@@ -138,6 +141,7 @@ abstract final class ReportBundleBuilder {
     bool includeNotes = false,
     Future<JsonMap?> Function()? notes,
     Future<JsonMap?> Function()? storeHealth,
+    Map<String, String> extraFiles = const {},
   }) async {
     final now = clock.now();
     final files = <String, String>{};
@@ -207,6 +211,13 @@ abstract final class ReportBundleBuilder {
         files['notes.json'] = _pretty(body);
         notesIncluded = true;
       }
+    }
+
+    for (final MapEntry(key: name, value: text) in extraFiles.entries) {
+      if (files.containsKey(name) || name == 'manifest.json') {
+        throw ArgumentError.value(name, 'extraFiles', 'is a fixed file name');
+      }
+      files[name] = text;
     }
 
     files['manifest.json'] = _pretty({

@@ -96,6 +96,8 @@ final class EpisodeParticipant {
       StreamController<EpisodeState>.broadcast();
   final StreamController<RequestRejected> _rejections =
       StreamController<RequestRejected>.broadcast();
+  final StreamController<List<EventEntry>> _entries =
+      StreamController<List<EventEntry>>.broadcast();
   ConnectionActor? _connection;
   Completer<bool> _linkDone = Completer<bool>()..complete(false);
   int _requestCounter = 0;
@@ -132,6 +134,11 @@ final class EpisodeParticipant {
 
   /// Requests the GM refused.
   Stream<RequestRejected> get rejections => _rejections.stream;
+
+  /// Emits the entries of each applied batch that were new, in `seq` order,
+  /// just before [states] emits: a participant's app builds its log from
+  /// them (the host sends events, never text).
+  Stream<List<EventEntry>> get entries => _entries.stream;
 
   /// Connects over [link] and sends `hello` with the last `seq` held.
   Future<void> connect(Link link) => _mailbox.run(() async {
@@ -229,6 +236,7 @@ final class EpisodeParticipant {
     await _connection?.close();
     await _states.close();
     await _rejections.close();
+    await _entries.close();
   });
 
   Future<void> _onEnvelope(Envelope envelope) async {
@@ -304,9 +312,14 @@ final class EpisodeParticipant {
 
   void _applyFrame(List<JsonMap> events) {
     final entries = [for (final e in events) EventEntry.fromJson(e, codec)];
+    final before = _feed.lastSeq;
     final result = _feed.apply(entries);
     switch (result) {
       case FeedResult.applied:
+        _entries.add([
+          for (final e in entries)
+            if (e.seq > before) e,
+        ]);
         _resyncFrom = null;
         for (final entry in entries) {
           final id = entry.requestId;

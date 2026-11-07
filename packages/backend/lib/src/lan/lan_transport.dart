@@ -98,7 +98,12 @@ Future<List<String>> lanAddresses() async {
 /// buffered; a frame longer than [maxFrameLength] UTF-16 units is dropped.
 /// Both are recorded in [diagnostics].
 final class LanHostTransport implements Transport {
-  LanHostTransport._(this._server, this.joinCode, this.diagnostics);
+  LanHostTransport._(
+    this._socket,
+    this._server,
+    this.joinCode,
+    this.diagnostics,
+  );
 
   /// Listens on [address] (default: every IPv4 interface) at [port] (default:
   /// any free port). [joinCode] defaults to [newJoinCode].
@@ -123,6 +128,7 @@ final class LanHostTransport implements Transport {
       ),
     );
     final transport = LanHostTransport._(
+      socket,
       server,
       joinCode ?? newJoinCode(),
       diagnostics,
@@ -139,6 +145,10 @@ final class LanHostTransport implements Transport {
   }
 
   final HttpServer _server;
+
+  // `HttpServer.listenOn` never closes the socket it was given, so [close]
+  // closes it; otherwise the port stays bound until the process exits.
+  final ServerSocket _socket;
   final StreamController<Link> _links = StreamController<Link>();
   final Set<_WebSocketLink> _open = {};
   bool _closing = false;
@@ -169,6 +179,7 @@ final class LanHostTransport implements Transport {
     // not add a link nobody will close.
     _closing = true;
     await _server.close(force: true);
+    await _socket.close();
     for (final link in _open.toList()) {
       await link.close();
     }
