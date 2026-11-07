@@ -4,6 +4,12 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Architecture docs: present-tense wording in chapters 00 to 08
+- `07-apps.md` (themes): removed decision attributions, dates and ruling ids ("R ruled on 2026-11-05 (T12)", "agreed by D", "(R, 2026-11-06, T13)") and the dropped-proposal note; the text states the design only and links the decision record. The settled document token values and safeguard values are no longer labelled Proposed; the `Technical safeguards` heading anchor changed to `#technical-safeguards`. The section's build note now matches 00: `theme_core` model, codec, validator, resolver and built-in JSON are built.
+- Developer guide (`engine.md`, `packs.md`, `session.md`) and `ui-kit.md`: same clean-up of attributions, dates and review narrative.
+- `decision-record.md`: two rows that were only recorded in the developer guide: stat-gated broadcast events (two events, co-recipients hidden) and pending values (setup decision 1, annotation stripping).
+- `architecture/README.md` Conventions: the **Fixed** label is removed.
+
 ### Event store: sembast `EventStore`, `StoreActor`, log export and resume
 - `backend`: `SembastEventStore`, the on-device `EventStore` on `sembast` 3.9.0 (pinned). One database file per episode, opened on demand. `append` writes events, text lines and the head snapshot in one transaction and a commit marker in a second; the first use of an episode deletes anything past the marker and readers never see past it ([V-31]). Layout version 1, refused if newer. No power-loss protection in v1. Spot check with a throwaway writer and checker (not committed): 25 `kill -9` runs on Linux, 0 reported commits lost, 0 inconsistent states; V-31's 100-kill runs used the same protocol.
 - `session`: `StoreActor` wraps any `EventStore` in one mailbox and paces the head-snapshot mirror. The interval is a constructor argument, default 5 minutes, changeable while running; `backend`'s `HostSettingsStore` keeps it as a per-machine host setting (S-5, R 2026-11-05; moved from 09 to the decision record); the mirror goes to a `HeadMirrorSink` the relay will supply, after an append once the interval has passed and on `mirrorHead(reason)` for pause, close and pre-migration.

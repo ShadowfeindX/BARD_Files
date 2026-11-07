@@ -18,7 +18,7 @@
 ## Rules
 
 - View models forward intents and never compute outcomes; every number shown comes from the engine through the service.
-- A held consequence (the F2 review gate) appears only in the GM's review tray. The player's log gets the line after the GM confirms, without the `overriddenFrom` detail.
+- A held consequence (the GM review gate) appears only in the GM's review tray. The player's log gets the line after the GM confirms, without the `overriddenFrom` detail.
 - GM notes are kept in the service only: the engine has no GM-note event yet, so they are not stored or replayed.
 - The two demo agents, their score spread and skills are demo data created through `CreateAgent`; the creation limits come from the pack.
 
