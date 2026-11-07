@@ -14,8 +14,10 @@ export '../data/models.dart' show HostInfo, PlayMode;
 import '../data/pack_assets.dart';
 import '../data/report_saver.dart';
 import '../data/services/episode_service.dart';
+import '../data/services/npc_notes_service.dart';
 import '../data/services/participant_episode_service.dart';
 import '../data/services/session_episode_service.dart';
+import '../ui/console/npc_notes_view_model.dart';
 
 /// The campaign the demo keeps NPC notes under: one fixed campaign, since
 /// the demo has no campaign records yet.
@@ -234,6 +236,31 @@ class Composition {
 
   /// A line about the link, on a joined machine.
   final ReadonlySignal<String>? status;
+
+  /// The Handler's NPC notes panel state, or null where there is no panel:
+  /// on a joined machine, or with no local data to keep the notes in.
+  ///
+  /// Notes belong to [demoCampaignId]; the NPCs are the pack's; a prepared
+  /// message goes to an agent's alias through
+  /// [SessionEpisodeService.sendAsNpc].
+  NpcNotesViewModel? npcNotes() {
+    final service = episode;
+    final store = local?.notes;
+    final npcs = pack?.npcs;
+    if (mode == PlayMode.join || store == null || npcs == null) return null;
+    return NpcNotesViewModel(
+      NpcNotesService(store),
+      campaignId: demoCampaignId,
+      npcs: [for (final n in npcs) NpcOption(id: n.id, name: n.name)],
+      aliases: computed(
+        () => [
+          for (final a in service.agents.value)
+            AliasOption(id: a.id, name: a.name),
+        ],
+      ),
+      sendAs: service is SessionEpisodeService ? service.sendAsNpc : null,
+    );
+  }
 
   /// The report button's action, or null when reports cannot be saved.
   ReportAction? get reportAction {

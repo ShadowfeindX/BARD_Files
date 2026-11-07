@@ -4,6 +4,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../ui/console/console_view.dart';
 import '../ui/console/console_view_model.dart';
+import '../ui/console/npc_notes_panel.dart';
 import '../ui/dossier/dossier_view.dart';
 import '../ui/dossier/dossier_view_model.dart';
 import '../ui/home/home_screen.dart';
@@ -20,6 +21,8 @@ GoRouter buildRouter(
   required PlayActions actions,
 }) {
   final console = ConsoleViewModel(c.episode);
+  final notes = c.npcNotes();
+  Widget? notesPanel() => notes == null ? null : NpcNotesPanel(model: notes);
   Widget single(String title, Widget body) => Scaffold(
     appBar: AppBar(title: Text(title)),
     body: Padding(padding: const EdgeInsets.all(8), child: body),
@@ -31,6 +34,7 @@ GoRouter buildRouter(
         builder: (context, state) => HomeScreen(
           service: c.episode,
           console: console,
+          npcNotes: notesPanel(),
           appearance: appearance,
           actions: actions,
           mode: c.mode,
@@ -41,8 +45,10 @@ GoRouter buildRouter(
       ),
       GoRoute(
         path: '/gm',
-        builder: (context, state) =>
-            single('GM console', ConsoleView(model: console)),
+        builder: (context, state) => single(
+          'GM console',
+          ConsoleView(model: console, npcNotes: notesPanel()),
+        ),
       ),
       GoRoute(
         path: '/player/:agentId',
