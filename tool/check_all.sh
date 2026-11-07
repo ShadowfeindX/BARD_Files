@@ -14,6 +14,7 @@ dart format --output=none --set-exit-if-changed .
 flutter analyze
 dart run tool/bin/check_dependency_rules.dart
 dart run tool/bin/check_pins.dart
+dart run tool/bin/check_spec_wording.dart
 bash tool/build_pack.sh --check
 bash tool/build_diagnostic_pack.sh --check
 bash tool/test_all.sh

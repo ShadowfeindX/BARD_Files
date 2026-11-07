@@ -1,5 +1,5 @@
 name: bard_tool
-description: "Repository checks run by CI and by hand (dependency rules, exact pins)."
+description: "Repository checks run by CI and by hand (dependency rules, exact pins, spec wording)."
 version: 0.0.0
 publish_to: none
 resolution: workspace

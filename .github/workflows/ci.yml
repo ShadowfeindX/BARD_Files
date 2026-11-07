@@ -47,6 +47,9 @@ jobs:
       - name: Exact pins
         run: dart run tool/bin/check_pins.dart
 
+      - name: Spec wording
+        run: dart run tool/bin/check_spec_wording.dart
+
       - name: Rules pack is current
         run: bash tool/build_pack.sh --check
 
