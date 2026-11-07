@@ -46,6 +46,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.service,
     required this.console,
+    this.npcNotes,
     required this.appearance,
     required this.actions,
     this.mode = PlayMode.oneDevice,
@@ -59,6 +60,9 @@ class HomeScreen extends StatefulWidget {
 
   /// GM console state.
   final ConsoleViewModel console;
+
+  /// The Handler's NPC notes panel for the console's slot, or null.
+  final Widget? npcNotes;
 
   /// The player's theme and variant setting.
   final ThemeController appearance;
@@ -280,7 +284,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Expanded(
                               flex: 3,
-                              child: ConsoleView(model: widget.console),
+                              child: ConsoleView(
+                                model: widget.console,
+                                npcNotes: widget.npcNotes,
+                              ),
                             ),
                             Expanded(
                               flex: 3,

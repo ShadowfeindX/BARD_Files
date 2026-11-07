@@ -4,14 +4,15 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Handler NPC notes panel placed in the console
+- The console's NPC notes slot now shows `NpcNotesPanel` in one-device play and while hosting, when the local folder is open. `buildNpcNotes` (`routes.dart`) wires it to the local notes store, `demoCampaignId`, the pack's NPCs, the episode's agents as recipients and `sendAsNpc`. A joined player has no panel.
+- Tests: the panel model lists the pack's NPCs and the agents, a prepared message reaches the player as the NPC (thread "Unknown number"), notes land in the store, and the console shows the panel only with local data.
+
 ### Handler NPC notes panel
-- `apps/bard`: `NpcNotesPanel` and `NpcNotesViewModel` for the console's NPC notes slot. The Handler picks an NPC, then edits free text (saved on losing focus or with Save notes), pins and unpins details, and adds, deletes and sends prepared messages. Errors from the store (an empty or over-long message) show in the panel. Send appears only when a `SendAsNpc(npcId, toAlias, text)` is supplied. A "Send to" picker lists the episode's aliases (the engine only allows NPC to alias messages); a lone alias is used without a choice and send stays off until a recipient exists; the panel is not yet placed in the home screen.
+- `apps/bard`: `NpcNotesPanel` and `NpcNotesViewModel` for the console's NPC notes slot. The Handler picks an NPC, then edits free text (saved on losing focus or with Save notes), pins and unpins details, and adds, deletes and sends prepared messages. Errors from the store (an empty or over-long message) show in the panel. Send appears only when a `SendAsNpc(npcId, toAlias, text)` is supplied. A "Send to" picker lists the episode's aliases (the engine only allows NPC to alias messages); a lone alias is used without a choice and send stays off until a recipient exists.
 - `apps/bard`: `NpcNotesService`, the UI-facing face of the store. Saves and loads run in order and a late result for a previous NPC is dropped; a message in flight is not sent twice.
 - `backend`: `NpcNotesStore.inMemory()` for tests of code that uses the store.
 - Docs: developer guide `app.md` describes the panel.
-
-### Known/Open Issues
-- The panel is not mounted yet: it needs the host composition to open the store, list the pack's NPCs, supply the send callback and offer the "include notes" tick on a report.
 
 ### Theme rulings T16 (effect safety)
 - `decision-record.md`: new row T16. The effect-safety pairs, their minimums and the existing lock-card and cue tokens are settled. The minimums are mandatory for the built-in themes only; custom themes have no limits and show failing pairs as advisories. The substitution inside the element is removed.
@@ -69,7 +70,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Docs: developer guide `session.md` describes the store.
 
 ### Known/Open Issues
-- The console panel and the "include notes" tick wait on the workstation shell and the host/join composition. Notes scope beyond a campaign (per episode or mission) stays open in 10.
+- Notes scope beyond a campaign (per episode or mission) stays open in 10.
 
 ### LAN transport (demo row 2)
 - `backend`: `LanHostTransport` and `LanClientTransport` over `dart:io` HTTP and WebSockets (S-6, no new package). Players join with `LanJoinInfo` (host, port, join code; the address `ws://host:port/join?code=CODE`, which is all the LAN QR carries); a wrong code or path is refused with HTTP 403/404 before a link opens and surfaces as `ConnectRefused`. `newJoinCode` and `lanAddresses` help the host screen.
