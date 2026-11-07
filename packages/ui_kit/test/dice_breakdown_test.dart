@@ -72,7 +72,7 @@ void main() {
 
   for (final entry in {
     CheckOutcomeKind.success: 'Success',
-    CheckOutcomeKind.partial: 'Partial success',
+    CheckOutcomeKind.partial: 'Partial Success',
     CheckOutcomeKind.failure: 'Failure',
   }.entries) {
     testWidgets('labels outcome ${entry.key.name}', (t) async {

@@ -106,7 +106,7 @@ class DiceBreakdownView extends StatelessWidget {
   /// Localized-free outcome text (strings move to the pack's `strings/` later).
   static String outcomeLabel(CheckOutcomeKind kind) => switch (kind) {
     CheckOutcomeKind.success => 'Success',
-    CheckOutcomeKind.partial => 'Partial success',
+    CheckOutcomeKind.partial => 'Partial Success',
     CheckOutcomeKind.failure => 'Failure',
   };
 
