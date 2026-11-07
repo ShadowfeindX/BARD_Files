@@ -26,12 +26,11 @@ This folder describes how the B.A.R.D. Files platform is built: what each packag
 
 ## Conventions in this spec
 
-- **Wording of chapters 00 to 08** (and of the developer guide and `docs/ui-kit.md`). These pages describe how the application works, in the present tense. They carry no decision status labels (Fixed, Ruled, Settled, Approved, Agreed), no attribution or date of a decision ("R ruled", "agreed by D", "(R, 2026-11-05)"), no ruling id used as a justification (T12, P1, F2), no rejected proposal or history ("the earlier proposal", "replaced", "dropped"), and no review narrative. Rulings with their dates, owners and reasons live only in [decision-record.md](decision-record.md); open items live only in [09](09-open-decisions.md) and [10](10-waiting-on-d.md). When an item is ruled: add or extend its row in the record, remove it from 09 or 10, then restate the chapter text as plain design and drop its Proposed label, with no id, date or name. A chapter may link to the record, without restating the ruling.
 - **Pending D** marks an item R wants D's approval on before it is designed in full. See [09-open-decisions.md](09-open-decisions.md#pending-d).
 - **Held** marks an item waiting on a probe or on R's ruling of a probe-based draft. See [09-open-decisions.md](09-open-decisions.md#held).
 - **Provisional** marks existing design text kept as a starting point for a Pending D item.
-- **Proposed** marks a design detail that is not yet decided, written as "(Proposed, open: <id>)" with a link to its entry in 09 or 10. It is not load-bearing.
-- Item ids (P1, F2, FS3, B5, W1, R-A1 and so on) are plain tags. In chapters 00 to 08 they appear only as open-item labels; library design ids (P15, DEC-07, VER-14) may name design material. They trace each ruling to [decision-record.md](decision-record.md#decisions-record-ruled-by-r-2026-10-20).
+- **Proposed** marks a design detail R has not ruled on individually. It is not load-bearing.
+- Item ids (P1, F2, FS3, B5, W1, R-A1 and so on) are plain tags. They trace each ruling to [decision-record.md](decision-record.md#decisions-record-ruled-by-r-2026-10-20).
 - **[U]** marks a claim from the backend investigation that is still unverified.
 - **[V-n]** points to a verified claim in [verification.md](verification.md). Any Dart, Flutter or Firebase statement without a tag is a design statement, not a claim about the toolkit.
 - Rulebook references cite the canonical PDF (`BARD Core Rulebook.pdf`) by section number.
