@@ -246,7 +246,7 @@ void main() {
           .messages
           .any((m) => m.text == 'Back online.'),
     );
-    expect(player(p).lastSeq, resumed.lastSeq);
+    await _until(() => player(p).lastSeq == resumed.lastSeq);
   });
 
   test(
