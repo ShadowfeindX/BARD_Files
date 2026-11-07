@@ -1,5 +1,9 @@
 import 'package:ui_kit/ui_kit.dart';
 
+/// The Handler's NPC notes as the UI shows them.
+export 'package:backend/backend.dart'
+    show NpcNotes, PreparedMessage, maxPreparedMessageUnits;
+
 /// Display data for one agent, as the service reports it. Vitals are read
 /// models supplied by the service; nothing here is computed in the UI.
 class AgentSheet {

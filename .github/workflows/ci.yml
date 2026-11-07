@@ -50,6 +50,9 @@ jobs:
       - name: Spec wording
         run: dart run tool/bin/check_spec_wording.dart
 
+      - name: UI layering
+        run: dart run tool/bin/check_ui_layering.dart
+
       - name: Rules pack is current
         run: bash tool/build_pack.sh --check
 

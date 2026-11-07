@@ -4,6 +4,11 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### UI layering: views no longer import services
+- `apps/bard`: `HomeScreen` takes the agents signal, a dossier view model factory and the table log from `routes.dart` instead of the `EpisodeService`. `TablePanel` takes the table log signal. The NPC notes types (`NpcNotes`, `PreparedMessage`, `maxPreparedMessageUnits`) are exported from `data/models.dart`, so `NpcNotesPanel` no longer imports the notes service. No change in behaviour.
+- `tool`: new check `check_ui_layering.dart`, run by `check_all.sh` and CI. It fails when a file under `apps/bard/lib/ui` other than a `*_view_model.dart` imports, exports or parts in `data/services` or `app/`. Conditional, split and dotted URIs are read; comments are skipped.
+- Docs: developer guide `setup.md` lists the check; `app.md` states the rule.
+
 ### Handler NPC notes panel placed in the console
 - The console's NPC notes slot now shows `NpcNotesPanel` in one-device play and while hosting, when the local folder is open. `buildNpcNotes` (`routes.dart`) wires it to the local notes store, `demoCampaignId`, the pack's NPCs, the episode's agents as recipients and `sendAsNpc`. A joined player has no panel.
 - Tests: the panel model lists the pack's NPCs and the agents, a prepared message reaches the player as the NPC (thread "Unknown number"), notes land in the store, and the console shows the panel only with local data.

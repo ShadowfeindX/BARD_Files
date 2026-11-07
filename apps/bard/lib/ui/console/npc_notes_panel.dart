@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-import '../../data/services/npc_notes_service.dart';
+import '../../data/models.dart';
 import 'npc_notes_view_model.dart';
 
 /// The Handler's notes on one NPC at a time: free text, pinned details and

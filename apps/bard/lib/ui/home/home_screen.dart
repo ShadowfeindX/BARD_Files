@@ -3,7 +3,6 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/models.dart';
-import '../../data/services/episode_service.dart';
 import '../console/console_view.dart';
 import '../console/console_view_model.dart';
 import '../dossier/dossier_view.dart';
@@ -44,7 +43,9 @@ class HomeScreen extends StatefulWidget {
   /// Creates the screen.
   const HomeScreen({
     super.key,
-    required this.service,
+    required this.agents,
+    required this.dossier,
+    required this.tableLog,
     required this.console,
     this.npcNotes,
     required this.appearance,
@@ -55,8 +56,15 @@ class HomeScreen extends StatefulWidget {
     this.report,
   });
 
-  /// The running episode.
-  final EpisodeService service;
+  /// The episode's agents, for the player picker and the hosting line.
+  final ReadonlySignal<List<AgentSheet>> agents;
+
+  /// Builds the dossier state for one agent. The screen keeps one model per
+  /// agent.
+  final DossierViewModel Function(String agentId) dossier;
+
+  /// The public log, for the table panel.
+  final ReadonlySignal<List<LogEntry>> tableLog;
 
   /// GM console state.
   final ConsoleViewModel console;
@@ -214,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   key: ValueKey('dossier-$selected'),
                   model: _dossiers.putIfAbsent(
                     selected,
-                    () => DossierViewModel(widget.service, selected),
+                    () => widget.dossier(selected),
                   ),
                 ),
         ),
@@ -226,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return SignalBuilder(
       builder: (context) {
-        final agents = widget.service.agents.value;
+        final agents = widget.agents.value;
         final selected = agents.any((a) => a.id == _agentId)
             ? _agentId
             : agents.firstOrNull?.id;
@@ -301,16 +309,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       key: ValueKey('dossier-$selected'),
                                       model: _dossiers.putIfAbsent(
                                         selected,
-                                        () => DossierViewModel(
-                                          widget.service,
-                                          selected,
-                                        ),
+                                        () => widget.dossier(selected),
                                       ),
                                     ),
                             ),
                             Expanded(
                               flex: 2,
-                              child: TablePanel(service: widget.service),
+                              child: TablePanel(log: widget.tableLog),
                             ),
                           ],
                         ),

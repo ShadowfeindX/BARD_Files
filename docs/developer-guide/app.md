@@ -16,7 +16,7 @@
 | `test/support/fake_episode_service.dart` | Test-only in-memory stand-in with scripted dice, used by widget tests of the UI alone. Its fixture arithmetic exists only there |
 | `lib/data/protocol_engine_codec.dart` | `EngineCodec` over the `protocol` codecs. State snapshots are not decoded yet |
 | `lib/data/pack_assets.dart` | Reads the generated pack from the asset bundle |
-| `lib/ui/console`, `dossier`, `table`, `home` | GM console, player dossier, table panel, and the home screen that shows them side by side; `home/lan_dialogs.dart` holds the consent, join and report dialogs |
+| `lib/ui/console`, `dossier`, `table`, `home` | GM console, player dossier, table panel, and the home screen that shows them side by side; `home/lan_dialogs.dart` holds the consent, join and report dialogs. Only the `*_view_model.dart` files call `data/services`, and no file under `lib/ui` reaches `app/`; views and panels take signals, view models or factories from `routes.dart`, and shared types (including the NPC notes types) from `data/models.dart`. `tool/bin/check_ui_layering.dart` enforces this by file name, so a widget is never named `*_view_model.dart` |
 | `lib/data/appearance_repository.dart` | `AppearanceRepository`: where the player's theme and variant are kept (client-side only). `LocalAppearanceRepository` keeps them in `settings.db`; the in-memory version, for tests and a machine without a local folder, holds them for the life of the process |
 | `lib/app/` | `composition.dart` (the one place services are built: `inProcess`, `host`, `join`) and `routes.dart` (`/` the home screen; `/gm`, `/player/:agentId`, `/table` for a second window) |
 
