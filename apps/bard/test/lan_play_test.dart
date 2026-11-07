@@ -4,6 +4,7 @@
 // HttpClient with a mock, which would stop the LAN client from connecting.
 // So the pack is read from its generated files, not from the asset bundle.
 // Needs `bash tool/build_pack.sh` first.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:backend/backend.dart';
@@ -13,6 +14,7 @@ import 'package:bard/data/services/episode_projection.dart';
 import 'package:bard/data/services/participant_episode_service.dart';
 import 'package:bard/data/services/session_episode_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:session/session.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 Map<String, String> _packFiles() {
@@ -273,6 +275,60 @@ void main() {
       expect(received.first, contains('"seq":1'));
     },
   );
+
+  test('a saved report reproduces the session in a fresh store', () async {
+    final h = await host(newEpisode: true);
+    final gm = h.episode as SessionEpisodeService;
+    final p = await join(h, 'vale');
+    await _until(() => player(p).status.value == JoinStatus.joined);
+    await p.episode.requestAction('vale', 'Search the desk');
+    await _until(() => gm.requests.value.isNotEmpty);
+    await gm.resolveRequest(
+      gm.requests.value.single.id,
+      gm.skills.first.id,
+      gm.difficulties.first.key,
+    );
+    await gm.sendPhone(null, 'alias:vale', 'Noted.');
+    final folder = await h.reports!.save();
+
+    List<Map<String, Object?>> lines(String name) => [
+      for (final l in File('$folder/$name').readAsLinesSync())
+        if (l.isNotEmpty) Map<String, Object?>.from(jsonDecode(l) as Map),
+    ];
+    final snapshot = Map<String, Object?>.from(
+      jsonDecode(File('$folder/snapshot.json').readAsStringSync()) as Map,
+    );
+    final store = InMemoryEventStore();
+    await importEpisode(
+      store,
+      EpisodeExport(
+        episodeId: 'replay',
+        events: [
+          for (final e in lines('game-log.jsonl')) StoredEvent.fromJson(e),
+        ],
+        text: [
+          for (final t in lines('text-log.jsonl')) TextLogLine.fromJson(t),
+        ],
+        head: HeadSnapshot.fromJson(snapshot),
+        rngDrawCount: snapshot['savedRngDrawCount']! as int,
+      ),
+    );
+    final replay = await SessionEpisodeService.open(
+      packFiles,
+      episodeId: 'replay',
+      store: store,
+    );
+    addTearDown(replay.dispose);
+    expect(replay.lastSeq, gm.lastSeq);
+    expect(
+      [for (final a in replay.agents.value) (a.id, a.health, a.sanity)],
+      [for (final a in gm.agents.value) (a.id, a.health, a.sanity)],
+    );
+    expect(
+      replay.gmLog.value.whereType<RollEntry>().length,
+      gm.gmLog.value.whereType<RollEntry>().length,
+    );
+  });
 
   test('a resumed host whose port is taken listens on another one', () async {
     var h = await host(newEpisode: true);

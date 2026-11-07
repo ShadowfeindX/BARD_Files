@@ -182,8 +182,12 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
   Future<void> _startNewEpisode() => _replace(
     'start a new episode',
     _composition.mode == PlayMode.host
-        ? () async =>
-              Composition.host(await _pack(), widget.local!, newEpisode: true)
+        ? () async => Composition.host(
+            await _pack(),
+            widget.local!,
+            newEpisode: true,
+            seedDemoAgents: false,
+          )
         : _oneDevice,
   );
 

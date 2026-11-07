@@ -80,8 +80,14 @@ class Composition {
   }) async {
     final saved = newEpisode ? null : await local.settings.lastHostedEpisode();
     final episodeId = saved?.episodeId ?? _newEpisodeId();
+    // Keep the saved code and port: if this start fails, the next one must
+    // still offer players the address they already have.
     await local.settings.setLastHostedEpisode(
-      HostedEpisode(episodeId: episodeId),
+      HostedEpisode(
+        episodeId: episodeId,
+        joinCode: saved?.joinCode,
+        port: saved?.port,
+      ),
     );
     final diagnostics = DiagnosticLog(
       sinks: [
@@ -200,7 +206,7 @@ class Composition {
         settings: () async => {
           'transport': 'lan',
           'role': 'player',
-          'alias': aliasId,
+          'aliasId': aliasId,
           'address': info.host,
           'lastSeq': service.lastSeq,
         },

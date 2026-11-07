@@ -50,8 +50,35 @@ class LanAdmission implements Admission {
 }
 
 /// What a player may send over a link: action requests and phone messages,
-/// always as their own alias (checked by [DefaultAuthorizer]).
-const Authorizer lanAuthorizer = DefaultAuthorizer(playerMay: _playerMay);
+/// always as their own alias (checked by [DefaultAuthorizer]), and an action
+/// request only for the agent that alias owns.
+const Authorizer lanAuthorizer = LanAuthorizer();
 
-bool _playerMay(Command command) =>
-    command is RequestAction || command is SendPhoneMessage;
+/// The rules behind [lanAuthorizer].
+class LanAuthorizer implements Authorizer {
+  /// Creates the rules.
+  const LanAuthorizer();
+
+  static const _base = DefaultAuthorizer(playerMay: _playerMay);
+
+  static bool _playerMay(Command command) =>
+      command is RequestAction || command is SendPhoneMessage;
+
+  @override
+  String? deny(Principal who, Command command, EpisodeState state) {
+    final denied = _base.deny(who, command, state);
+    if (denied != null || who.isGm) return denied;
+    // The engine checks only that the entity exists, so without this a
+    // player could file requests for another player's agent, or probe the
+    // ids of GM-only entities.
+    if (command is RequestAction) {
+      final owner = state.stores
+          .get(Identity.componentType, command.entity)
+          ?.ownerAlias;
+      if (owner?.value != who.aliasId) {
+        return 'You can only make requests for your own agent.';
+      }
+    }
+    return null;
+  }
+}

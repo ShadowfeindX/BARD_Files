@@ -47,7 +47,7 @@ The app shell is themed fixed panels on the one-device layout. `main.dart` loads
 
 ## New episode
 
-`New episode` (app bar) closes the active host, opens an empty one from the shipped pack, rebuilds the router so it restarts at `/`, and leaves the GM to add agents. One host is active at a time. The first launch still seeds two demo agents. While hosting, `New episode` starts a fresh hosted episode (with the two demo agents) under a new id.
+`New episode` (app bar) closes the active host, opens an empty one from the shipped pack, rebuilds the router so it restarts at `/`, and leaves the GM to add agents. One host is active at a time. The first launch still seeds two demo agents. While hosting, `New episode` starts a fresh, empty hosted episode under a new id; the first time this machine hosts, the episode gets the two demo agents.
 
 ## Local data
 
@@ -76,6 +76,7 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 
 - **Hosting.** `Composition.host` reopens the episode this machine hosted last (`AppSettingsStore.lastHostedEpisode`), so a host that was killed resumes from its store. It listens on every IPv4 interface, with the saved join code and, when free, the saved port, so players already in reconnect by themselves. The console shows a line with this machine's addresses, the port, the join code and the agent codes (each agent's alias id).
 - **Joining.** The player types the host address (`host:port`), the join code and their agent code. `LanVerifier` takes the hello's agent and alias (the code was checked before the link opened) and never accepts the GM's id; `LanAdmission` admits a known agent code and keeps it for the first machine that uses it until the host stops. Players may send `RequestAction` and `SendPhoneMessage` as their own alias (`lanAuthorizer`). The joined screen shows only that player's dossier and a status line (connecting, joined, reconnecting, refused).
+- **What a player may send.** `LanAuthorizer` adds to the default rules that a `RequestAction` names the entity the player's own alias owns.
 - **The player's log.** The host sends events, never text, so `ParticipantEpisodeService` narrates each full entry with the engine's `Narrator` (the player line) and shows `EpisodeProjection.redactedLine` for a redacted one.
 - **Tests.** `test/lan_play_test.dart` runs host and players over loopback sockets with the store on disk: join, a request and roll, phone both ways, a prepared NPC message, refusals (wrong code, unknown agent, taken agent), a killed host that resumes on the same port while the player resyncs, and reports. It runs without the widget binding, whose mock `HttpClient` would stop the LAN client, so it reads the pack from the generated files.
 

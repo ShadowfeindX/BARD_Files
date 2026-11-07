@@ -64,6 +64,7 @@
 - `Backoff` has no jitter: every participant of a restarted host retries on the same schedule. Fine for a LAN table; worth adding before the relay.
 - The LAN transport is tested over loopback only; the two- and three-machine runs are row 7. The end-to-end loopback tests with a real `EpisodeHost` live in the app (`apps/bard/test/lan_play_test.dart`), because the dependency rules (00-overview) keep the engine out of `backend`, tests included.
 - The join code has about 30 bits and no wrong-attempt limit; each wrong code is logged as `lan.refused`.
+- `PerspectiveFeed.apply` is not atomic: if `evolve` throws partway through a batch, `lastSeq` has moved past the earlier entries, the result is never `applied`, and `entries` never emits them, so those lines are missing from a player's log until a fresh join. Error path only.
 - A participant keeps no store: its log lives in memory and is rebuilt from the host on the next join. The app narrates it from `entries` (see the app guide).
 - Co-recipients stay hidden: `projectFor` narrows `BroadcastDelivered` to the viewer.
 - `hidden` entries keep `seq` consecutive per recipient; an entry without exactly one of `event`, `redacted` and `hidden` is malformed and forces a resync; the RTDB relay stores events per audience, so row 15 must decide how a player reads a gapless sequence from it.
