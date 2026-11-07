@@ -6,7 +6,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ### UI layering: views no longer import services
 - `apps/bard`: `HomeScreen` takes the agents signal, a dossier view model factory and the table log from `routes.dart` instead of the `EpisodeService`. `TablePanel` takes the table log signal. The NPC notes types (`NpcNotes`, `PreparedMessage`, `maxPreparedMessageUnits`) are exported from `data/models.dart`, so `NpcNotesPanel` no longer imports the notes service. No change in behaviour.
-- `tool`: new check `check_ui_layering.dart`, run by `check_all.sh` and CI. It fails when a file under `apps/bard/lib/ui` other than a `*_view_model.dart` imports or exports `data/services`.
+- `tool`: new check `check_ui_layering.dart`, run by `check_all.sh` and CI. It fails when a file under `apps/bard/lib/ui` other than a `*_view_model.dart` imports, exports or parts in `data/services` or `app/`. Conditional, split and dotted URIs are read; comments are skipped.
 - Docs: developer guide `setup.md` lists the check; `app.md` states the rule.
 
 ### Handler NPC notes panel placed in the console
