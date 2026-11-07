@@ -12,7 +12,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ### Architecture docs for demo row 6
 - `04-session.md`: the LAN play mode is described as built (address, port, join code and agent code; resume with the same code and port); discovery stays planned.
 - `07-apps.md`: the appearance setting is kept in `settings.db` in the app's data folder.
-- `09-open-decisions.md`: new open item S-11 (NPCs from pack templates, and whether players read an NPC's name); known issues for the LAN player identity and the joined player's missing store.
+- `09-open-decisions.md`: new open item S-11 (NPCs from pack templates, and whether players read an NPC's name); known issues for the LAN player identity, the joined player's missing store, the fixed demo seed and episodes kept open in memory.
 
 ### Theme rulings T15 (T3 derived themes and import/export)
 - `decision-record.md`: new row T15. The theme document, lookup and fallback, token sets and version map, import and export, the stored setting and the colour format are settled as written. Bases are limited to a built-in, a theme whose base is a built-in, or a theme with no base. Derived themes follow their base; Detach is removed.
