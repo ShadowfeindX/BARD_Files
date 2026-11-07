@@ -4,6 +4,16 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Demo row 6: networked composition and local data
+- **Local data.** `LocalData` and `LocalDataPaths` (`backend`) keep `settings.db`, `notes.db`, one sembast store and diagnostic log per hosted episode, joined-player diagnostic logs and report bundles in `%APPDATA%\BARD` (Windows) or `$XDG_DATA_HOME/bard` (Linux), found from the environment with no plugin. `AppSettingsStore` holds the appearance, this machine's agent id and the last hosted episode.
+- **Appearance persists.** `LocalAppearanceRepository` saves the theme and variant in `settings.db`; a restart keeps them.
+- **Host and join over the LAN.** `Composition.host` resumes the last hosted episode from its store with its join code and port; `Composition.join` joins with host address, join code and agent code. `LanVerifier`, `LanAdmission` and `lanAuthorizer` decide who joins and what players send. `ParticipantEpisodeService` narrates a player's log from received entries and reconnects with resync.
+- **Consent step.** Hosting and joining show the log-collection notice first (PLACEHOLDER text).
+- **Reports.** **Save a report** writes a bundle to `reports/`; the Handler's dialog has an **Include notes** tick.
+- **Send as NPC.** `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` for row 8's prepared messages: the NPC enters the episode on first send with PLACEHOLDER minimum scores. Players see NPC threads as `Unknown number`.
+- `EpisodeParticipant.entries` emits each applied batch's new entries. `EpisodeProjection` holds the display code both services share.
+- **Fix.** `LanHostTransport.close()` now closes the server socket: `HttpServer.listenOn` left it bound, so a restarted host could not reuse its port.
+
 ### Theme rulings T16 (effect safety)
 - `decision-record.md`: new row T16. The effect-safety pairs, their minimums and the existing lock-card and cue tokens are settled. The minimums are mandatory for the built-in themes only; custom themes have no limits and show failing pairs as advisories. The substitution inside the element is removed.
 - `07-apps.md`: Effect-safety rule, Fallback built-in, Custom themes advisories, Layering, Accessibility and the tests follow T16.

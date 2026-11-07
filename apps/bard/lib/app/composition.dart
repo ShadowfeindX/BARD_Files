@@ -5,6 +5,7 @@ import 'package:backend/backend.dart';
 import 'package:engine/engine.dart' show RulesPack, loadPack;
 import 'package:flutter/services.dart';
 import 'package:session/session.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../data/lan_access.dart';
 import '../data/pack_assets.dart';
@@ -59,6 +60,7 @@ class Composition {
     this.reports,
     this.local,
     this.pack,
+    this.status,
     this._onDispose,
   });
 
@@ -201,6 +203,15 @@ class Composition {
       mode: PlayMode.join,
       local: local,
       pack: pack,
+      status: computed(
+        () => switch (service.status.value) {
+          JoinStatus.connecting => 'Connecting to the host…',
+          JoinStatus.joined => 'Joined as agent $aliasId.',
+          JoinStatus.reconnecting => 'Lost the host. Reconnecting…',
+          JoinStatus.refused => service.refusal.value ?? 'The host refused.',
+          JoinStatus.closed => 'Left the episode.',
+        },
+      ),
       reports: ReportSaver(
         episodeId: logId,
         // A player keeps no store: the report carries the session's
@@ -237,6 +248,9 @@ class Composition {
 
   /// The pack in play.
   final RulesPack? pack;
+
+  /// A line about the link, on a joined machine.
+  final ReadonlySignal<String>? status;
 
   final Future<void> Function()? _onDispose;
 

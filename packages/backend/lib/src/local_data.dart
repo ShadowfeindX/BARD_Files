@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
+import 'package:sembast/sembast_memory.dart';
 
 import 'host_settings_store.dart';
 import 'npc_notes_store.dart';
@@ -221,6 +221,20 @@ final class LocalData {
       ),
     );
   }
+
+  /// A fresh memory database factory, to pass to [inMemory] more than once.
+  static DatabaseFactory memoryFactory() => newDatabaseFactoryMemory();
+
+  /// Databases held in memory under [root], for tests and for a machine
+  /// whose folder cannot be written. [factory] lets a test reopen the same
+  /// memory databases; by default each call starts empty.
+  static Future<LocalData> inMemory({
+    String root = '/memory',
+    DatabaseFactory? factory,
+  }) => open(
+    LocalDataPaths(root),
+    factory: factory ?? newDatabaseFactoryMemory(),
+  );
 
   /// Where the files are.
   final LocalDataPaths paths;

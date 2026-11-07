@@ -12,12 +12,12 @@ import 'composition.dart';
 
 /// Builds the router. `/` shows all panels on one device; the other routes
 /// open a single panel, for a second window or display. [appearance] is the
-/// player's theme setting. [onNewEpisode]
-/// replaces the episode; the caller then builds a fresh router.
+/// player's theme setting. Each of [actions] replaces the composition; the
+/// caller then builds a fresh router.
 GoRouter buildRouter(
   Composition c, {
   required ThemeController appearance,
-  required VoidCallback onNewEpisode,
+  required PlayActions actions,
 }) {
   final console = ConsoleViewModel(c.episode);
   Widget single(String title, Widget body) => Scaffold(
@@ -32,7 +32,8 @@ GoRouter buildRouter(
           service: c.episode,
           console: console,
           appearance: appearance,
-          onNewEpisode: onNewEpisode,
+          actions: actions,
+          composition: c,
         ),
       ),
       GoRoute(

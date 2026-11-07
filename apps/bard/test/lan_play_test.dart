@@ -58,7 +58,17 @@ void main() {
     opened.clear();
     await hostData.close();
     await playerData.close();
-    await dir.delete(recursive: true);
+    // A closed link may still log its last diagnostic line a moment later
+    // (its sink recreates the file), so the folder is deleted with retries.
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await dir.delete(recursive: true);
+        break;
+      } on FileSystemException {
+        if (attempt == 5) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
   });
 
   Future<Composition> host({bool newEpisode = false, int port = 0}) async {
