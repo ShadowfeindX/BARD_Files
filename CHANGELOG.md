@@ -4,16 +4,6 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
-### Demo row 6: networked composition and local data
-- **Local data.** `LocalData` and `LocalDataPaths` (`backend`) keep `settings.db`, `notes.db`, one sembast store and diagnostic log per hosted episode, joined-player diagnostic logs and report bundles in `%APPDATA%\BARD` (Windows) or `$XDG_DATA_HOME/bard` (Linux), found from the environment with no plugin. `AppSettingsStore` holds the appearance, this machine's agent id and the last hosted episode.
-- **Appearance persists.** `LocalAppearanceRepository` saves the theme and variant in `settings.db`; a restart keeps them.
-- **Host and join over the LAN.** `Composition.host` resumes the last hosted episode from its store with its join code and port; `Composition.join` joins with host address, join code and agent code. `LanVerifier`, `LanAdmission` and `lanAuthorizer` decide who joins and what players send. `ParticipantEpisodeService` narrates a player's log from received entries and reconnects with resync. A player may file `RequestAction` only for the agent their alias owns (`LanAuthorizer`). A saved host report is replayed into a fresh store in the tests.
-- **Consent step.** Hosting and joining show the log-collection notice first (PLACEHOLDER text).
-- **Reports.** **Save a report** writes a bundle to `reports/`; the Handler's dialog has an **Include notes** tick. A joined player's bundle carries `received-entries.jsonl` (`ReportBundleBuilder.build(extraFiles:)`).
-- **Send as NPC.** `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` for row 8's prepared messages: the NPC enters the episode on first send with PLACEHOLDER minimum scores. Players see NPC threads as `Unknown number`.
-- `EpisodeParticipant.entries` emits each applied batch's new entries. `EpisodeProjection` holds the display code both services share.
-- **Fix.** `LanHostTransport.close()` now closes the server socket: `HttpServer.listenOn` left it bound, so a restarted host could not reuse its port.
-
 ### Theme rulings T16 (effect safety)
 - `decision-record.md`: new row T16. The effect-safety pairs, their minimums and the existing lock-card and cue tokens are settled. The minimums are mandatory for the built-in themes only; custom themes have no limits and show failing pairs as advisories. The substitution inside the element is removed.
 - `07-apps.md`: Effect-safety rule, Fallback built-in, Custom themes advisories, Layering, Accessibility and the tests follow T16.
@@ -23,6 +13,16 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - `decision-record.md`: new row T15. The theme document, lookup and fallback, token sets and version map, import and export, the stored setting and the colour format are settled as written. Bases are limited to a built-in, a theme whose base is a built-in, or a theme with no base. Derived themes follow their base; Detach is removed.
 - `07-apps.md`: T3 headings lose their Proposed label (anchors such as `#chain-checks`, `#derived-themes-base-and-overrides`, `#import-and-export`); Chain checks gains the eligible-base rule; import Replace checks it instead of a cycle; cycles and the depth safeguard are corrupt-data safeguards; tests updated, and the effects test follows the photosensitivity alternatives. Only Custom themes (the editor) stays open (T3).
 - `09-open-decisions.md`: T3 reduced to the custom-theme editor, outside the demo's scope.
+
+### Demo row 6: networked composition and local data
+- **Local data.** `LocalData` and `LocalDataPaths` (`backend`) keep `settings.db`, `notes.db`, one sembast store and diagnostic log per hosted episode, joined-player diagnostic logs and report bundles in `%APPDATA%\BARD` (Windows) or `$XDG_DATA_HOME/bard` (Linux), found from the environment with no plugin. `AppSettingsStore` holds the appearance, this machine's agent id and the last hosted episode.
+- **Appearance persists.** `LocalAppearanceRepository` saves the theme and variant in `settings.db`; a restart keeps them.
+- **Host and join over the LAN.** `Composition.host` resumes the last hosted episode from its store with its join code and port; `Composition.join` joins with host address, join code and agent code. `LanVerifier`, `LanAdmission` and `lanAuthorizer` decide who joins and what players send. `ParticipantEpisodeService` narrates a player's log from received entries and reconnects with resync. A player may file `RequestAction` only for the agent their alias owns (`LanAuthorizer`). A saved host report is replayed into a fresh store in the tests.
+- **Consent step.** Hosting and joining show the log-collection notice first (PLACEHOLDER text).
+- **Reports.** **Save a report** writes a bundle to `reports/`; the Handler's dialog has an **Include notes** tick. A joined player's bundle carries `received-entries.jsonl` (`ReportBundleBuilder.build(extraFiles:)`).
+- **Send as NPC.** `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` for row 8's prepared messages: the NPC enters the episode on first send with PLACEHOLDER minimum scores. Players see NPC threads as `Unknown number`.
+- `EpisodeParticipant.entries` emits each applied batch's new entries. `EpisodeProjection` holds the display code both services share.
+- **Fix.** `LanHostTransport.close()` now closes the server socket: `HttpServer.listenOn` left it bound, so a restarted host could not reuse its port.
 
 ### Theme rulings T14 (T3 drop-down, T4, token names)
 - T3: the variant drop-down lists only the variants the chosen theme provides; 07 and 09 no longer list it as open.

@@ -42,7 +42,8 @@ The app shell is themed fixed panels on the one-device layout. `main.dart` loads
 - **Conditions.** The console's **Conditions** window picks an agent and a pack condition (`EpisodeService.conditions`) and sends `ApplyCondition`; the result waits in the review tray like a Sanity loss and the player sees it after the Handler confirms. Chips under the picker clear a condition the agent has (`ClearCondition`, direct). The record card lists the agent's conditions.
 - **Whisper.** A stat-gated whisper the player receives stays a log line and also raises a **Whisper** alert at the top of the dossier, outside the phone, until dismissed (`TextEntry.whisper`, `DossierViewModel.whisper`).
 - **Review.** While a consequence waits for the Handler, the player's view shows nothing.
-- **NPC notes slot.** `ConsoleView(npcNotes: ...)` shows a widget after the whisper window. The Handler's NPC notes panel plugs in there. What it needs from the composition is ready: `Composition.local!.notes` (the store), `demoCampaignId`, `Composition.pack!.npcs` and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)`.
+- **NPC notes slot.** `ConsoleView(npcNotes: ...)` shows a widget after the whisper window. The Handler's NPC notes panel plugs in there; nothing is built for it yet.
+- **What the notes panel gets from the composition.** `Composition.local!.notes` (the store), `demoCampaignId`, `Composition.pack!.npcs` and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)`.
 - **Placeholder labels.** The record card's section labels (Attributes, Vitals, Conditions) are generic. The table label of the design's record card (DEC-24) is not used and no other field is shown until D decides the record's content.
 
 ## New episode
