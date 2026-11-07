@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:backend/backend.dart';
 import 'package:bard/app/composition.dart';
+import 'package:bard/app/routes.dart';
 import 'package:bard/data/services/episode_projection.dart';
 import 'package:bard/data/services/session_episode_service.dart';
 import 'package:bard/main.dart';
@@ -30,7 +31,7 @@ void main() {
   final packFiles = _packFiles();
   final pack = loadPack(packFiles).pack!;
 
-  group('Composition.npcNotes', () {
+  group('buildNpcNotes', () {
     test('lists the pack NPCs and the agents, and sends as the NPC', () async {
       final local = await LocalData.inMemory();
       addTearDown(local.close);
@@ -38,7 +39,7 @@ void main() {
       addTearDown(service.dispose);
       final c = Composition(episode: service, local: local, pack: service.pack);
 
-      final model = c.npcNotes()!;
+      final model = buildNpcNotes(c)!;
       expect(model.campaignId, demoCampaignId);
       expect(
         [for (final n in model.npcs) n.id],
@@ -66,7 +67,7 @@ void main() {
         local: local,
         pack: pack,
       );
-      final model = c.npcNotes()!;
+      final model = buildNpcNotes(c)!;
       final npc = pack.npcs.first.id;
       await model.select(npc);
       expect(await model.pin('Owes the Bureau'), isTrue);
@@ -77,22 +78,38 @@ void main() {
       expect(model.sendAs, isNull);
     });
 
+    test('a hosting machine has the panel', () async {
+      final local = await LocalData.inMemory();
+      addTearDown(local.close);
+      final model = buildNpcNotes(
+        Composition(
+          episode: FakeEpisodeService(),
+          mode: PlayMode.host,
+          local: local,
+          pack: pack,
+        ),
+      );
+      expect(model, isNotNull);
+    });
+
     test(
       'there is no panel without local data or on a joined machine',
       () async {
         expect(
-          Composition(episode: FakeEpisodeService(), pack: pack).npcNotes(),
+          buildNpcNotes(Composition(episode: FakeEpisodeService(), pack: pack)),
           isNull,
         );
         final local = await LocalData.inMemory();
         addTearDown(local.close);
         expect(
-          Composition(
-            episode: FakeEpisodeService(),
-            mode: PlayMode.join,
-            local: local,
-            pack: pack,
-          ).npcNotes(),
+          buildNpcNotes(
+            Composition(
+              episode: FakeEpisodeService(),
+              mode: PlayMode.join,
+              local: local,
+              pack: pack,
+            ),
+          ),
           isNull,
         );
       },

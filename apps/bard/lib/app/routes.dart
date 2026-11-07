@@ -1,15 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import '../ui/console/console_view.dart';
 import '../ui/console/console_view_model.dart';
+import '../data/services/npc_notes_service.dart';
 import '../ui/console/npc_notes_panel.dart';
+import '../ui/console/npc_notes_view_model.dart';
 import '../ui/dossier/dossier_view.dart';
 import '../ui/dossier/dossier_view_model.dart';
 import '../ui/home/home_screen.dart';
 import '../ui/table/table_panel.dart';
 import 'composition.dart';
+
+/// The Handler's NPC notes panel state for [c], or null where there is no
+/// panel ([Composition.hasNpcNotes]).
+///
+/// Notes belong to [demoCampaignId]; the NPCs are the pack's; the "Send to"
+/// list is the episode's agents; a prepared message goes out through
+/// [Composition.sendAsNpc]. One model serves `/` and `/gm`: open the panel in
+/// one window at a time, since a second window's text box does not refresh
+/// while it shows the same NPC.
+NpcNotesViewModel? buildNpcNotes(Composition c) {
+  if (!c.hasNpcNotes) return null;
+  final agents = c.episode.agents;
+  return NpcNotesViewModel(
+    NpcNotesService(c.local!.notes),
+    campaignId: demoCampaignId,
+    npcs: [for (final n in c.pack!.npcs) NpcOption(id: n.id, name: n.name)],
+    aliases: computed(
+      () => [for (final a in agents.value) AliasOption(id: a.id, name: a.name)],
+    ),
+    sendAs: c.sendAsNpc,
+  );
+}
 
 /// Builds the router. `/` shows all panels on one device; the other routes
 /// open a single panel, for a second window or display. [appearance] is the
@@ -21,7 +46,7 @@ GoRouter buildRouter(
   required PlayActions actions,
 }) {
   final console = ConsoleViewModel(c.episode);
-  final notes = c.npcNotes();
+  final notes = buildNpcNotes(c);
   Widget? notesPanel() => notes == null ? null : NpcNotesPanel(model: notes);
   Widget single(String title, Widget body) => Scaffold(
     appBar: AppBar(title: Text(title)),

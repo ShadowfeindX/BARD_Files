@@ -82,7 +82,7 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 
 ## Where the NPC notes panel is placed
 
-`Composition.npcNotes()` builds the panel's view model, and `routes.dart` places `NpcNotesPanel` in the console's slot on `/` and `/gm`. It uses the store `Composition.local!.notes` (through `NpcNotesService`), the campaign `demoCampaignId`, the pack's NPCs as `NpcOption`s, the episode's agents as the "Send to" aliases, and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` as `SendAsNpc`. The panel shows in one-device play and while hosting, whenever the local folder is open; a joined machine and a machine without local data have no panel.
+`buildNpcNotes` in `routes.dart` builds the panel's view model next to the console's, and places `NpcNotesPanel` in the console's slot on `/` and `/gm`. It uses the store `Composition.local!.notes` (through `NpcNotesService`), the campaign `demoCampaignId`, the pack's NPCs as `NpcOption`s, the episode's agents as the "Send to" aliases, and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` as `SendAsNpc`. The panel shows in one-device play and while hosting, whenever the local folder is open; a joined machine and a machine without local data have no panel (`Composition.hasNpcNotes`). One model serves both routes, so open the panel in one window at a time: a second window's text box does not refresh while it shows the same NPC.
 
 ## Reports
 
