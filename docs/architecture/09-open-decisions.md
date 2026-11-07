@@ -76,6 +76,13 @@ Proposals written into the chapters as structured designs, not yet ruled. Each h
 - **Options:** none beyond these candidates; each goes to R with its purpose and alternatives when its transport is scheduled (build order: in-process, LAN, Realtime Database relay, P2P).
 - **Owner:** R. **Described in:** [04](04-session.md#play-modes), [00](00-overview.md#platform-and-stack).
 
+### S-11 NPCs from pack templates
+
+- **Undecided:** how a pack NPC (an `NpcTemplate`) becomes an entity in an episode, and whether players may read its name. A phone message needs an entity as sender (`PhoneNpc`), and no command turns a template into one.
+- **As built for the demo:** the Handler's first prepared message from an NPC adds it with a GM `CreateAgent`: no owner, the template's name, the pack's minimum score in every attribute (PLACEHOLDER), GM-only. Later messages reuse it by name. Players see its thread as `Unknown number`, because its identity is GM-only.
+- **Options:** an engine command that introduces an NPC from its template (an engine-core change), carrying the template's attributes once D fills them and saying whether the name is public; or keep the demo path.
+- **Owner:** R. **Described in:** [developer guide, app](../developer-guide/app.md#broadcast-and-phone).
+
 ### S-8 Badge packages
 
 - **Undecided:** the packages for badge printing and scanning: printing (candidate `barcode`), phone scanning (`mobile_scanner`), desktop scanning (`flutter_zxing`, Windows and Linux beta, or USB 2D keyboard-wedge scanners). None is on the approved list (CLAUDE.md section 6).
@@ -134,6 +141,8 @@ Not decisions; work still owed.
   Fix (proposed, not yet ruled by R): give each link an outbound queue with a byte limit (count queued UTF-8 bytes, release them on `flush`), and close a link that passes it; the player reconnects and resyncs from `lastSeq`, so nothing is lost. **Owner:** R. **Found in:** PR #37, `_WebSocketLink.send`.
 - <a id="lan-backoff-jitter"></a>**Low: reconnect backoff has no jitter.** `Backoff.delayFor` (`packages/session/lib/src/reconnector.dart`, PR #37) waits exactly 500 ms, then 1 s, 2 s and so on up to 30 s. When a host restarts, every participant retries on the same schedule, so they all reconnect, `hello` and resync in the same instant. At a LAN table of a few players this is harmless; on the relay or with many players it turns a restart into load spikes. `Reconnector` also resets the backoff after any welcomed link, so a host that welcomes and then drops every link is retried every 500 ms.
   Fix (proposed, not yet ruled by R): add random jitter to each wait (for example "full jitter", a random wait between zero and the computed delay, with an injected `Random` so tests stay deterministic), and reset the backoff only after a link has stayed up for a minimum time. **Owner:** R. **Found in:** PR #37, `Backoff.delayFor` and `Reconnector.run`.
+- <a id="lan-identity"></a>**High: must fix before any internet-facing hosting. A LAN player's identity is the join code only.** `LanVerifier` (`apps/bard/lib/data/lan_access.dart`) takes the agent id a `hello` names; anyone with the join code and an agent code can join as that agent if no other machine holds it. `LanAdmission` keeps each agent code for the first machine that joins with it, in memory, so after a host restart the first machine to reconnect gets it. Acceptable at a LAN table; the account layer replaces it.
+- **A joined player keeps no store.** The player's log lives in memory and is rebuilt from the host on the next join; a player's report bundle has no game log (the host's report has it).
 - **Session gaps.** `docs/developer-guide/session.md` lists the known gaps in the session layer.
 
 ## Held
