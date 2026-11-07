@@ -268,3 +268,47 @@ class BroadcastPreviewItem {
   /// The agent's score the condition read, or null when the agent has none.
   final num? score;
 }
+
+/// How this machine takes part in play (04 §Play modes).
+enum PlayMode {
+  /// "In person, one device": every panel on this machine, nothing on the
+  /// network.
+  oneDevice,
+
+  /// This machine hosts over the LAN and runs the Handler console.
+  host,
+
+  /// This machine joined a LAN host as one player.
+  join,
+}
+
+/// What players need to reach this host: shown on the Handler's screen.
+class HostInfo {
+  /// Creates the description.
+  const HostInfo({
+    required this.joinCode,
+    required this.port,
+    required this.addresses,
+  });
+
+  /// The code players type.
+  final String joinCode;
+
+  /// The port the host listens on.
+  final int port;
+
+  /// This machine's LAN addresses (IPv4, loopback left out).
+  final List<String> addresses;
+}
+
+/// The report button: saves a bundle and returns its folder.
+class ReportAction {
+  /// Creates the action.
+  const ReportAction({required this.canIncludeNotes, required this.save});
+
+  /// Whether the "include notes" tick is offered (the Handler's machine).
+  final bool canIncludeNotes;
+
+  /// Saves a report; [includeNotes] is the tick.
+  final Future<String> Function({bool includeNotes}) save;
+}

@@ -156,6 +156,17 @@ void main() {
 
     List<String> kinds() => [for (final e in hostLog.entries) e.kind];
 
+    test('close frees the port for a restarted host', () async {
+      final port = host.port;
+      await host.close();
+      host = await LanHostTransport.bind(
+        address: InternetAddress.loopbackIPv4,
+        port: port,
+        joinCode: 'ABC234',
+      );
+      expect(host.port, port);
+    });
+
     test('frames arrive in order both ways, and close ends them', () async {
       final client = await const LanClientTransport().connect(joinAddress());
       final server = await nextLink();

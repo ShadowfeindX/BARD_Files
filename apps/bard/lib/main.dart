@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:backend/backend.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -8,19 +11,42 @@ import 'package:ui_kit/ui_kit.dart';
 import 'app/composition.dart';
 import 'app/routes.dart';
 import 'data/appearance_repository.dart';
+import 'data/pack_assets.dart';
+import 'ui/home/home_screen.dart';
+import 'ui/home/lan_dialogs.dart';
 
-/// Entry point. Opens an in-process episode over the shipped pack.
+/// Entry point. Opens this machine's local data and an in-process episode
+/// over the shipped pack.
+///
+/// When the local data folder cannot be opened, the app still runs: the
+/// appearance setting lasts until exit, and hosting, joining and reports are
+/// off.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final appearance = InMemoryAppearanceRepository();
+  LocalData? local;
+  try {
+    local = await LocalData.open(LocalDataPaths.forPlatform());
+  } on Object catch (e) {
+    debugPrint('Local data unavailable: $e');
+  }
+  final AppearanceRepository appearance = local == null
+      ? InMemoryAppearanceRepository()
+      : LocalAppearanceRepository(local.settings);
   runApp(
     BardApp(
-      composition: await Composition.inProcess(rootBundle),
+      composition: await Composition.inProcess(rootBundle, local: local),
+      local: local,
       appearance: await ThemeController.load(
         rootBundle,
         initial: await appearance.load(),
         brightness: _platformBrightness(),
-        onChanged: appearance.save,
+        onChanged: (setting) => unawaited(
+          appearance
+              .save(setting)
+              .catchError(
+                (Object e) => debugPrint('Could not save the appearance: $e'),
+              ),
+        ),
       ),
     ),
   );
@@ -39,6 +65,7 @@ class BardApp extends StatefulWidget {
     super.key,
     required this.composition,
     required this.appearance,
+    this.local,
   });
 
   /// Injected services.
@@ -46,6 +73,9 @@ class BardApp extends StatefulWidget {
 
   /// The player's theme and variant. It outlives a new episode.
   final ThemeController appearance;
+
+  /// This machine's local data; null turns hosting, joining and reports off.
+  final LocalData? local;
 
   @override
   State<BardApp> createState() => _BardAppState();
@@ -58,7 +88,12 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
   GoRouter _build() => buildRouter(
     _composition,
     appearance: widget.appearance,
-    onNewEpisode: _startNewEpisode,
+    actions: PlayActions(
+      newEpisode: _startNewEpisode,
+      host: widget.local == null ? null : _host,
+      join: widget.local == null ? null : _join,
+      leave: _leave,
+    ),
   );
 
   @override
@@ -70,6 +105,8 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // The local data belongs to the app: close it after the episode.
+    unawaited(_composition.dispose().whenComplete(() => widget.local?.close()));
     super.dispose();
   }
 
@@ -78,36 +115,102 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
   void didChangePlatformBrightness() =>
       widget.appearance.osBrightness.value = _platformBrightness();
 
-  /// One active host at a time: the old one is closed, a fresh empty
-  /// episode replaces it, and the router restarts at `/`.
   final GlobalKey<ScaffoldMessengerState> _messenger =
       GlobalKey<ScaffoldMessengerState>();
   bool _opening = false;
+  Map<String, String>? _packFiles;
 
-  Future<void> _startNewEpisode() async {
+  Future<Map<String, String>> _pack() async =>
+      _packFiles ??= await loadPackFiles(rootBundle);
+
+  /// One active composition at a time: [open] builds the next one, the old
+  /// one is closed, and the router restarts at `/`. If [open] fails, [what]
+  /// says what did not happen: one-device play keeps running, and a
+  /// networked composition (already closed) falls back to one-device play.
+  /// A second action while one runs is ignored.
+  Future<void> _replace(
+    String what,
+    Future<Composition> Function() open,
+  ) async {
     if (_opening) return;
     _opening = true;
-    final Composition next;
     try {
-      next = await Composition.inProcess(rootBundle, seedDemoAgents: false);
-    } catch (e) {
-      // Keep the current episode running and say why nothing changed.
-      _opening = false;
-      if (mounted) {
-        _messenger.currentState?.showSnackBar(
-          SnackBar(content: Text('Could not start a new episode: $e')),
-        );
+      final old = _composition;
+      Composition next;
+      try {
+        // A host must let go of its port before the next one binds it, so
+        // a networked composition closes first; one-device play swaps
+        // without a gap.
+        if (old.mode != PlayMode.oneDevice) await old.dispose();
+        next = await open();
+      } catch (e) {
+        _say('Could not $what: $e');
+        if (old.mode == PlayMode.oneDevice) return;
+        try {
+          next = await _oneDevice();
+        } catch (e) {
+          // Nothing left to run: the old composition is closed.
+          _say('Could not return to one-device play: $e');
+          return;
+        }
       }
-      return;
+      if (!mounted) {
+        await next.dispose();
+        return;
+      }
+      setState(() {
+        _composition = next;
+        _router = _build();
+      });
+      if (old.mode == PlayMode.oneDevice) await old.dispose();
+    } finally {
+      _opening = false;
     }
-    _opening = false;
-    final old = _composition;
-    setState(() {
-      _composition = next;
-      _router = _build();
-    });
-    await old.episode.dispose();
   }
+
+  void _say(String text) {
+    if (!mounted) return;
+    _messenger.currentState?.showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<Composition> _oneDevice() => Composition.inProcess(
+    rootBundle,
+    seedDemoAgents: false,
+    local: widget.local,
+  );
+
+  Future<void> _startNewEpisode() => _replace(
+    'start a new episode',
+    _composition.mode == PlayMode.host
+        ? () async => Composition.host(
+            await _pack(),
+            widget.local!,
+            newEpisode: true,
+            seedDemoAgents: false,
+          )
+        : _oneDevice,
+  );
+
+  Future<void> _host() => _replace(
+    'host',
+    () async => Composition.host(await _pack(), widget.local!),
+  );
+
+  Future<void> _join(JoinRequest request) => _replace(
+    'join',
+    () async => Composition.join(
+      await _pack(),
+      widget.local!,
+      info: LanJoinInfo(
+        host: request.host,
+        port: request.port,
+        joinCode: request.joinCode,
+      ),
+      aliasId: request.aliasId,
+    ),
+  );
+
+  Future<void> _leave() => _replace('leave', _oneDevice);
 
   @override
   Widget build(BuildContext context) {

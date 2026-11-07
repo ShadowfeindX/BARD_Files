@@ -8,6 +8,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../models.dart';
 import '../protocol_engine_codec.dart';
+import 'episode_projection.dart';
 import 'episode_service.dart';
 
 /// [EpisodeService] over a real `EpisodeHost` in "in person, one device"
@@ -19,19 +20,34 @@ import 'episode_service.dart';
 /// because no transport is involved on one device; the transport path
 /// (authorization per player) comes with the networked modes.
 class SessionEpisodeService implements EpisodeService {
-  SessionEpisodeService._(this._host, this._store, this._pack);
+  SessionEpisodeService._(this._host, this._store, this._pack)
+    : _projection = EpisodeProjection(_pack);
 
-  static const _episodeId = 'demo';
+  /// The episode id one-device play uses.
+  static const String oneDeviceEpisodeId = 'demo';
 
   /// Fixed demo seed so a run is reproducible; the rolls are still logged.
   static final RngSeed demoSeed = RngSeed(1, 2, 3, 4);
 
-  /// Opens an episode from [packFiles] and starts it. With
-  /// [seedDemoAgents] it also adds two demo agents; a new episode passes
-  /// false and the GM adds agents. Throws [StateError] listing the pack problems if it fails.
+  /// Opens episode [episodeId] from [packFiles] over [store] (default: a
+  /// new in-memory store).
+  ///
+  /// An empty store is a new episode: it is started, and with
+  /// [seedDemoAgents] two demo agents are added (a new episode passes false
+  /// and the GM adds agents). A store that holds the episode resumes it from
+  /// its log and adds nothing. [verifier], [admission] and [authorizer]
+  /// decide who may join over a transport given to [listen]; the defaults
+  /// admit nobody. Throws [StateError] listing the pack problems if it
+  /// fails.
   static Future<SessionEpisodeService> open(
     Map<String, String> packFiles, {
     bool seedDemoAgents = true,
+    String episodeId = oneDeviceEpisodeId,
+    EventStore? store,
+    DiagnosticLog? diagnostics,
+    IdentityVerifier? verifier,
+    Admission? admission,
+    Authorizer authorizer = const DefaultAuthorizer(),
   }) async {
     final loaded = loadPack(packFiles);
     final pack = loaded.pack;
@@ -40,19 +56,27 @@ class SessionEpisodeService implements EpisodeService {
         'The rules pack did not load:\n${loaded.issues.join('\n')}',
       );
     }
-    final store = InMemoryEventStore();
+    final events = store ?? InMemoryEventStore();
     final host = await EpisodeHost.open(
-      episodeId: _episodeId,
+      episodeId: episodeId,
       gm: const Principal(agentId: 'gm', isGm: true),
       engine: Engine(pack),
       codec: const ProtocolEngineCodec(),
-      store: store,
+      store: events,
       rngFactory: (draws) => XoshiroRng(demoSeed, drawCount: draws),
-      verifier: _NoLinksVerifier(),
+      verifier: verifier ?? _NoLinksVerifier(),
+      admission: admission,
+      authorizer: authorizer,
+      diagnostics: diagnostics,
     );
-    final service = SessionEpisodeService._(host, store, pack);
+    final service = SessionEpisodeService._(host, events, pack);
     try {
-      await service._seed(seedDemoAgents: seedDemoAgents);
+      if (host.lastSeq == 0) {
+        await service._seed(seedDemoAgents: seedDemoAgents);
+      } else {
+        service._resume();
+        await service._refresh();
+      }
     } catch (_) {
       await host.close();
       rethrow;
@@ -65,8 +89,32 @@ class SessionEpisodeService implements EpisodeService {
   }
 
   final EpisodeHost _host;
-  final InMemoryEventStore _store;
+  final EventStore _store;
   final RulesPack _pack;
+  final EpisodeProjection _projection;
+
+  /// The episode's id.
+  String get episodeId => _host.episodeId;
+
+  /// The store the episode is kept in, for the report bundle.
+  EventStore get store => _store;
+
+  /// The last committed `seq`.
+  int get lastSeq => _host.lastSeq;
+
+  /// The pack in play.
+  RulesPack get pack => _pack;
+
+  /// Whether held consequences are confirmed without the Handler's review.
+  bool get autoConfirm =>
+      _host.state.meta?.settings.autoConfirmConsequences ?? false;
+
+  /// The aliases that own an agent: the agent codes players join with.
+  Set<String> get aliasIds => {for (final a in _agents.value) a.id};
+
+  /// Accepts players' links from [transport] (LAN hosting).
+  void listen(Transport transport, {Liveness? liveness}) =>
+      _host.listen(transport, liveness: liveness);
 
   final Signal<List<AgentSheet>> _agents = signal(const []);
   final Signal<List<ActionRequestItem>> _requests = signal(const []);
@@ -86,10 +134,18 @@ class SessionEpisodeService implements EpisodeService {
   /// scores spread the pack's creation points; they are demo data, not rules.
   static const _demoAliases = {'vale': 'Agent Vale', 'quill': 'Agent Quill'};
 
+  /// Continues alias numbering after the agents a resumed log holds.
+  void _resume() {
+    final pattern = RegExp(r'^agent(\d+)$');
+    for (final who in _host.state.stores.all(Identity.componentType).values) {
+      final match = pattern.firstMatch(who.ownerAlias?.value ?? '');
+      final n = match == null ? null : int.parse(match.group(1)!);
+      if (n != null && n >= _nextAlias) _nextAlias = n + 1;
+    }
+  }
+
   Future<void> _seed({required bool seedDemoAgents}) async {
-    final started = await _host.submit(
-      const StartEpisode(episodeId: _episodeId),
-    );
+    final started = await _host.submit(StartEpisode(episodeId: episodeId));
     if (started is Refusal) {
       throw StateError('Could not start the episode: ${started.message}');
     }
@@ -202,11 +258,9 @@ class SessionEpisodeService implements EpisodeService {
   ReadonlySignal<List<PhoneThreadData>> playerPhone(String agentId) =>
       _playerPhones.putIfAbsent(agentId, () => signal(const []));
 
-  EntityId _entityOf(String alias) => _host.state.stores
-      .all(Identity.componentType)
-      .entries
-      .firstWhere((e) => e.value.ownerAlias == AliasId(alias))
-      .key;
+  EntityId _entityOf(String alias) =>
+      _projection.entityOf(_host.state, alias) ??
+      (throw StateError('No agent for alias $alias'));
 
   // --- commands ----------------------------------------------------------
 
@@ -312,7 +366,7 @@ class SessionEpisodeService implements EpisodeService {
   @override
   Future<void> sendPhone(String? fromAgentId, String threadId, String text) =>
       _serial(() async {
-        final to = _partyOf(threadId);
+        final to = _projection.partyOf(threadId);
         await _submit(
           SendPhoneMessage(
             from: fromAgentId == null
@@ -326,6 +380,56 @@ class SessionEpisodeService implements EpisodeService {
           ),
         );
       });
+
+  /// Sends [text] to the agent [toAlias] as the pack NPC [npcId] (row 8's
+  /// prepared messages). Returns the refusal message, or null when sent.
+  ///
+  /// The pack's NPCs are templates, not entities, and a phone message comes
+  /// from an entity. So the first message from an NPC brings it into the
+  /// episode as a GM-only, unowned agent with the template's name and the
+  /// pack's minimum score in every attribute. Those scores are PLACEHOLDER:
+  /// an NPC that only speaks never rolls, and an engine command that
+  /// introduces an NPC from its template is an open item (09). Later
+  /// messages reuse the entity, found by name.
+  Future<String?> sendAsNpc(String npcId, String toAlias, String text) =>
+      _serial(() async {
+        final template = _pack.npcs.where((n) => n.id == npcId).firstOrNull;
+        if (template == null) return 'That NPC is not in the pack.';
+        var entity = _npcEntity(template.name);
+        if (entity == null) {
+          final created = await _host.submit(
+            CreateAgent(
+              name: template.name,
+              attributes: {
+                for (final a in _pack.attributes)
+                  a.key: _pack.attributeCreation.minPerAttribute,
+              },
+            ),
+          );
+          if (created is Refusal) {
+            _error.value = created.message;
+            return created.message;
+          }
+          entity = _npcEntity(template.name);
+          if (entity == null) return 'The NPC could not be added.';
+        }
+        final result = await _submit(
+          SendPhoneMessage(
+            from: PhoneNpc(entity),
+            to: PhoneAlias(AliasId(toAlias)),
+            text: text,
+            actor: const GmActor(),
+          ),
+        );
+        return result is Refusal ? result.message : null;
+      });
+
+  EntityId? _npcEntity(String name) => _host.state.stores
+      .all(Identity.componentType)
+      .entries
+      .where((e) => e.value.ownerAlias == null && e.value.name == name)
+      .firstOrNull
+      ?.key;
 
   /// "[attribute] [op] [value]" as an engine condition.
   Condition _condition(String attribute, BroadcastOp op, int value) =>
@@ -427,12 +531,8 @@ class SessionEpisodeService implements EpisodeService {
 
   Future<void> _refresh() async {
     final state = _host.state;
-    final stats = DerivedStats(_pack);
     final identities = state.stores.all(Identity.componentType);
-    _agents.value = [
-      for (final e in identities.entries)
-        if (e.value.ownerAlias != null) _sheet(state, stats, e.key, e.value),
-    ];
+    _agents.value = _projection.agents(state);
     _requests.value = [
       for (final r in state.pending.requests.entries)
         ActionRequestItem(
@@ -467,10 +567,10 @@ class SessionEpisodeService implements EpisodeService {
     ];
     final codec = const ProtocolEngineCodec();
     final events = [
-      await for (final stored in _store.read(_episodeId))
+      await for (final stored in _store.read(episodeId))
         (stored.seq, codec.decodeEvent(stored.event)),
     ];
-    final text = {await for (final t in _store.readText(_episodeId)) t.seq: t};
+    final text = {await for (final t in _store.readText(episodeId)) t.seq: t};
     List<LogEntry> view(Perspective p, String? alias) => [
       for (final (seq, event) in events)
         ..._entriesFor(event, text[seq]!, p, alias, state),
@@ -479,7 +579,9 @@ class SessionEpisodeService implements EpisodeService {
     _gmLog.value = [..._gmEvents, ..._notes];
     _tableLog.value = view(const TablePerspective(), null);
     final names = {for (final a in _agents.value) a.id: a.name};
-    _gmPhone.value = _gmThreads([for (final (_, e) in events) e], names);
+    _gmPhone.value = _projection.gmThreads([
+      for (final (_, e) in events) e,
+    ], names);
     for (final alias in names.keys) {
       final perspective = PlayerPerspective(AliasId(alias));
       final log = _playerLogs.putIfAbsent(alias, () => signal(const []));
@@ -490,101 +592,8 @@ class SessionEpisodeService implements EpisodeService {
             projectFor(e, perspective),
       ];
       final phone = _playerPhones.putIfAbsent(alias, () => signal(const []));
-      phone.value = _playerThreads(visible, alias, names);
+      phone.value = _projection.playerThreads(visible, alias, names);
     }
-  }
-
-  // --- phone -------------------------------------------------------------
-
-  /// Thread ids name the counterpart: `gm` for the Handler, `alias:<id>` for
-  /// an agent's alias.
-  PhoneParty _partyOf(String threadId) => threadId == 'gm'
-      ? const PhoneGm()
-      : PhoneAlias(AliasId(threadId.substring('alias:'.length)));
-
-  String _threadOf(PhoneParty party) => switch (party) {
-    PhoneGm() => 'gm',
-    PhoneAlias(:final alias) => 'alias:${alias.value}',
-    PhoneNpc(:final entity) => 'npc:${entity.value}',
-  };
-
-  /// The Handler's threads: one per agent, holding the messages between the
-  /// Handler and that alias. Messages between agents show in the GM log.
-  List<PhoneThreadData> _gmThreads(List<Event> log, Map<String, String> names) {
-    final byAlias = <String, List<PhoneMessageData>>{};
-    for (final c in phoneConversations(log)) {
-      final alias = switch ((c.a, c.b)) {
-        (PhoneAlias(:final alias), PhoneGm()) ||
-        (PhoneGm(), PhoneAlias(:final alias)) => alias.value,
-        _ => null,
-      };
-      if (alias == null) continue;
-      byAlias[alias] = [
-        for (final m in c.messages)
-          PhoneMessageData(text: m.text, fromMe: m.from is PhoneGm),
-      ];
-    }
-    return [
-      for (final MapEntry(key: alias, value: name) in names.entries)
-        PhoneThreadData(
-          id: 'alias:$alias',
-          title: name,
-          messages: byAlias[alias] ?? const [],
-        ),
-    ];
-  }
-
-  /// A player's threads: the Handler, then every other agent, from the
-  /// events this player may see.
-  List<PhoneThreadData> _playerThreads(
-    List<Event> visible,
-    String alias,
-    Map<String, String> names,
-  ) {
-    final me = PhoneAlias(AliasId(alias));
-    final byThread = {
-      for (final c in phoneConversations(visible, viewer: AliasId(alias)))
-        _threadOf(c.b): [
-          for (final m in c.messages)
-            PhoneMessageData(text: m.text, fromMe: m.from == me),
-        ],
-    };
-    return [
-      PhoneThreadData(
-        id: 'gm',
-        title: 'The Handler',
-        messages: byThread['gm'] ?? const [],
-      ),
-      for (final MapEntry(key: other, value: name) in names.entries)
-        if (other != alias)
-          PhoneThreadData(
-            id: 'alias:$other',
-            title: name,
-            messages: byThread['alias:$other'] ?? const [],
-          ),
-    ];
-  }
-
-  AgentSheet _sheet(
-    EpisodeState state,
-    DerivedStats stats,
-    EntityId id,
-    Identity who,
-  ) {
-    final vitals = stats.vitals(state, id);
-    final scores = state.stores.get(Attributes.componentType, id)?.scores;
-    final active = state.stores.get(Conditions.componentType, id)?.ids;
-    return AgentSheet(
-      id: who.ownerAlias!.value,
-      name: who.name,
-      attributes: scores?.asMap() ?? const {},
-      health: vitals?.health.toInt() ?? 0,
-      sanity: vitals?.sanity.toInt() ?? 0,
-      conditions: [
-        for (final c in active ?? const <String>{})
-          ConditionOption(id: c, name: _pack.condition(c)?.name ?? c),
-      ],
-    );
   }
 
   Iterable<LogEntry> _entriesFor(
@@ -597,7 +606,7 @@ class SessionEpisodeService implements EpisodeService {
     return switch (deliveryFor(event.visibility, perspective)) {
       Delivery.hidden => const [],
       Delivery.redacted => [
-        TextEntry(line.variants['redacted'] ?? 'The Handler did something.'),
+        TextEntry(line.variants['redacted'] ?? EpisodeProjection.redactedLine),
       ],
       Delivery.full => [
         ?_full(projectFor(event, perspective), line, perspective, alias, state),
@@ -612,59 +621,17 @@ class SessionEpisodeService implements EpisodeService {
     String? alias,
     EpisodeState state,
   ) {
-    if (event is CheckResolved) return RollEntry(_breakdown(event, state));
     final v = line.variants;
     final text = switch (perspective) {
       GmPerspective() => v['gm'],
       PlayerPerspective() => v['alias:$alias'] ?? v['public'],
       TablePerspective() => v['public'],
     };
-    if (text == null) return null;
-    return TextEntry(
+    return _projection.entry(
+      event,
       text,
-      whisper: event is BroadcastDelivered && perspective is PlayerPerspective,
-    );
-  }
-
-  DiceBreakdownData _breakdown(CheckResolved event, EpisodeState state) {
-    final b = event.breakdown;
-    final spec = event.spec;
-    final name = state.stores.get(Identity.componentType, spec.entity)?.name;
-    final skillName = spec.skill == null
-        ? null
-        : _pack.skills.where((s) => s.id == spec.skill).firstOrNull?.name;
-    DiceGroup group(String label, Term term) => DiceGroup(
-      label: label,
-      dice: [
-        if (term is DiceTerm)
-          for (final roll in term.rolls)
-            for (var i = 0; i < roll.faces.length; i++)
-              DieResult(roll.faces[i], exploded: i < roll.faces.length - 1),
-      ],
-      subtotal: term.value.toInt(),
-    );
-    final proficiency = b.proficiency;
-    return DiceBreakdownData(
-      title: '${name ?? '?'}: ${skillName ?? b.attribute}',
-      groups: [
-        group('Primary d6', b.primary),
-        if (proficiency != null) group('Proficiency', proficiency),
-      ],
-      modifiers: [
-        ModifierLine(b.attribute, b.attributeScore),
-        for (final m in b.modifiers) ModifierLine(m.label, m.value),
-      ],
-      total: b.total.toInt(),
-      dc: spec.dc,
-      dcLabel: _pack.difficultyCategories
-          .where((d) => d.key == spec.category)
-          .firstOrNull
-          ?.name,
-      outcome: switch (event.outcome) {
-        CheckOutcome.success => CheckOutcomeKind.success,
-        CheckOutcome.partialSuccess => CheckOutcomeKind.partial,
-        CheckOutcome.failure => CheckOutcomeKind.failure,
-      },
+      state,
+      forPlayer: perspective is PlayerPerspective,
     );
   }
 }
