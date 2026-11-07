@@ -1,4 +1,5 @@
 import 'package:bard/app/composition.dart';
+import 'package:bard/data/models.dart';
 import 'package:bard/main.dart';
 import 'package:bard/ui/dossier/dossier_view.dart';
 import 'package:flutter/material.dart';
@@ -288,5 +289,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(psstIn(rook), findsNothing, reason: thread);
     }
+  });
+
+  testWidgets('a condition is held, then shown on the record card; a '
+      'dismissed whisper stays dismissed', (tester) async {
+    final composition = await _pump(tester);
+    await tester.runAsync(
+      () => composition.episode.proposeCondition('vale', 'bleeding'),
+    );
+    await _settle(tester);
+    expect(composition.episode.agents.value.first.conditions, isEmpty);
+    expect(composition.episode.reviewTray.value.first.condition, 'Bleeding');
+    await tester.runAsync(
+      () => composition.episode.confirmReview(
+        composition.episode.reviewTray.value.first.id,
+      ),
+    );
+    await _settle(tester);
+    expect(composition.episode.agents.value.first.conditions.map((c) => c.id), [
+      'bleeding',
+    ]);
+
+    // A whisper to everyone with Strength at least 0, then dismiss it and
+    // cause another refresh: it must not come back.
+    await tester.runAsync(
+      () => composition.episode.broadcast(
+        'A cold draft.',
+        'STR',
+        BroadcastOp.ge,
+        0,
+      ),
+    );
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('whisper-vale')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('whisper-dismiss-vale')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => composition.episode.addGmNote('later'));
+    await tester.runAsync(
+      () => composition.episode.proposeSanityLoss('vale', 1),
+    );
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('whisper-vale')), findsNothing);
   });
 }
