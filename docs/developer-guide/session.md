@@ -71,6 +71,10 @@
 
 `SembastEventStore.health(episodeId)` reports the commit marker, event and text-line counts, how many events recovery deleted when the file was opened, and the file size (pass `sizeOf:` to the constructor; the store itself does no file I/O). A non-zero discard count means the previous run ended in the middle of a batch. The saved report reads it.
 
+## Handler NPC notes (`backend`)
+
+`NpcNotesStore` (`packages/backend/lib/src/npc_notes_store.dart`) keeps the Handler's notes on NPCs in a small sembast database of its own on the Handler's machine, opened the way `HostSettingsStore` is. Notes belong to an NPC within a campaign (`NpcNotes`: free text, pinned details, prepared messages), so they carry across episodes and missions and are not touched by an episode's clean-up. They are not events: they never enter the game log, the wire or a player's projection, and the pack's NPC data is never edited. The console sends a `PreparedMessage` as the NPC through the existing `SendPhoneMessage(from: entity, ...)`; the store only holds the text, held to the phone limit (`maxPreparedMessageUnits`, the engine's 2,000 units repeated because `backend` cannot import the engine). Every change is one transaction. A report bundle leaves the notes out; when the Handler ticks "include notes", the composer writes `exportCampaignJson(campaignId)` as one extra file.
+
 ## Kill test for the sembast store
 
 `bash packages/backend/tool/kill_probe/run.sh [runs]` (from the repository root, Git Bash) compiles a writer and a checker, kills the writer with SIGKILL at random moments, and reopens the file after each kill. It fails if a batch the writer reported as committed is missing, the log has a gap, or text lines and head disagree with the events. It needs only Dart. It is run by hand, not by `check_all.sh`. Results so far: Linux, 25 kills (a throwaway script) and 12 kills (this script), 0 failures. Windows (R's PC, Git Bash, commit d59c5b7): 25 kills, 0 failures; `kill -9` reached the native process. These are process kills only: OS crash and power loss are not tested, and sembast calls no fsync [V-31]. The script stops with an error if the writer survives a kill.
