@@ -235,6 +235,19 @@ class Composition {
   /// A line about the link, on a joined machine.
   final ReadonlySignal<String>? status;
 
+  /// Sends a prepared message as a pack NPC, where this machine runs the
+  /// Handler's episode; null on a joined machine.
+  Future<String?> Function(String npcId, String toAlias, String text)?
+  get sendAsNpc {
+    final service = episode;
+    return service is SessionEpisodeService ? service.sendAsNpc : null;
+  }
+
+  /// Whether this machine shows the Handler's NPC notes: not on a joined
+  /// machine, and only with local data to keep them in.
+  bool get hasNpcNotes =>
+      mode != PlayMode.join && local != null && pack != null;
+
   /// The report button's action, or null when reports cannot be saved.
   ReportAction? get reportAction {
     final saver = reports;

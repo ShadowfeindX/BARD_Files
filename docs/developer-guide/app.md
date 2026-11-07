@@ -80,9 +80,9 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 - **The player's log.** The host sends events, never text, so `ParticipantEpisodeService` narrates each full entry with the engine's `Narrator` (the player line) and shows `EpisodeProjection.redactedLine` for a redacted one.
 - **Tests.** `test/lan_play_test.dart` runs host and players over loopback sockets with the store on disk: join, a request and roll, phone both ways, a prepared NPC message, refusals (wrong code, unknown agent, taken agent), a killed host that resumes on the same port while the player resyncs, and reports. It runs without the widget binding, whose mock `HttpClient` would stop the LAN client, so it reads the pack from the generated files.
 
-## For the NPC notes panel
+## Where the NPC notes panel is placed
 
-The composition provides what the console's notes panel needs: `Composition.local!.notes` (the store), `demoCampaignId`, `Composition.pack!.npcs` and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)`.
+`buildNpcNotes` in `routes.dart` builds the panel's view model next to the console's, and places `NpcNotesPanel` in the console's slot on `/` and `/gm`. It uses the store `Composition.local!.notes` (through `NpcNotesService`), the campaign `demoCampaignId`, the pack's NPCs as `NpcOption`s, the episode's agents as the "Send to" aliases, and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` as `SendAsNpc`. The panel shows in one-device play and while hosting, whenever the local folder is open; a joined machine and a machine without local data have no panel (`Composition.hasNpcNotes`). One model serves both routes.
 
 ## Reports
 
