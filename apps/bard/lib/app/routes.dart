@@ -55,7 +55,9 @@ GoRouter buildRouter(
       GoRoute(
         path: '/',
         builder: (context, state) => HomeScreen(
-          service: c.episode,
+          agents: c.episode.agents,
+          dossier: (agentId) => DossierViewModel(c.episode, agentId),
+          tableLog: c.episode.tableLog,
           console: console,
           npcNotes: notesPanel(),
           appearance: appearance,
@@ -88,7 +90,7 @@ GoRouter buildRouter(
       GoRoute(
         path: '/table',
         builder: (context, state) =>
-            single('Table', TablePanel(service: c.episode)),
+            single('Table', TablePanel(log: c.episode.tableLog)),
       ),
     ],
   );

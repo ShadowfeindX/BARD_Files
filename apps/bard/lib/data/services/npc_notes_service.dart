@@ -1,10 +1,8 @@
 import 'package:backend/backend.dart';
 
-export 'package:backend/backend.dart'
-    show NpcNotes, PreparedMessage, maxPreparedMessageUnits;
-
 /// The Handler's NPC notes for the UI: a thin face over [NpcNotesStore], so
 /// view models do not reach the `backend` package directly (07 §Layering).
+/// The notes types reach the UI through `data/models.dart`.
 ///
 /// Notes are Handler-only data on this machine; nothing here touches the
 /// episode, the wire or the pack.

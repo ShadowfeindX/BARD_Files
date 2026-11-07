@@ -1,5 +1,6 @@
 import 'package:signals_flutter/signals_flutter.dart';
 
+import '../../data/models.dart';
 import '../../data/services/npc_notes_service.dart';
 
 /// An NPC the Handler can keep notes on: the pack's id and display name.
