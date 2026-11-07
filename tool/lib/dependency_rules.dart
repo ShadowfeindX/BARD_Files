@@ -32,6 +32,7 @@ const _appPackages = {
   'backend',
   'ui_kit',
   'content_core',
+  'theme_core',
   'signals_flutter',
   'go_router',
   'app_links',
@@ -44,7 +45,10 @@ const layerRules = <String, LayerRule>{
   'apps/functions': LayerRule(
     allowed: {'protocol_envelope', 'firebase_functions', 'firebase_admin_sdk'},
   ),
-  'packages/ui_kit': LayerRule(allowed: {'signals_flutter'}, flutterSdk: true),
+  'packages/ui_kit': LayerRule(
+    allowed: {'signals_flutter', 'theme_core'},
+    flutterSdk: true,
+  ),
   'packages/backend': LayerRule(
     allowed: {
       'session',

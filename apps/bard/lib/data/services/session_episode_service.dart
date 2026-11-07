@@ -153,6 +153,11 @@ class SessionEpisodeService implements EpisodeService {
   );
 
   @override
+  List<ConditionOption> get conditions => [
+    for (final c in _pack.conditions) ConditionOption(id: c.id, name: c.name),
+  ];
+
+  @override
   Future<String?> addAgent(String name, Map<String, int> scores) => _serial(
     () async {
       final alias = 'agent${_nextAlias++}';
@@ -240,6 +245,21 @@ class SessionEpisodeService implements EpisodeService {
   @override
   Future<void> proposeSanityLoss(String agentId, int amount) =>
       _serial(() => _proposeSanityLoss(agentId, amount));
+
+  @override
+  Future<void> proposeCondition(String agentId, String conditionId) =>
+      _serial(() => _proposeCondition(agentId, conditionId));
+
+  @override
+  Future<void> clearCondition(String agentId, String conditionId) => _serial(
+    () => _submit(
+      ClearCondition(
+        entity: _entityOf(agentId),
+        condition: conditionId,
+        visibility: AliasesOnly({AliasId(agentId)}),
+      ),
+    ),
+  );
 
   @override
   Future<void> editReview(String reviewId, int amount) =>
@@ -358,6 +378,14 @@ class SessionEpisodeService implements EpisodeService {
     ),
   );
 
+  Future<void> _proposeCondition(String agentId, String conditionId) => _submit(
+    ApplyCondition(
+      entity: _entityOf(agentId),
+      condition: conditionId,
+      visibility: AliasesOnly({AliasId(agentId)}),
+    ),
+  );
+
   Future<void> _editReview(String reviewId, int amount) async {
     _edits[reviewId] = amount;
     await _refresh();
@@ -427,6 +455,14 @@ class SessionEpisodeService implements EpisodeService {
               originalAmount: _edits.containsKey(_batchId(batch))
                   ? e.amount
                   : null,
+            )
+          else if (e is ConditionApplied)
+            ReviewItem(
+              id: _batchId(batch),
+              agentName: identities[e.entity]?.name ?? '?',
+              label: 'Condition',
+              amount: 0,
+              condition: _pack.condition(e.condition)?.name ?? e.condition,
             ),
     ];
     final codec = const ProtocolEngineCodec();
@@ -537,12 +573,17 @@ class SessionEpisodeService implements EpisodeService {
   ) {
     final vitals = stats.vitals(state, id);
     final scores = state.stores.get(Attributes.componentType, id)?.scores;
+    final active = state.stores.get(Conditions.componentType, id)?.ids;
     return AgentSheet(
       id: who.ownerAlias!.value,
       name: who.name,
       attributes: scores?.asMap() ?? const {},
       health: vitals?.health.toInt() ?? 0,
       sanity: vitals?.sanity.toInt() ?? 0,
+      conditions: [
+        for (final c in active ?? const <String>{})
+          ConditionOption(id: c, name: _pack.condition(c)?.name ?? c),
+      ],
     );
   }
 
@@ -578,7 +619,11 @@ class SessionEpisodeService implements EpisodeService {
       PlayerPerspective() => v['alias:$alias'] ?? v['public'],
       TablePerspective() => v['public'],
     };
-    return text == null ? null : TextEntry(text);
+    if (text == null) return null;
+    return TextEntry(
+      text,
+      whisper: event is BroadcastDelivered && perspective is PlayerPerspective,
+    );
   }
 
   DiceBreakdownData _breakdown(CheckResolved event, EpisodeState state) {

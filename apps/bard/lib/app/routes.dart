@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 import '../ui/console/console_view.dart';
 import '../ui/console/console_view_model.dart';
@@ -10,9 +11,14 @@ import '../ui/table/table_panel.dart';
 import 'composition.dart';
 
 /// Builds the router. `/` shows all panels on one device; the other routes
-/// open a single panel, for a second window or display. [onNewEpisode]
+/// open a single panel, for a second window or display. [appearance] is the
+/// player's theme setting. [onNewEpisode]
 /// replaces the episode; the caller then builds a fresh router.
-GoRouter buildRouter(Composition c, {required VoidCallback onNewEpisode}) {
+GoRouter buildRouter(
+  Composition c, {
+  required ThemeController appearance,
+  required VoidCallback onNewEpisode,
+}) {
   final console = ConsoleViewModel(c.episode);
   Widget single(String title, Widget body) => Scaffold(
     appBar: AppBar(title: Text(title)),
@@ -25,6 +31,7 @@ GoRouter buildRouter(Composition c, {required VoidCallback onNewEpisode}) {
         builder: (context, state) => HomeScreen(
           service: c.episode,
           console: console,
+          appearance: appearance,
           onNewEpisode: onNewEpisode,
         ),
       ),

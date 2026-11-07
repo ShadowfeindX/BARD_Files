@@ -11,7 +11,25 @@ class DossierViewModel {
     sheet = computed(
       () => _service.agents.value.firstWhere((a) => a.id == agentId),
     );
+    whisper = computed(() {
+      final received = _receivedWhispers();
+      return received.length > _dismissed.value ? received.last : null;
+    });
   }
+
+  final Signal<int> _dismissed = signal(0);
+
+  List<String> _receivedWhispers() => [
+    for (final e in log.value)
+      if (e is TextEntry && e.whisper) e.text,
+  ];
+
+  /// The newest whisper this player has not dismissed, or null. The dossier
+  /// shows it as an alert outside the phone (DEC-17); the log line stays.
+  late final ReadonlySignal<String?> whisper;
+
+  /// Hides the alert for the whispers received so far.
+  void dismissWhisper() => _dismissed.value = _receivedWhispers().length;
 
   final EpisodeService _service;
 

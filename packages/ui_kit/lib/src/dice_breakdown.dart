@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'theme.dart';
+import 'result_chip.dart';
+import 'theme/bard_tokens.dart';
 
 /// How a resolved check ended, as shown by [DiceBreakdownView].
 ///
@@ -105,14 +106,14 @@ class DiceBreakdownView extends StatelessWidget {
   /// Localized-free outcome text (strings move to the pack's `strings/` later).
   static String outcomeLabel(CheckOutcomeKind kind) => switch (kind) {
     CheckOutcomeKind.success => 'Success',
-    CheckOutcomeKind.partial => 'Partial success',
+    CheckOutcomeKind.partial => 'Partial Success',
     CheckOutcomeKind.failure => 'Failure',
   };
 
-  static Color _outcomeColor(CheckOutcomeKind kind) => switch (kind) {
-    CheckOutcomeKind.success => BardTheme.success,
-    CheckOutcomeKind.partial => BardTheme.partial,
-    CheckOutcomeKind.failure => BardTheme.failure,
+  static ChipKind _chipKind(CheckOutcomeKind kind) => switch (kind) {
+    CheckOutcomeKind.success => ChipKind.success,
+    CheckOutcomeKind.partial => ChipKind.partial,
+    CheckOutcomeKind.failure => ChipKind.failure,
   };
 
   @override
@@ -121,43 +122,38 @@ class DiceBreakdownView extends StatelessWidget {
     final dcText = data.dc == null
         ? null
         : 'DC ${data.dc}${data.dcLabel == null ? '' : ' (${data.dcLabel})'}';
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(data.title, style: text.titleMedium),
-            const SizedBox(height: 8),
-            for (final group in data.groups) _GroupRow(group: group),
-            for (final mod in data.modifiers)
-              _ValueRow(label: mod.label, value: _signed(mod.value)),
-            const Divider(),
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text('Total ${data.total}', style: text.titleLarge),
-                if (dcText != null) Text('vs $dcText', style: text.bodyLarge),
-                Chip(
-                  label: Text(
-                    outcomeLabel(data.outcome),
-                    style: TextStyle(
-                      color:
-                          ThemeData.estimateBrightnessForColor(
-                                _outcomeColor(data.outcome),
-                              ) ==
-                              Brightness.dark
-                          ? Colors.white
-                          : Colors.black,
-                    ),
+    final tokens = BardTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: tokens.window,
+        shape: Border.all(color: tokens.windowEdge),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(data.title, style: text.titleMedium),
+              const SizedBox(height: 8),
+              for (final group in data.groups) _GroupRow(group: group),
+              for (final mod in data.modifiers)
+                _ValueRow(label: mod.label, value: _signed(mod.value)),
+              const Divider(),
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text('Total ${data.total}', style: text.titleLarge),
+                  if (dcText != null) Text('vs $dcText', style: text.bodyLarge),
+                  ResultChip(
+                    kind: _chipKind(data.outcome),
+                    label: outcomeLabel(data.outcome),
                   ),
-                  backgroundColor: _outcomeColor(data.outcome),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -197,7 +193,7 @@ class _DieChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tokens = BardTokens.of(context);
     return Semantics(
       label: die.exploded ? 'die ${die.value}, exploded' : 'die ${die.value}',
       child: ExcludeSemantics(
@@ -207,13 +203,15 @@ class _DieChip extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            color: die.exploded
-                ? scheme.tertiaryContainer
-                : scheme.secondaryContainer,
-            border: Border.all(color: scheme.outline),
+            color: die.exploded ? tokens.signalFill : tokens.labelCell,
+            border: Border.all(color: tokens.windowEdge),
           ),
-          child: Text(die.exploded ? '${die.value}!' : '${die.value}'),
+          child: Text(
+            die.exploded ? '${die.value}!' : '${die.value}',
+            style: TextStyle(
+              color: die.exploded ? tokens.onSignalFill : tokens.ink,
+            ),
+          ),
         ),
       ),
     );

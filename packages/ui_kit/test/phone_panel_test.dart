@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+
+import 'support.dart';
+
 import 'package:ui_kit/ui_kit.dart';
 
 const _threads = [
@@ -25,7 +28,7 @@ Widget _panel(
   String? disabled,
   int maxLength = 2000,
 }) => MaterialApp(
-  theme: BardTheme.dark(),
+  theme: testTheme(),
   home: Scaffold(
     body: SizedBox(
       width: 700,

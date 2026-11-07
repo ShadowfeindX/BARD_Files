@@ -43,6 +43,7 @@ class FakeEpisodeService implements EpisodeService {
   final Signal<List<LogEntry>> _tableLog = signal(const []);
   final Map<String, Signal<List<LogEntry>>> _playerLogs = {};
   final Map<String, String> _reviewAgent = {};
+  final Map<String, String> _reviewCondition = {};
   final Signal<String?> _error = signal(null);
 
   @override
@@ -67,6 +68,62 @@ class FakeEpisodeService implements EpisodeService {
       AttributeOption(key: 'DEX', name: 'Dexterity'),
     ],
   );
+
+  @override
+  final List<ConditionOption> conditions = const [
+    ConditionOption(id: 'bleeding', name: 'Bleeding'),
+    ConditionOption(id: 'stunned', name: 'Stunned'),
+  ];
+
+  @override
+  Future<void> proposeCondition(String agentId, String conditionId) async {
+    final agent = _agent(agentId);
+    final name = conditions.firstWhere((c) => c.id == conditionId).name;
+    final id = 'rev${_nextId++}';
+    _reviewAgent[id] = agentId;
+    _reviewCondition[id] = conditionId;
+    _review.value = [
+      ..._review.value,
+      ReviewItem(
+        id: id,
+        agentName: agent.name,
+        label: 'Condition',
+        amount: 0,
+        condition: name,
+      ),
+    ];
+  }
+
+  @override
+  Future<void> clearCondition(String agentId, String conditionId) async {
+    _setConditions(
+      agentId,
+      (have) => [
+        for (final c in have)
+          if (c.id != conditionId) c,
+      ],
+    );
+  }
+
+  void _setConditions(
+    String agentId,
+    List<ConditionOption> Function(List<ConditionOption> have) change,
+  ) {
+    _agents.value = [
+      for (final a in _agents.value)
+        if (a.id == agentId)
+          AgentSheet(
+            id: a.id,
+            name: a.name,
+            attributes: a.attributes,
+            health: a.health,
+            sanity: a.sanity,
+            conditions: change(a.conditions),
+          )
+        else
+          a,
+    ];
+  }
 
   @override
   Future<String?> addAgent(String name, Map<String, int> scores) async {
@@ -257,6 +314,17 @@ class FakeEpisodeService implements EpisodeService {
       for (final r in _review.value)
         if (r.id != reviewId) r,
     ];
+    final conditionId = _reviewCondition.remove(reviewId);
+    if (conditionId != null) {
+      final option = conditions.firstWhere((c) => c.id == conditionId);
+      _setConditions(agentId, (have) => [...have, option]);
+      _append(_gmLog, TextEntry('${item.agentName} is now ${option.name}.'));
+      _append(
+        _playerLog(agentId),
+        TextEntry('${item.agentName} is now ${option.name}.'),
+      );
+      return;
+    }
     _agents.value = [
       for (final a in _agents.value)
         if (a.id == agentId)
@@ -327,7 +395,7 @@ class FakeEpisodeService implements EpisodeService {
     for (final a in _agents.value) {
       if (!_meets(a, attribute, op, value)) continue;
       names.add(a.name);
-      _append(_playerLog(a.id), TextEntry(text));
+      _append(_playerLog(a.id), TextEntry(text, whisper: true));
     }
     _append(
       _gmLog,
