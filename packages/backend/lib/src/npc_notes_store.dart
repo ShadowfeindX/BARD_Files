@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:sembast/sembast.dart';
+import 'package:sembast/sembast_memory.dart';
 
 /// The longest prepared message, in UTF-16 code units.
 ///
@@ -169,6 +169,17 @@ final class NpcNotes {
 final class NpcNotesStore {
   /// Creates a store over an already opened [database].
   NpcNotesStore(this._db);
+
+  /// A store over a fresh in-memory database that is gone when the process
+  /// ends, for tests of the code that uses the store (`apps/bard` may not
+  /// depend on `sembast` itself).
+  static Future<NpcNotesStore> inMemory() async => NpcNotesStore(
+    await newDatabaseFactoryMemory().openDatabase(
+      'npc-notes-${_memoryCount++}',
+    ),
+  );
+
+  static int _memoryCount = 0;
 
   static final _notes = stringMapStoreFactory.store('npcNotes');
 
