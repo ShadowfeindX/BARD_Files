@@ -4,6 +4,7 @@
 library;
 
 export 'src/appearance.dart';
+export 'src/base_rules.dart';
 export 'src/codec.dart';
 export 'src/colour.dart';
 export 'src/limits.dart';

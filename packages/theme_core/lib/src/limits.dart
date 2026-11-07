@@ -8,6 +8,7 @@ class ThemeLimits {
   /// Largest import file in bytes, checked before parsing.
   final int maxImportBytes;
 
-  /// Longest base chain, in links, the resolver follows.
+  /// Longest base chain, in links, the resolver follows. A guard against
+  /// corrupt data only: the eligible-base rule keeps real chains to two links.
   final int maxChainDepth;
 }

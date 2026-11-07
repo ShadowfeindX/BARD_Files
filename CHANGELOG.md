@@ -86,6 +86,10 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - Chapter 12 proposes splitting the Firestore `operations` node: a new `episodes/{episodeId}` node for live-game data under its own rules, with the operation record keeping arc and handler data (R, 2026-11-03). The phone box now clears when the operation ends, not at mission end.
 - The live-game unit is now called an **Episode** in the spec and developer guide (tree: Campaign > Operation > Mission > Episode). "Operation" means only the story arc; "session" keeps its host and network meaning. Code identifiers, RTDB paths and the Firestore node are renamed in the refactor entry above.
 
+### Bug Fixes: theme_core base rule (T15)
+- A custom theme's base must be a built-in, a theme whose base is a built-in, or a theme with no base, so a chain is at most two links. `ThemeResolver` gets `customThemes` and `withTheme`; new `base_rules.dart` adds `isEligibleBase`, `dependantsOf`, `baseProblem` (a theme with dependants takes only a built-in base or none), `eligibleBasesFor` (what the editor lists), `importBaseOutcome` and `flattenImport` (an import with an installed ineligible base is offered Flatten), `checkReplace` (an import Replace that breaks the rule is refused) and `flattenedDependants` ("Flatten them first" before deleting a base).
+- The cycle check and the depth limit (32) stay as guards against corrupt data only.
+
 ### Docs: round-2 follow-ups
 - `09-open-decisions.md`: Pending D now lists DEC-41 and X0 / Q24 beside T5 and the theme labels; new Known issues and follow-ups section.
 - Recorded D's partly answered round-2 sheet (`10-pending-d-followup.md`); added the next-round question sheet for D, a follow-up sheet for R, and a homework and discussion notes document for D (automated single and multiplayer play, damage reduction, currency). `09-open-decisions.md` records D's 2026-10-29 answers and R's 2026-11-03 rulings on the R follow-up; `10-pending-r-a2-explained.md` explains which level owns the live game record.

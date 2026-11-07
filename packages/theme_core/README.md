@@ -4,6 +4,7 @@ Pure-Dart theme model (no Flutter, no dependencies). See `docs/architecture/07-a
 
 - `ThemeCodec`: decodes and validates theme files (all problems at once, with JSON paths; invalid files are rejected, never repaired) and encodes documents.
 - `ThemeResolver`: own value, base chain, fallback built-in; loop, depth and missing-base checks; `flatten`.
+- `base_rules.dart`: the eligible-base rule (a base is a built-in, a theme whose base is a built-in, or a theme with no base; chains are at most two links), the import and Replace checks, and `flattenedDependants` for "Flatten them first".
 - `applyAppearance`: the player's setting (System follows OS brightness, missing theme or variant handled without overwriting the stored setting).
 - `themeTokens`: the token registry (42 tokens in set 1; only `highlight` and `sceneTint` accept `#RRGGBBAA`).
 - `ThemeLimits`: the import size and chain depth safeguards (Proposed, T3), passed in, not hard-coded.

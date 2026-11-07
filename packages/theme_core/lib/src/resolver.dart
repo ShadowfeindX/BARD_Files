@@ -114,11 +114,33 @@ class ThemeResolver {
   /// Whether [id] names a built-in.
   bool isBuiltIn(String id) => _builtIns.containsKey(id);
 
+  /// The installed custom themes.
+  Iterable<ThemeDocument> get customThemes => _custom.values;
+
+  /// A resolver like this one with [doc] installed as a custom theme,
+  /// replacing the custom theme with the same id. Throws [ArgumentError] for
+  /// a built-in id: a built-in is never replaced.
+  ThemeResolver withTheme(ThemeDocument doc) {
+    if (isBuiltIn(doc.id)) {
+      throw ArgumentError.value(doc.id, 'doc', 'a built-in is never replaced');
+    }
+    return ThemeResolver(
+      builtIns: _builtIns.values,
+      custom: [
+        for (final d in _custom.values)
+          if (d.id != doc.id) d,
+        doc,
+      ],
+      limits: limits,
+    );
+  }
+
   /// Ids of themes that sit on a loop of bases.
   Set<String> get loopMembers => _loopMembers;
 
-  /// Whether pointing [themeId] at [baseId] would create a loop. For the
-  /// editor and for import checks.
+  /// Whether pointing [themeId] at [baseId] would create a loop. A guard
+  /// against corrupt data: the eligible-base rule (`base_rules.dart`) already
+  /// rules loops out, so use `baseProblem` for the editor and for imports.
   bool wouldCreateLoop(String themeId, String baseId) {
     final seen = <String>{};
     String? current = baseId;
