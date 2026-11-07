@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
+import '../data/services/npc_notes_service.dart';
 import '../ui/console/console_view.dart';
 import '../ui/console/console_view_model.dart';
-import '../data/services/npc_notes_service.dart';
 import '../ui/console/npc_notes_panel.dart';
 import '../ui/console/npc_notes_view_model.dart';
 import '../ui/dossier/dossier_view.dart';
@@ -19,9 +19,7 @@ import 'composition.dart';
 ///
 /// Notes belong to [demoCampaignId]; the NPCs are the pack's; the "Send to"
 /// list is the episode's agents; a prepared message goes out through
-/// [Composition.sendAsNpc]. One model serves `/` and `/gm`: open the panel in
-/// one window at a time, since a second window's text box does not refresh
-/// while it shows the same NPC.
+/// [Composition.sendAsNpc]. One model serves both `/` and `/gm`.
 NpcNotesViewModel? buildNpcNotes(Composition c) {
   if (!c.hasNpcNotes) return null;
   final agents = c.episode.agents;
