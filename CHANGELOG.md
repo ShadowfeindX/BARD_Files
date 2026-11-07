@@ -4,6 +4,15 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Handler NPC notes panel
+- `apps/bard`: `NpcNotesPanel` and `NpcNotesViewModel` for the console's NPC notes slot. The Handler picks an NPC, then edits free text (saved on losing focus or with Save notes), pins and unpins details, and adds, deletes and sends prepared messages. Errors from the store (an empty or over-long message) show in the panel. Send appears only when a `SendAsNpc` is supplied; the panel is not yet placed in the home screen.
+- `apps/bard`: `NpcNotesService`, the UI-facing face of the store. Saves and loads run in order and a late result for a previous NPC is dropped; a message in flight is not sent twice.
+- `backend`: `NpcNotesStore.inMemory()` for tests of code that uses the store.
+- Docs: developer guide `app.md` describes the panel.
+
+### Known/Open Issues
+- The panel is not mounted yet: it needs the host composition to open the store, list the pack's NPCs, supply the send callback and offer the "include notes" tick on a report.
+
 ### Theme rulings T16 (effect safety)
 - `decision-record.md`: new row T16. The effect-safety pairs, their minimums and the existing lock-card and cue tokens are settled. The minimums are mandatory for the built-in themes only; custom themes have no limits and show failing pairs as advisories. The substitution inside the element is removed.
 - `07-apps.md`: Effect-safety rule, Fallback built-in, Custom themes advisories, Layering, Accessibility and the tests follow T16.
