@@ -20,6 +20,13 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - `StoredEvent`, `TextLogLine` and `HeadSnapshot` gain `toJson`/`fromJson`.
 - Docs: 04, 00 and 10 §5 mark the store, `StoreActor` and the export as built; developer guide `session.md` lists the new files.
 
+### Handler NPC notes store
+- `backend`: `NpcNotesStore`, the Handler's notes on NPCs in a sembast database of its own on the Handler's machine. Notes are per NPC within a campaign: free text, pinned details and prepared messages (`NpcNotes`, `PreparedMessage`). Prepared messages are held to the phone limit (`maxPreparedMessageUnits`, 2,000 units) and are sent through the existing `SendPhoneMessage(from: entity, ...)` by the console panel. Rows carry a layout version; a row from a newer build is never overwritten, and unreadable rows are skipped. Notes are not events, never reach the wire or a player, and never edit pack data. `exportCampaignJson` gives the file a report bundle adds when the Handler ticks "include notes"; bundles omit notes otherwise.
+- Docs: developer guide `session.md` describes the store.
+
+### Known/Open Issues
+- The console panel and the "include notes" tick wait on the workstation shell and the host/join composition. Notes scope beyond a campaign (per episode or mission) stays open in 10.
+
 ### LAN transport (demo row 2)
 - `backend`: `LanHostTransport` and `LanClientTransport` over `dart:io` HTTP and WebSockets (S-6, no new package). Players join with `LanJoinInfo` (host, port, join code; the address `ws://host:port/join?code=CODE`, which is all the LAN QR carries); a wrong code or path is refused with HTTP 403/404 before a link opens and surfaces as `ConnectRefused`. `newJoinCode` and `lanAddresses` help the host screen.
 - Frame cap on the socket: `WebSocketFrameGuard` reads frame headers and closes the socket once one message passes `maxFrameBytes` (3 × `maxFrameLength`), including a message split over continuation frames, which `dart:io` does not limit. A received text frame over `maxFrameLength` is dropped and the link stays. Both are logged (`lan.oversize`). Compression is off; the client never uses an environment proxy.
