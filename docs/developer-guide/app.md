@@ -43,7 +43,6 @@ The app shell is themed fixed panels on the one-device layout. `main.dart` loads
 - **Whisper.** A stat-gated whisper the player receives stays a log line and also raises a **Whisper** alert at the top of the dossier, outside the phone, until dismissed (`TextEntry.whisper`, `DossierViewModel.whisper`).
 - **Review.** While a consequence waits for the Handler, the player's view shows nothing.
 - **NPC notes slot.** `ConsoleView(npcNotes: ...)` shows a widget after the whisper window. The Handler's NPC notes panel plugs in there; nothing is built for it yet.
-- **What the notes panel gets from the composition.** `Composition.local!.notes` (the store), `demoCampaignId`, `Composition.pack!.npcs` and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)`.
 - **Placeholder labels.** The record card's section labels (Attributes, Vitals, Conditions) are generic. The table label of the design's record card (DEC-24) is not used and no other field is shown until D decides the record's content.
 
 ## New episode
@@ -80,6 +79,10 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 - **What a player may send.** `LanAuthorizer` adds to the default rules that a `RequestAction` names the entity the player's own alias owns.
 - **The player's log.** The host sends events, never text, so `ParticipantEpisodeService` narrates each full entry with the engine's `Narrator` (the player line) and shows `EpisodeProjection.redactedLine` for a redacted one.
 - **Tests.** `test/lan_play_test.dart` runs host and players over loopback sockets with the store on disk: join, a request and roll, phone both ways, a prepared NPC message, refusals (wrong code, unknown agent, taken agent), a killed host that resumes on the same port while the player resyncs, and reports. It runs without the widget binding, whose mock `HttpClient` would stop the LAN client, so it reads the pack from the generated files.
+
+## For the NPC notes panel
+
+The composition provides what the console's notes panel needs: `Composition.local!.notes` (the store), `demoCampaignId`, `Composition.pack!.npcs` and `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)`.
 
 ## Reports
 
