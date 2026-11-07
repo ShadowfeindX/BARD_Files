@@ -42,3 +42,23 @@ String derivedJson({
 /// Decoded built-in as a JSON map, for building invalid variants of it.
 Map<String, dynamic> builtInJson(String id) =>
     jsonDecode(builtInSource(id)) as Map<String, dynamic>;
+
+/// A full custom theme copied from [from], with [patch] applied to `normal`.
+String fullCopy(
+  String id, {
+  String from = 'phosphor',
+  Map<String, String>? patch,
+}) {
+  final j = builtInJson(from);
+  j['id'] = id;
+  j['name'] = id;
+  j['copiedFrom'] = from;
+  if (patch != null) {
+    final variants = j['variants'] as Map<String, dynamic>;
+    variants['normal'] = {
+      ...variants['normal'] as Map<String, dynamic>,
+      ...patch,
+    };
+  }
+  return jsonEncode(j);
+}
