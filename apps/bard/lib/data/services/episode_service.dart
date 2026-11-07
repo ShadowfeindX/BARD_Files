@@ -24,6 +24,15 @@ abstract interface class EpisodeService {
   /// The pack's agent creation limits.
   CreationLimits get creationLimits;
 
+  /// Conditions the GM can apply.
+  List<ConditionOption> get conditions;
+
+  /// GM applies a condition; it waits in the review tray.
+  Future<void> proposeCondition(String agentId, String conditionId);
+
+  /// GM clears a condition the agent has.
+  Future<void> clearCondition(String agentId, String conditionId);
+
   /// GM adds an agent with these attribute scores. Returns the engine's
   /// refusal message, or null when the agent was created.
   Future<String?> addAgent(String name, Map<String, int> scores);

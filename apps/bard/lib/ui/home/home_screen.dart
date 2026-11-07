@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 import '../../data/services/episode_service.dart';
 import '../console/console_view.dart';
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.service,
     required this.console,
+    required this.appearance,
     required this.onNewEpisode,
   });
 
@@ -24,6 +26,9 @@ class HomeScreen extends StatefulWidget {
 
   /// GM console state.
   final ConsoleViewModel console;
+
+  /// The player's theme and variant setting.
+  final ThemeController appearance;
 
   /// Replaces the episode with a fresh, empty one.
   final VoidCallback onNewEpisode;
@@ -71,6 +76,13 @@ class _HomeScreenState extends State<HomeScreen> {
           appBar: AppBar(
             title: const Text('B.A.R.D. Files'),
             actions: [
+              TextButton.icon(
+                key: const ValueKey('appearance'),
+                onPressed: () =>
+                    showAppearanceDialog(context, widget.appearance),
+                icon: const Icon(Icons.palette_outlined),
+                label: const Text('Appearance'),
+              ),
               TextButton.icon(
                 key: const ValueKey('new-episode'),
                 onPressed: _confirmNew,

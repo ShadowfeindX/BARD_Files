@@ -68,6 +68,17 @@ class ConsoleViewModel {
     await _service.declineRequest(id);
   }
 
+  /// Conditions offered.
+  List<ConditionOption> get conditions => _service.conditions;
+
+  /// Holds the condition [conditionId] for [agentId] in the review tray.
+  Future<void> proposeCondition(String agentId, String conditionId) =>
+      _service.proposeCondition(agentId, conditionId);
+
+  /// Clears a condition the agent has.
+  Future<void> clearCondition(String agentId, String conditionId) =>
+      _service.clearCondition(agentId, conditionId);
+
   /// Holds a Sanity loss of [amount] for [agentId] in the review tray.
   Future<void> proposeSanityLoss(String agentId, int amount) =>
       _service.proposeSanityLoss(agentId, amount);

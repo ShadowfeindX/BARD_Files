@@ -15,7 +15,12 @@ Future<Composition> _pump(WidgetTester tester) async {
   final composition = (await tester.runAsync(
     () => Composition.inProcess(rootBundle),
   ))!;
-  await tester.pumpWidget(BardApp(composition: composition));
+  final appearance = (await tester.runAsync(
+    () => ThemeController.load(rootBundle),
+  ))!;
+  await tester.pumpWidget(
+    BardApp(composition: composition, appearance: appearance),
+  );
   await tester.pumpAndSettle();
   return composition;
 }
@@ -101,7 +106,7 @@ void main() {
     tester,
   ) async {
     await _pump(tester);
-    await tester.ensureVisible(find.byKey(const ValueKey('add-agent')));
+    await _reveal(tester, find.byKey(const ValueKey('add-agent')));
     await tester.tap(find.byKey(const ValueKey('add-agent')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -208,7 +213,7 @@ void main() {
       await _showDossier(tester, agent);
       expect(
         inDossier,
-        receives ? findsOneWidget : findsNothing,
+        receives ? findsNWidgets(2) : findsNothing, // alert + log line
         reason: agent,
       );
     }

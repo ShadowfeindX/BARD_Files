@@ -7,19 +7,33 @@ import '../shared/log_entry_tile.dart';
 import 'add_agent_dialog.dart';
 import 'console_view_model.dart';
 
-/// GM console: request queue, check controls, review tray, stat-gated
-/// broadcast, the Handler's phone and the GM log.
+/// GM console: request queue, check controls, review tray, conditions,
+/// stat-gated whisper, the Handler's phone and the GM log.
 class ConsoleView extends StatelessWidget {
   /// Creates the console over [model].
-  const ConsoleView({super.key, required this.model});
+  const ConsoleView({super.key, required this.model, this.npcNotes});
 
   /// State and commands.
   final ConsoleViewModel model;
+
+  /// The slot for the Handler's NPC notes panel (demo row 8). It is shown
+  /// after the whisper window when set; the notes are Handler-only data and
+  /// never reach a player.
+  final Widget? npcNotes;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: BardTokens.of(context).supervisor,
+          child: Text(
+            'HANDLER CONSOLE',
+            style: TextStyle(color: BardTokens.of(context).window),
+          ),
+        ),
         Expanded(
           flex: 2,
           child: PerspectivePanel<LogEntry>(
@@ -40,8 +54,10 @@ class ConsoleView extends StatelessWidget {
               _CheckControls(model: model),
               _ReviewTray(model: model),
               _SanityControl(model: model),
+              _ConditionControl(model: model),
               _NoteField(model: model),
-              Card(
+              ShellWindow(
+                title: 'Agents',
                 child: ListTile(
                   key: const ValueKey('add-agent'),
                   leading: const Icon(Icons.person_add),
@@ -53,7 +69,9 @@ class ConsoleView extends StatelessWidget {
                 ),
               ),
               _BroadcastCard(model: model),
-              Card(
+              ?npcNotes,
+              ShellWindow(
+                title: 'Phone',
                 child: SizedBox(
                   key: const ValueKey('gm-phone'),
                   height: 320,
@@ -86,11 +104,11 @@ class _RequestQueue extends StatelessWidget {
             if (r.status == RequestStatus.pending) r,
         ];
         final selected = model.selectedRequest.value;
-        return Card(
+        return ShellWindow(
+          title: 'Requests',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const ListTile(title: Text('Requests')),
               if (pending.isEmpty)
                 const ListTile(title: Text('No pending requests.')),
               for (final r in pending)
@@ -119,7 +137,8 @@ class _CheckControls extends StatelessWidget {
     return SignalBuilder(
       builder: (context) {
         final enabled = model.selectedRequest.value != null;
-        return Card(
+        return ShellWindow(
+          title: 'Check',
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Wrap(
@@ -185,12 +204,12 @@ class _ReviewTray extends StatelessWidget {
     return SignalBuilder(
       builder: (context) {
         final items = model.reviewTray.value;
-        return Card(
+        return ShellWindow(
+          title: 'Review tray',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const ListTile(
-                title: Text('Review tray'),
                 subtitle: Text(
                   'Held until you confirm. Players cannot see it.',
                 ),
@@ -200,7 +219,9 @@ class _ReviewTray extends StatelessWidget {
                 ListTile(
                   key: ValueKey('review-${item.id}'),
                   title: Text(
-                    '${item.agentName}: ${item.label} ${item.amount}',
+                    item.condition == null
+                        ? '${item.agentName}: ${item.label} ${item.amount}'
+                        : '${item.agentName}: ${item.label} ${item.condition}',
                   ),
                   subtitle: item.originalAmount == null
                       ? null
@@ -208,20 +229,22 @@ class _ReviewTray extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        key: ValueKey('review-dec-${item.id}'),
-                        tooltip: 'Lower by 1',
-                        icon: const Icon(Icons.remove),
-                        onPressed: item.amount > 0
-                            ? () => model.adjustReview(item.id, -1)
-                            : null,
-                      ),
-                      IconButton(
-                        key: ValueKey('review-inc-${item.id}'),
-                        tooltip: 'Raise by 1',
-                        icon: const Icon(Icons.add),
-                        onPressed: () => model.adjustReview(item.id, 1),
-                      ),
+                      if (item.condition == null) ...[
+                        IconButton(
+                          key: ValueKey('review-dec-${item.id}'),
+                          tooltip: 'Lower by 1',
+                          icon: const Icon(Icons.remove),
+                          onPressed: item.amount > 0
+                              ? () => model.adjustReview(item.id, -1)
+                              : null,
+                        ),
+                        IconButton(
+                          key: ValueKey('review-inc-${item.id}'),
+                          tooltip: 'Raise by 1',
+                          icon: const Icon(Icons.add),
+                          onPressed: () => model.adjustReview(item.id, 1),
+                        ),
+                      ],
                       FilledButton(
                         key: ValueKey('review-confirm-${item.id}'),
                         onPressed: () => model.confirmReview(item.id),
@@ -267,14 +290,14 @@ class _SanityControlState extends State<_SanityControl> {
         final agent = agents.any((a) => a.id == _agent)
             ? _agent!
             : agents.first.id;
-        return Card(
+        return ShellWindow(
+          title: 'Sanity loss',
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Wrap(
               spacing: 12,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const Text('Sanity loss'),
                 DropdownButton<String>(
                   key: const ValueKey('sanity-agent'),
                   value: agent,
@@ -311,6 +334,94 @@ class _SanityControlState extends State<_SanityControl> {
   }
 }
 
+class _ConditionControl extends StatefulWidget {
+  const _ConditionControl({required this.model});
+
+  final ConsoleViewModel model;
+
+  @override
+  State<_ConditionControl> createState() => _ConditionControlState();
+}
+
+class _ConditionControlState extends State<_ConditionControl> {
+  String? _agent;
+  String? _condition;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = widget.model;
+    final options = model.conditions;
+    if (options.isEmpty) return const SizedBox.shrink();
+    return SignalBuilder(
+      builder: (context) {
+        final agents = model.agents.value;
+        if (agents.isEmpty) return const SizedBox.shrink();
+        final agent = agents.firstWhere(
+          (a) => a.id == _agent,
+          orElse: () => agents.first,
+        );
+        final condition = options.any((c) => c.id == _condition)
+            ? _condition!
+            : options.first.id;
+        return ShellWindow(
+          title: 'Conditions',
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    DropdownButton<String>(
+                      key: const ValueKey('condition-agent'),
+                      value: agent.id,
+                      items: [
+                        for (final a in agents)
+                          DropdownMenuItem(value: a.id, child: Text(a.name)),
+                      ],
+                      onChanged: (v) => setState(() => _agent = v),
+                    ),
+                    DropdownButton<String>(
+                      key: const ValueKey('condition-pick'),
+                      value: condition,
+                      items: [
+                        for (final c in options)
+                          DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      ],
+                      onChanged: (v) => setState(() => _condition = v),
+                    ),
+                    FilledButton(
+                      key: const ValueKey('condition-hold'),
+                      onPressed: () =>
+                          model.proposeCondition(agent.id, condition),
+                      child: const Text('Hold for review'),
+                    ),
+                  ],
+                ),
+                if (agent.conditions.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final c in agent.conditions)
+                        InputChip(
+                          key: ValueKey('condition-clear-${c.id}'),
+                          label: Text(c.name),
+                          onDeleted: () => model.clearCondition(agent.id, c.id),
+                          deleteButtonTooltipMessage: 'Clear',
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _NoteField extends StatefulWidget {
   const _NoteField({required this.model});
 
@@ -337,7 +448,8 @@ class _NoteFieldState extends State<_NoteField> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return ShellWindow(
+      title: 'Notes',
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -424,16 +536,13 @@ class _BroadcastCardState extends State<_BroadcastCard> {
   Widget build(BuildContext context) {
     if (widget.model.attributes.isEmpty) return const SizedBox.shrink();
     final preview = _preview;
-    return Card(
+    return ShellWindow(
+      title: 'Stat-gated whisper',
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Stat-gated broadcast',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
             TextField(
               key: const ValueKey('broadcast-text'),
               controller: _text,
@@ -514,8 +623,9 @@ class _ErrorBanner extends StatelessWidget {
       builder: (context) {
         final error = model.lastError.value;
         if (error == null) return const SizedBox.shrink();
-        return Card(
-          color: Theme.of(context).colorScheme.errorContainer,
+        return ShellWindow(
+          title: 'Refused',
+          accent: BardTokens.of(context).chip(ChipKind.failure).$1,
           child: ListTile(
             key: const ValueKey('error-banner'),
             leading: const Icon(Icons.error_outline),
