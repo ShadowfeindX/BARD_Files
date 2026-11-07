@@ -8,43 +8,14 @@ import 'package:session/session.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../data/lan_access.dart';
+import '../data/models.dart';
+
+export '../data/models.dart' show HostInfo, PlayMode;
 import '../data/pack_assets.dart';
 import '../data/report_saver.dart';
 import '../data/services/episode_service.dart';
 import '../data/services/participant_episode_service.dart';
 import '../data/services/session_episode_service.dart';
-
-/// How this machine takes part in play (04 §Play modes).
-enum PlayMode {
-  /// "In person, one device": every panel on this machine, nothing on the
-  /// network.
-  oneDevice,
-
-  /// This machine hosts over the LAN and runs the Handler console.
-  host,
-
-  /// This machine joined a LAN host as one player.
-  join,
-}
-
-/// What players need to reach this host: shown on the Handler's screen.
-class HostInfo {
-  /// Creates the description.
-  const HostInfo({
-    required this.joinCode,
-    required this.port,
-    required this.addresses,
-  });
-
-  /// The code players type.
-  final String joinCode;
-
-  /// The port the host listens on.
-  final int port;
-
-  /// This machine's LAN addresses (IPv4, loopback left out).
-  final List<String> addresses;
-}
 
 /// The campaign the demo keeps NPC notes under: one fixed campaign, since
 /// the demo has no campaign records yet.
@@ -133,7 +104,8 @@ class Composition {
       admission: LanAdmission(() => service.aliasIds),
       authorizer: lanAuthorizer,
     );
-    final LanHostTransport transport;
+    LanHostTransport? transport;
+    final List<String> addresses;
     try {
       transport = await _bind(
         bindAddress,
@@ -148,7 +120,9 @@ class Composition {
           port: transport.port,
         ),
       );
+      addresses = await lanAddresses();
     } catch (_) {
+      await transport?.close();
       await service.dispose();
       rethrow;
     }
@@ -161,7 +135,7 @@ class Composition {
       hosting: HostInfo(
         joinCode: transport.joinCode,
         port: transport.port,
-        addresses: await lanAddresses(),
+        addresses: addresses,
       ),
       reports: _hostReports(service, diagnostics, local, transport: 'lan'),
       onDispose: transport.close,
@@ -186,7 +160,7 @@ class Composition {
       );
     }
     final agentId = await local.settings.localAgentId(_newAgentId);
-    final logId = 'joined-${_stamp()}';
+    final logId = 'joined-${_stamp()}-${_random(4)}';
     final diagnostics = DiagnosticLog(
       sinks: [DiagnosticFileSink(File(local.paths.joinedDiagnosticLog(logId)))],
     );
@@ -214,9 +188,12 @@ class Composition {
       ),
       reports: ReportSaver(
         episodeId: logId,
-        // A player keeps no store: the report carries the session's
-        // diagnostics and the host's report carries the log.
+        // A player keeps no store, so its view of the game log goes in as
+        // the entries it received; the host's report has the full log.
         store: InMemoryEventStore(),
+        extraFiles: () => {
+          'received-entries.jsonl': service.receivedEntriesJsonl(),
+        },
         log: diagnostics,
         folder: local.paths.reportsFolder,
         pack: pack.ref,
@@ -251,6 +228,17 @@ class Composition {
 
   /// A line about the link, on a joined machine.
   final ReadonlySignal<String>? status;
+
+  /// The report button's action, or null when reports cannot be saved.
+  ReportAction? get reportAction {
+    final saver = reports;
+    return saver == null
+        ? null
+        : ReportAction(
+            canIncludeNotes: saver.canIncludeNotes,
+            save: saver.save,
+          );
+  }
 
   final Future<void> Function()? _onDispose;
 
@@ -322,10 +310,16 @@ class Composition {
       .split('.')
       .first;
 
-  static String _newEpisodeId() => 'lan-${_stamp()}';
+  // The random part keeps two starts in the same second apart.
+  static String _newEpisodeId() => 'lan-${_stamp()}-${_random(4)}';
 
-  static String _newAgentId() {
+  static String _random(int length) {
     final random = Random.secure();
-    return 'p-${List.generate(12, (_) => random.nextInt(36).toRadixString(36)).join()}';
+    return List.generate(
+      length,
+      (_) => random.nextInt(36).toRadixString(36),
+    ).join();
   }
+
+  static String _newAgentId() => 'p-${_random(12)}';
 }

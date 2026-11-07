@@ -267,8 +267,35 @@ void main() {
         File('${playerReport.path}/network-trace.jsonl').readAsStringSync(),
         contains('hello.welcomed'),
       );
+      final received = File('${playerReport.path}/received-entries.jsonl')
+          .readAsLinesSync();
+      expect(received, isNotEmpty);
+      expect(received.first, contains('"seq":1'));
     },
   );
+
+  test('a resumed host whose port is taken listens on another one', () async {
+    var h = await host(newEpisode: true);
+    final port = h.hosting!.port;
+    final code = h.hosting!.joinCode;
+    final id = (h.episode as SessionEpisodeService).episodeId;
+    await h.dispose();
+    opened.remove(h);
+    final squatter = await ServerSocket.bind(
+      InternetAddress.loopbackIPv4,
+      port,
+    );
+    addTearDown(squatter.close);
+
+    h = await host();
+    expect(h.hosting!.port, isNot(port));
+    expect(h.hosting!.joinCode, code);
+    expect((h.episode as SessionEpisodeService).episodeId, id);
+    expect(
+      (await hostData.settings.lastHostedEpisode())?.port,
+      h.hosting!.port,
+    );
+  });
 
   test('signals stay readable after the player leaves', () async {
     final h = await host(newEpisode: true);
@@ -277,6 +304,6 @@ void main() {
     await p.dispose();
     opened.remove(p);
     expect(player(p).status.value, JoinStatus.closed);
-    expect(untracked(() => p.episode.agents.value), isNotNull);
+    expect(untracked(() => p.episode.agents.value).map((a) => a.id), ['vale']);
   });
 }

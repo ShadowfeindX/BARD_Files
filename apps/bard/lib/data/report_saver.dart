@@ -26,6 +26,7 @@ class ReportSaver {
     required this.settings,
     this.storeHealth,
     this.notes,
+    this.extraFiles,
   });
 
   /// The episode the reports are about.
@@ -52,6 +53,9 @@ class ReportSaver {
   /// The NPC notes export, on the Handler's machine.
   final Future<JsonMap?> Function()? notes;
 
+  /// More files for the bundle, such as a joined player's received entries.
+  final Map<String, String> Function()? extraFiles;
+
   /// Whether a report may include the Handler's NPC notes.
   bool get canIncludeNotes => notes != null;
 
@@ -67,6 +71,7 @@ class ReportSaver {
       includeNotes: includeNotes && canIncludeNotes,
       notes: notes,
       storeHealth: storeHealth,
+      extraFiles: extraFiles?.call() ?? const {},
     );
     log.record(DiagnosticCategory.lifecycle, 'report.saved', {
       'includeNotes': includeNotes && canIncludeNotes,

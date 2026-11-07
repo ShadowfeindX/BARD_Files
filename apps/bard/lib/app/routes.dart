@@ -33,7 +33,10 @@ GoRouter buildRouter(
           console: console,
           appearance: appearance,
           actions: actions,
-          composition: c,
+          mode: c.mode,
+          hosting: c.hosting,
+          status: c.status,
+          report: c.reportAction,
         ),
       ),
       GoRoute(

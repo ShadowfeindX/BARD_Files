@@ -40,7 +40,13 @@ Future<void> main() async {
         rootBundle,
         initial: await appearance.load(),
         brightness: _platformBrightness(),
-        onChanged: (setting) => unawaited(appearance.save(setting)),
+        onChanged: (setting) => unawaited(
+          appearance
+              .save(setting)
+              .catchError(
+                (Object e) => debugPrint('Could not save the appearance: $e'),
+              ),
+        ),
       ),
     ),
   );
@@ -99,6 +105,8 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // The local data belongs to the app: close it after the episode.
+    unawaited(_composition.dispose().whenComplete(() => widget.local?.close()));
     super.dispose();
   }
 
@@ -116,47 +124,53 @@ class _BardAppState extends State<BardApp> with WidgetsBindingObserver {
       _packFiles ??= await loadPackFiles(rootBundle);
 
   /// One active composition at a time: [open] builds the next one, the old
-  /// one is closed, and the router restarts at `/`. If [open] fails, the
-  /// current one keeps running and [what] says what did not happen.
+  /// one is closed, and the router restarts at `/`. If [open] fails, [what]
+  /// says what did not happen: one-device play keeps running, and a
+  /// networked composition (already closed) falls back to one-device play.
+  /// A second action while one runs is ignored.
   Future<void> _replace(
     String what,
     Future<Composition> Function() open,
   ) async {
     if (_opening) return;
     _opening = true;
-    final old = _composition;
-    final Composition next;
     try {
-      // A host must let go of its port and store before the next one
-      // opens them, so the old composition closes first when either side
-      // is networked; one-device play swaps without a gap.
-      if (old.mode != PlayMode.oneDevice) await old.dispose();
-      next = await open();
-    } catch (e) {
-      _opening = false;
-      if (old.mode != PlayMode.oneDevice) {
-        // The old one is closed already; fall back to one-device play.
-        final fallback = await _oneDevice();
-        if (mounted) {
-          setState(() {
-            _composition = fallback;
-            _router = _build();
-          });
+      final old = _composition;
+      Composition next;
+      try {
+        // A host must let go of its port before the next one binds it, so
+        // a networked composition closes first; one-device play swaps
+        // without a gap.
+        if (old.mode != PlayMode.oneDevice) await old.dispose();
+        next = await open();
+      } catch (e) {
+        _say('Could not $what: $e');
+        if (old.mode == PlayMode.oneDevice) return;
+        try {
+          next = await _oneDevice();
+        } catch (e) {
+          // Nothing left to run: the old composition is closed.
+          _say('Could not return to one-device play: $e');
+          return;
         }
       }
-      if (mounted) {
-        _messenger.currentState?.showSnackBar(
-          SnackBar(content: Text('Could not $what: $e')),
-        );
+      if (!mounted) {
+        await next.dispose();
+        return;
       }
-      return;
+      setState(() {
+        _composition = next;
+        _router = _build();
+      });
+      if (old.mode == PlayMode.oneDevice) await old.dispose();
+    } finally {
+      _opening = false;
     }
-    _opening = false;
-    setState(() {
-      _composition = next;
-      _router = _build();
-    });
-    if (old.mode == PlayMode.oneDevice) await old.dispose();
+  }
+
+  void _say(String text) {
+    if (!mounted) return;
+    _messenger.currentState?.showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<Composition> _oneDevice() => Composition.inProcess(

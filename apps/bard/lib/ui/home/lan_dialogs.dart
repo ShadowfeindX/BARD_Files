@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../app/composition.dart';
-import '../../data/report_saver.dart';
+import '../../data/models.dart';
 
 /// The log-collection notice every tester accepts before hosting or
 /// joining. PLACEHOLDER wording until R or D supplies the final text.
@@ -181,7 +180,7 @@ class _JoinDialogState extends State<_JoinDialog> {
 
 /// Saves a report and says where it went. On the Handler's machine the
 /// dialog offers the "include notes" tick (off by default).
-Future<void> saveReport(BuildContext context, ReportSaver reports) async {
+Future<void> saveReport(BuildContext context, ReportAction reports) async {
   final messenger = ScaffoldMessenger.of(context);
   final includeNotes = await showDialog<bool>(
     context: context,

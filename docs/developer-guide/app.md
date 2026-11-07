@@ -72,7 +72,7 @@ To start over on a machine, quit the app and delete the folder.
 
 ## Play over the LAN
 
-The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and **Stop hosting** or **Leave** once networked. Each shows the log-collection notice first (`consentText`, PLACEHOLDER wording); declining changes nothing. `BardApp` swaps the composition: a networked one is closed before the next opens, so the port and store are free.
+The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and **Stop hosting** or **Leave** once networked. Each shows the log-collection notice first (`consentText`, PLACEHOLDER wording); declining changes nothing. `BardApp` swaps the composition: a networked one is closed before the next opens, so the port is free. If the next one fails to open, the app falls back to one-device play and says why.
 
 - **Hosting.** `Composition.host` reopens the episode this machine hosted last (`AppSettingsStore.lastHostedEpisode`), so a host that was killed resumes from its store. It listens on every IPv4 interface, with the saved join code and, when free, the saved port, so players already in reconnect by themselves. The console shows a line with this machine's addresses, the port, the join code and the agent codes (each agent's alias id).
 - **Joining.** The player types the host address (`host:port`), the join code and their agent code. `LanVerifier` takes the hello's agent and alias (the code was checked before the link opened) and never accepts the GM's id; `LanAdmission` admits a known agent code and keeps it for the first machine that uses it until the host stops. Players may send `RequestAction` and `SendPhoneMessage` as their own alias (`lanAuthorizer`). The joined screen shows only that player's dossier and a status line (connecting, joined, reconnecting, refused).
@@ -81,7 +81,7 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 
 ## Reports
 
-**Save a report** (app bar, when the local folder is open) writes a report bundle into `reports/` and shows the folder to send by hand. On the Handler's machine the dialog has an **Include notes** tick, off by default, that adds the NPC notes of `demoCampaignId`. A joined player's report has the environment, settings, diagnostic log, network trace and recent errors; its game log is empty because a player keeps no store.
+**Save a report** (app bar, when the local folder is open) writes a report bundle into `reports/` and shows the folder to send by hand. On the Handler's machine the dialog has an **Include notes** tick, off by default, that adds the NPC notes of `demoCampaignId`. A joined player keeps no store, so its report has an empty `game-log.jsonl` and instead `received-entries.jsonl`: every entry the host sent it, as on the wire (its own view of the game log). `appVersion` in `lib/data/report_saver.dart` is set by hand and is raised with the pubspec version at each release.
 
 ## Adding agents
 
@@ -91,7 +91,7 @@ The app bar offers **Host on LAN** and **Join on LAN** in one-device play, and *
 
 The console's **Stat-gated whisper** window builds a `Compare(op, Attr(key), Const(n))` condition from the attribute, comparison and value the GM picks (`BroadcastOp` mirrors the engine's `CompareOp`). **Preview** calls `engine.broadcastPreview` and lists each agent, whether they qualify and the score it read; it sends nothing. **Send** submits `BroadcastToQualifying`, so the engine decides again at send time. Only qualifying players get the line; the GM log names the recipients.
 
-Phones use the ui_kit `PhonePanel`. Thread ids name the counterpart: `gm` for the Handler, `alias:<id>` for an agent's alias. The Handler's phone has one thread per agent (messages between the Handler and that alias); messages between two agents show in the GM log, not in the Handler's phone. A player's phone has the Handler and every other agent, built from the events that player may see. A thread with an NPC is `npc:<entity>`. `sendAsNpc` brings a pack NPC into the episode on its first message as a GM-only agent with no owner, the template's name and the pack's minimum in every attribute (PLACEHOLDER scores), and reuses it by name after that. Because that identity is GM-only, a player's thread with the NPC is titled `Unknown number`.
+Phones use the ui_kit `PhonePanel`. Thread ids name the counterpart: `gm` for the Handler, `alias:<id>` for an agent's alias. The Handler's phone has one thread per agent (messages between the Handler and that alias); messages between two agents show in the GM log, not in the Handler's phone. A player's phone has the Handler and every other agent, built from the events that player may see. A thread with an NPC is `npc:<entity>`. `sendAsNpc` brings a pack NPC into the episode on its first message as a GM-only agent with no owner, the template's name and the pack's minimum in every attribute (PLACEHOLDER scores), and reuses it by name after that, so two NPCs with the same name share one entity. Because that identity is GM-only, a player's thread with the NPC is titled `Unknown number`.
 
 ## Demo data to replace
 

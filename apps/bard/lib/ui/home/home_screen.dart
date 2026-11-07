@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-import '../../app/composition.dart';
+import '../../data/models.dart';
 import '../../data/services/episode_service.dart';
 import '../console/console_view.dart';
 import '../console/console_view_model.dart';
@@ -48,7 +48,10 @@ class HomeScreen extends StatefulWidget {
     required this.console,
     required this.appearance,
     required this.actions,
-    this.composition,
+    this.mode = PlayMode.oneDevice,
+    this.hosting,
+    this.status,
+    this.report,
   });
 
   /// The running episode.
@@ -63,11 +66,19 @@ class HomeScreen extends StatefulWidget {
   /// Mode changes the app performs.
   final PlayActions actions;
 
-  /// The running composition, for the mode, the host's details and reports.
-  /// Null shows one-device play with no reports.
-  final Composition? composition;
+  /// How this machine takes part.
+  final PlayMode mode;
 
-  PlayMode get _mode => composition?.mode ?? PlayMode.oneDevice;
+  /// Where players connect, when this machine hosts.
+  final HostInfo? hosting;
+
+  /// A line about the link, on a joined machine.
+  final ReadonlySignal<String>? status;
+
+  /// The report button's action, or null for no button.
+  final ReportAction? report;
+
+  PlayMode get _mode => mode;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -149,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _modeActions() {
-    final reports = widget.composition?.reports;
+    final reports = widget.report;
     return [
       if (widget._mode == PlayMode.oneDevice && widget.actions.host != null)
         TextButton.icon(
@@ -183,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _joined(BuildContext context, String? selected) {
-    final status = widget.composition?.status?.value;
+    final status = widget.status?.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -254,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (widget.composition?.hosting case final hosting?)
+                      if (widget.hosting case final hosting?)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: SelectableText(

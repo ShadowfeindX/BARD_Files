@@ -33,6 +33,7 @@ void main() {
     bool includeNotes = false,
     Future<JsonMap?> Function()? notes,
     int errorLimit = 50,
+    Map<String, String> extraFiles = const {},
   }) => ReportBundleBuilder.build(
     episodeId: 'op1',
     store: rig.store,
@@ -44,6 +45,7 @@ void main() {
     notes: notes,
     recentErrorLimit: errorLimit,
     storeHealth: () async => {'ok': true},
+    extraFiles: extraFiles,
   );
 
   test(
@@ -134,5 +136,16 @@ void main() {
     final b = await bundle();
     expect(b.files['game-log.jsonl'], isEmpty);
     expect(b.files, isNot(contains('snapshot.json')));
+  });
+
+  test('extra files are added and listed; fixed names are refused', () async {
+    rig = await Rig.create();
+    final b = await bundle(extraFiles: {'received-entries.jsonl': 'x\n'});
+    expect(b.files['received-entries.jsonl'], 'x\n');
+    expect(b.files['manifest.json'], contains('received-entries.jsonl'));
+    expect(
+      () => bundle(extraFiles: {'game-log.jsonl': ''}),
+      throwsArgumentError,
+    );
   });
 }

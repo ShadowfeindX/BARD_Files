@@ -9,7 +9,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 - **Appearance persists.** `LocalAppearanceRepository` saves the theme and variant in `settings.db`; a restart keeps them.
 - **Host and join over the LAN.** `Composition.host` resumes the last hosted episode from its store with its join code and port; `Composition.join` joins with host address, join code and agent code. `LanVerifier`, `LanAdmission` and `lanAuthorizer` decide who joins and what players send. `ParticipantEpisodeService` narrates a player's log from received entries and reconnects with resync.
 - **Consent step.** Hosting and joining show the log-collection notice first (PLACEHOLDER text).
-- **Reports.** **Save a report** writes a bundle to `reports/`; the Handler's dialog has an **Include notes** tick.
+- **Reports.** **Save a report** writes a bundle to `reports/`; the Handler's dialog has an **Include notes** tick. A joined player's bundle carries `received-entries.jsonl` (`ReportBundleBuilder.build(extraFiles:)`).
 - **Send as NPC.** `SessionEpisodeService.sendAsNpc(npcId, toAlias, text)` for row 8's prepared messages: the NPC enters the episode on first send with PLACEHOLDER minimum scores. Players see NPC threads as `Unknown number`.
 - `EpisodeParticipant.entries` emits each applied batch's new entries. `EpisodeProjection` holds the display code both services share.
 - **Fix.** `LanHostTransport.close()` now closes the server socket: `HttpServer.listenOn` left it bound, so a restarted host could not reuse its port.

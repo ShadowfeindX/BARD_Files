@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:engine/engine.dart' hide Visibility;
 import 'package:session/session.dart';
@@ -98,6 +99,16 @@ class ParticipantEpisodeService implements EpisodeService {
   final Signal<List<PhoneThreadData>> _phone = signal(const []);
   final Signal<String?> _error = signal(null);
   final List<Event> _visible = [];
+  final List<String> _received = [];
+  final Signal<List<ActionRequestItem>> _noRequests = signal(const []);
+  final Signal<List<ReviewItem>> _noReview = signal(const []);
+  final Signal<List<LogEntry>> _noLog = signal(const []);
+  final Signal<List<PhoneThreadData>> _noPhone = signal(const []);
+
+  /// Every entry received so far, one JSON object per line as on the wire:
+  /// this player's view of the game log, for a report.
+  String receivedEntriesJsonl() =>
+      _received.isEmpty ? '' : '${_received.join('\n')}\n';
 
   /// Where the link stands.
   ReadonlySignal<JoinStatus> get status => _status;
@@ -130,8 +141,10 @@ class ParticipantEpisodeService implements EpisodeService {
 
   void _apply(List<EventEntry> batch) {
     final state = _participant.state;
+    // A new list each batch, so the signal sees a change.
     final log = [..._log.value];
     for (final entry in batch) {
+      _received.add(jsonEncode(entry.toJson(const ProtocolEngineCodec())));
       switch (entry) {
         case FullEntry(:final event):
           _visible.add(event);
@@ -161,6 +174,8 @@ class ParticipantEpisodeService implements EpisodeService {
       _error.value = null;
     } on ArgumentError catch (e) {
       _error.value = '${e.message}';
+    } on Object catch (e) {
+      _error.value = 'The request could not be sent: $e';
     }
   }
 
@@ -246,22 +261,20 @@ class ParticipantEpisodeService implements EpisodeService {
   static Never _gmOnly() =>
       throw UnsupportedError('Only the host runs the Handler console.');
 
-  static final Signal<List<Never>> _none = signal(const []);
+  @override
+  ReadonlySignal<List<ActionRequestItem>> get requests => _noRequests;
 
   @override
-  ReadonlySignal<List<ActionRequestItem>> get requests => _none;
+  ReadonlySignal<List<ReviewItem>> get reviewTray => _noReview;
 
   @override
-  ReadonlySignal<List<ReviewItem>> get reviewTray => _none;
+  ReadonlySignal<List<LogEntry>> get gmLog => _noLog;
 
   @override
-  ReadonlySignal<List<LogEntry>> get gmLog => _none;
+  ReadonlySignal<List<LogEntry>> get tableLog => _noLog;
 
   @override
-  ReadonlySignal<List<LogEntry>> get tableLog => _none;
-
-  @override
-  ReadonlySignal<List<PhoneThreadData>> get gmPhone => _none;
+  ReadonlySignal<List<PhoneThreadData>> get gmPhone => _noPhone;
 
   @override
   Future<String?> addAgent(String name, Map<String, int> scores) => _gmOnly();
