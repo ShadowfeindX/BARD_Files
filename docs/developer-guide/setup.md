@@ -46,7 +46,7 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 
 ## The checks
 
-`bash tool/check_all.sh` runs steps 2 to 8 of the CI workflow locally (after `flutter pub get`), in the same order (the build-pack step, then the rows below); the web run (step 9, `dart test -p node` in engine and session) and the Flutter install are CI-only ([08-testing.md](../architecture/08-testing.md#continuous-integration)):
+`bash tool/check_all.sh` runs steps 2 to 9 of the CI workflow locally (after `flutter pub get`), in the same order (the build-pack step, then the rows below); the web run (step 10, `dart test -p node` in engine and session) and the Flutter install are CI-only ([08-testing.md](../architecture/08-testing.md#continuous-integration)):
 
 | Step | Command | Fails when |
 |---|---|---|
@@ -54,6 +54,7 @@ Every member has `resolution: workspace`, depends on other members as `any`, and
 | Analyze | `flutter analyze` | any warning or info (one `analysis_options.yaml` at the root) |
 | Dependency rules | `dart run tool/bin/check_dependency_rules.dart` | a pubspec lists a package its layer may not, a pubspec is not in the workspace, or `apps/functions` reaches `engine` or `protocol` transitively |
 | Exact pins | `dart run tool/bin/check_pins.dart` | an external dependency is not an exact version (exact pins; the standing rule is stated at the top of [decision-record.md](../architecture/decision-record.md)) |
+| Spec wording | `dart run tool/bin/check_spec_wording.dart` | chapters 00 to 08 of `docs/architecture/`, the developer guide or `docs/ui-kit.md` contain decision or provenance wording (a decision attributed to R or D, a dated decision, a status label, decision history, review narrative); the patterns are in `tool/lib/spec_wording.dart`. Rulings go in `decision-record.md`; 09, 10 and the record are not checked |
 | Rules pack | `bash tool/build_pack.sh` then `bash tool/build_pack.sh --check` | the generated pack (`packages/content_core/assets/generated/`, git-ignored) is missing, stale or has extra files |
 | Tests | `bash tool/test_all.sh` | any package test fails |
 
