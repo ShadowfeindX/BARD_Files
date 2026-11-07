@@ -4,6 +4,22 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 
 ## Unreleased
 
+### Theme rulings T16 (effect safety)
+- `decision-record.md`: new row T16. The effect-safety pairs, their minimums and the existing lock-card and cue tokens are settled. The minimums are mandatory for the built-in themes only; custom themes have no limits and show failing pairs as advisories. The substitution inside the element is removed.
+- `07-apps.md`: Effect-safety rule, Fallback built-in, Custom themes advisories, Layering, Accessibility and the tests follow T16.
+- `09-open-decisions.md`: T4 lists T16.
+
+### Theme rulings T15 (T3 derived themes and import/export)
+- `decision-record.md`: new row T15. The theme document, lookup and fallback, token sets and version map, import and export, the stored setting and the colour format are settled as written. Bases are limited to a built-in, a theme whose base is a built-in, or a theme with no base. Derived themes follow their base; Detach is removed.
+- `07-apps.md`: T3 headings lose their Proposed label (anchors such as `#chain-checks`, `#derived-themes-base-and-overrides`, `#import-and-export`); Chain checks gains the eligible-base rule; import Replace checks it instead of a cycle; cycles and the depth safeguard are corrupt-data safeguards; tests updated, and the effects test follows the photosensitivity alternatives. Only Custom themes (the editor) stays open (T3).
+- `09-open-decisions.md`: T3 reduced to the custom-theme editor, outside the demo's scope.
+
+### Theme rulings T14 (T3 drop-down, T4, token names)
+- T3: the variant drop-down lists only the variants the chosen theme provides; 07 and 09 no longer list it as open.
+- `decision-record.md`: new row T14. The outdated-theme fill with its notice and **Add missing colours**, the effect-safety substitution, the variant reading and the names of the four new effect tokens and the four document tokens are settled.
+- `07-apps.md`: the Outdated themes and Effect-safety rule headings lose their Proposed label (anchors `#outdated-themes`, `#effect-safety-rule`); the effect and document token names are no longer Proposed; only the four effect token values and where the photosensitivity setting lives stay open (T4).
+- `09-open-decisions.md`: T4 keeps only the four token values and where the photosensitivity setting lives.
+
 ### Architecture docs: present-tense wording in chapters 00 to 08
 - `07-apps.md` (themes): removed decision attributions, dates and ruling ids ("R ruled on 2026-11-05 (T12)", "agreed by D", "(R, 2026-11-06, T13)") and the dropped-proposal note; the text states the design only and links the decision record. The settled document token values and safeguard values are no longer labelled Proposed; the `Technical safeguards` heading anchor changed to `#technical-safeguards`. The section's build note now matches 00: `theme_core` model, codec, validator, resolver and built-in JSON are built.
 - Developer guide (`engine.md`, `packs.md`, `session.md`) and `ui-kit.md`: same clean-up of attributions, dates and review narrative.
