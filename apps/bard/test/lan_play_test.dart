@@ -108,14 +108,22 @@ void main() {
   ParticipantEpisodeService player(Composition c) =>
       c.episode as ParticipantEpisodeService;
 
+  /// Waits until [c] is welcomed and holds its own agent. A welcome comes
+  /// before the host's first events frame, so "joined" alone does not mean
+  /// the player's state, log or received entries have anything in them yet.
+  Future<void> caughtUp(Composition c, String alias) => _until(
+    () =>
+        player(c).status.value == JoinStatus.joined &&
+        c.episode.agents.value.any((a) => a.id == alias),
+  );
+
   test(
     'a player joins, requests, and sees the roll and a phone message',
     () async {
       final h = await host(newEpisode: true);
       final gm = h.episode as SessionEpisodeService;
       final p = await join(h, 'vale');
-      await _until(() => player(p).status.value == JoinStatus.joined);
-      await _until(() => p.episode.agents.value.isNotEmpty);
+      await caughtUp(p, 'vale');
       expect(p.episode.agents.value.map((a) => a.id), ['vale']);
 
       await p.episode.requestAction('vale', 'Search the desk');
@@ -153,7 +161,7 @@ void main() {
     final h = await host(newEpisode: true);
     final gm = h.episode as SessionEpisodeService;
     final p = await join(h, 'vale');
-    await _until(() => player(p).status.value == JoinStatus.joined);
+    await caughtUp(p, 'vale');
     final npc = gm.pack.npcs.first;
     expect(await gm.sendAsNpc(npc.id, 'vale', 'You were seen.'), isNull);
     expect(await gm.sendAsNpc(npc.id, 'vale', 'Twice.'), isNull);
@@ -205,7 +213,7 @@ void main() {
     var h = await host(newEpisode: true);
     final port = h.hosting!.port;
     final p = await join(h, 'vale');
-    await _until(() => player(p).status.value == JoinStatus.joined);
+    await caughtUp(p, 'vale');
     final gm = h.episode as SessionEpisodeService;
     await gm.addAgent('Agent Rook', {
       for (final a in gm.creationLimits.attributes)
@@ -262,7 +270,7 @@ void main() {
 
       final p = await join(h, 'vale');
       expect(p.reports!.canIncludeNotes, isFalse);
-      await _until(() => player(p).status.value == JoinStatus.joined);
+      await caughtUp(p, 'vale');
       final playerReport = Directory(await p.reports!.save(includeNotes: true));
       expect(File('${playerReport.path}/notes.json').existsSync(), isFalse);
       expect(
@@ -280,7 +288,7 @@ void main() {
     final h = await host(newEpisode: true);
     final gm = h.episode as SessionEpisodeService;
     final p = await join(h, 'vale');
-    await _until(() => player(p).status.value == JoinStatus.joined);
+    await caughtUp(p, 'vale');
     await p.episode.requestAction('vale', 'Search the desk');
     await _until(() => gm.requests.value.isNotEmpty);
     await gm.resolveRequest(
@@ -356,7 +364,7 @@ void main() {
   test('signals stay readable after the player leaves', () async {
     final h = await host(newEpisode: true);
     final p = await join(h, 'vale');
-    await _until(() => player(p).status.value == JoinStatus.joined);
+    await caughtUp(p, 'vale');
     await p.dispose();
     opened.remove(p);
     expect(player(p).status.value, JoinStatus.closed);

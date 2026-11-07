@@ -16,7 +16,9 @@ enum JoinStatus {
   /// Opening the link or waiting for the host's welcome.
   connecting,
 
-  /// The host welcomed this player.
+  /// The host welcomed this player. The host sends the player's entries in
+  /// frames right after the welcome, so the state may still be empty: wait
+  /// for the player's agent before acting.
   joined,
 
   /// The link dropped; the reconnect loop is trying again.
