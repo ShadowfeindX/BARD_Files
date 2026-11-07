@@ -5,11 +5,12 @@ import 'package:bard/ui/console/npc_notes_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 void main() {
   late NpcNotesStore store;
-  final sent = <(String, String)>[];
+  final sent = <(String, String, String)>[];
 
   setUp(() async {
     sent.clear();
@@ -23,9 +24,13 @@ void main() {
       NpcOption(id: 'mara', name: 'Mara'),
       NpcOption(id: 'ellis', name: 'Ellis'),
     ],
+    aliases: signal(const [
+      AliasOption(id: 'vale', name: 'Vale'),
+      AliasOption(id: 'hall', name: 'Hall'),
+    ]),
     sendAs: canSend
-        ? (id, text) async {
-            sent.add((id, text));
+        ? (id, to, text) async {
+            sent.add((id, to, text));
             return null;
           }
         : null,
@@ -100,9 +105,20 @@ void main() {
     );
     await pump(tester, m);
     await choose(tester, 'Mara');
+    // Two aliases and none chosen: send is disabled.
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const ValueKey('npc-msg-send-m1')))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byKey(const ValueKey('npc-msg-recipient')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hall').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('npc-msg-send-m1')));
     await tester.pumpAndSettle();
-    expect(sent, [('mara', 'Leave now.')]);
+    expect(sent, [('mara', 'hall', 'Leave now.')]);
   });
 
   testWidgets('without a sender there is no send button', (tester) async {

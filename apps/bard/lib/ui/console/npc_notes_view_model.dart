@@ -14,15 +14,32 @@ class NpcOption {
   final String name;
 }
 
-/// Sends [text] as the NPC [npcId] through the existing phone command.
+/// An alias (a player's character) a prepared message can be sent to.
+class AliasOption {
+  /// Creates an option.
+  const AliasOption({required this.id, required this.name});
+
+  /// The alias id in the episode.
+  final String id;
+
+  /// The name shown to the Handler.
+  final String name;
+}
+
+/// Sends [text] as the NPC [npcId] to the alias [toAlias] through the
+/// existing phone command (the engine only allows NPC to alias messages).
 /// Returns the engine's refusal message, or null on success.
-typedef SendAsNpc = Future<String?> Function(String npcId, String text);
+typedef SendAsNpc = Future<String?> Function(
+  String npcId,
+  String toAlias,
+  String text,
+);
 
 /// State and commands for the Handler's NPC notes panel.
 ///
 /// The notes live in [NpcNotesStore] on the Handler's machine and are never
 /// events. A prepared message is sent through [sendAs], which the app wires
-/// to `SendPhoneMessage(from: entity, ...)`; with no [sendAs] the panel
+/// to `SendPhoneMessage(from: entity, to: alias, ...)`; with no [sendAs] the panel
 /// edits notes but cannot send.
 class NpcNotesViewModel {
   /// Creates the view model for [campaignId] over [_store].
@@ -31,7 +48,8 @@ class NpcNotesViewModel {
     required this.campaignId,
     required this.npcs,
     this.sendAs,
-  });
+    ReadonlySignal<List<AliasOption>>? aliases,
+  }) : aliases = aliases ?? signal(const []);
 
   final NpcNotesService _store;
 
@@ -43,6 +61,25 @@ class NpcNotesViewModel {
 
   /// Sends a prepared message as an NPC, or null when sending is not wired.
   final SendAsNpc? sendAs;
+
+  /// The episode's aliases, the possible recipients. Changes as agents join.
+  final ReadonlySignal<List<AliasOption>> aliases;
+
+  /// The alias chosen as recipient, or null. With exactly one alias in the
+  /// episode it is that one.
+  late final Signal<String?> toAlias = signal(null);
+
+  /// The recipient to use now: the chosen alias if it still exists, else
+  /// the only alias, else null.
+  String? get recipient {
+    final list = aliases.value;
+    final chosen = toAlias.value;
+    if (chosen != null && list.any((a) => a.id == chosen)) return chosen;
+    return list.length == 1 ? list.first.id : null;
+  }
+
+  /// Whether a prepared message can be sent now.
+  bool get canSend => sendAs != null && recipient != null;
 
   /// The NPC being edited, or null.
   final Signal<String?> selected = signal(null);
@@ -109,10 +146,11 @@ class NpcNotesViewModel {
     final message = notes.value?.prepared
         .where((m) => m.id == messageId)
         .firstOrNull;
-    if (id == null || send == null || message == null) return;
+    final to = recipient;
+    if (id == null || send == null || message == null || to == null) return;
     if (!_sending.add('$id/$messageId')) return;
     try {
-      final result = await send(id, message.text);
+      final result = await send(id, to, message.text);
       if (selected.value == id) error.value = result;
     } finally {
       _sending.remove('$id/$messageId');

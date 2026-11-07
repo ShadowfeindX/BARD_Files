@@ -172,6 +172,18 @@ class _NpcNotesPanelState extends State<NpcNotesPanel> {
       ),
       const SizedBox(height: 8),
       const Text('Prepared messages'),
+      if (model.sendAs != null)
+        DropdownButton<String>(
+          key: const ValueKey('npc-msg-recipient'),
+          isExpanded: true,
+          hint: const Text('Send to'),
+          value: model.recipient,
+          items: [
+            for (final a in model.aliases.value)
+              DropdownMenuItem(value: a.id, child: Text(a.name)),
+          ],
+          onChanged: (id) => model.toAlias.value = id,
+        ),
       for (final m in notes.prepared)
         ListTile(
           key: ValueKey('npc-msg-${m.id}'),
@@ -184,9 +196,13 @@ class _NpcNotesPanelState extends State<NpcNotesPanel> {
               if (model.sendAs != null)
                 IconButton(
                   key: ValueKey('npc-msg-send-${m.id}'),
-                  tooltip: 'Send as this NPC',
+                  tooltip: model.canSend
+                      ? 'Send as this NPC'
+                      : model.aliases.value.isEmpty
+                      ? 'No recipient in this episode'
+                      : 'Choose who to send to',
                   icon: const Icon(Icons.send),
-                  onPressed: () => model.send(m.id),
+                  onPressed: model.canSend ? () => model.send(m.id) : null,
                 ),
               IconButton(
                 key: ValueKey('npc-msg-delete-${m.id}'),

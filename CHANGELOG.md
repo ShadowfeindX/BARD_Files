@@ -5,7 +5,7 @@ All notable changes to this project are recorded here (CLAUDE.md §10).
 ## Unreleased
 
 ### Handler NPC notes panel
-- `apps/bard`: `NpcNotesPanel` and `NpcNotesViewModel` for the console's NPC notes slot. The Handler picks an NPC, then edits free text (saved on losing focus or with Save notes), pins and unpins details, and adds, deletes and sends prepared messages. Errors from the store (an empty or over-long message) show in the panel. Send appears only when a `SendAsNpc` is supplied; the panel is not yet placed in the home screen.
+- `apps/bard`: `NpcNotesPanel` and `NpcNotesViewModel` for the console's NPC notes slot. The Handler picks an NPC, then edits free text (saved on losing focus or with Save notes), pins and unpins details, and adds, deletes and sends prepared messages. Errors from the store (an empty or over-long message) show in the panel. Send appears only when a `SendAsNpc(npcId, toAlias, text)` is supplied. A "Send to" picker lists the episode's aliases (the engine only allows NPC to alias messages); a lone alias is used without a choice and send stays off until a recipient exists; the panel is not yet placed in the home screen.
 - `apps/bard`: `NpcNotesService`, the UI-facing face of the store. Saves and loads run in order and a late result for a previous NPC is dropped; a message in flight is not sent twice.
 - `backend`: `NpcNotesStore.inMemory()` for tests of code that uses the store.
 - Docs: developer guide `app.md` describes the panel.
