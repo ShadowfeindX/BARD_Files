@@ -162,7 +162,7 @@ All modes run the same loop; they differ only in which `Transport` and whether a
 | Solo / prep | none | none | GM alone, building NPCs or testing. |
 | In person, one device | in-process | none | Table shares the GM's screen; player views are panels on the same device. |
 | In person, phones | LAN (or in-process + LAN) (planned; S-6) | none | GM device hosts; companion phones join on the local network. |
-| LAN | LAN (planned; S-6) | none | Discovery on the local network; host must be a native app (see below). |
+| LAN | LAN (`dart:io` HTTP server and WebSockets) | none | The host must be a native app (see below). The host shows its address, port and join code; a player types them with their agent code. Discovery on the local network is planned (S-6). A host resumes its last episode from its store with the same join code and, when it is free, the same port, so players reconnect without retyping. |
 | P2P over internet | P2P (planned; S-6) | signaling only | Direct links between GM and players; needs signaling and NAT traversal [V-17]. Built last. |
 | Network-hosted (planned) | relay | yes | Realtime Database relays live play; finished episodes are archived to Firestore ([06-accounts-backend.md](06-accounts-backend.md#relay)). Players can join without reaching the GM directly. |
 | Offline | any local | none | Signed-in accounts use the local cache; network-hosted episodes resume relaying when online (planned; 10 §5 'Offline account cache and session outbox'). |
