@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
+import 'theme/bard_tokens.dart';
+
 /// One message bubble in a phone thread. Plain data: the app maps the
 /// engine's phone events into it.
 class PhoneMessageData {
@@ -159,7 +161,7 @@ class _PhonePanelState extends State<PhonePanel> {
   }
 
   Widget _conversation(BuildContext context, PhoneThreadData open) {
-    final scheme = Theme.of(context).colorScheme;
+    final tokens = BardTokens.of(context);
     return Column(
       children: [
         Expanded(
@@ -176,14 +178,17 @@ class _PhonePanelState extends State<PhonePanel> {
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(maxWidth: 360),
                     decoration: BoxDecoration(
-                      color: m.fromMe
-                          ? scheme.primaryContainer
-                          : scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
+                      color: m.fromMe ? tokens.signalFill : tokens.labelCell,
+                      border: Border.all(color: tokens.windowEdge),
                     ),
                     child: Semantics(
                       label: m.fromMe ? 'You said' : '${open.title} said',
-                      child: Text(m.text),
+                      child: Text(
+                        m.text,
+                        style: TextStyle(
+                          color: m.fromMe ? tokens.onSignalFill : tokens.ink,
+                        ),
+                      ),
                     ),
                   ),
                 ),
