@@ -146,14 +146,42 @@ final class AppSettingsStore {
       });
 
   /// The episode this machine hosted last, or null.
-  Future<String?> lastHostedEpisode() async {
-    final id = (await _settings.record(_hostedKey).get(_db))?['id'];
-    return id is String && id.isNotEmpty ? id : null;
+  Future<HostedEpisode?> lastHostedEpisode() async {
+    final row = await _settings.record(_hostedKey).get(_db);
+    final id = row?['id'];
+    final code = row?['joinCode'];
+    final port = row?['port'];
+    if (id is! String || id.isEmpty) return null;
+    return HostedEpisode(
+      episodeId: id,
+      joinCode: code is String && code.isNotEmpty ? code : null,
+      port: port is int && port > 0 && port < 65536 ? port : null,
+    );
   }
 
-  /// Records [episodeId] as the episode this machine hosts.
-  Future<void> setLastHostedEpisode(String episodeId) =>
-      _settings.record(_hostedKey).put(_db, {'id': episodeId});
+  /// Records [hosted] as the episode this machine hosts.
+  Future<void> setLastHostedEpisode(HostedEpisode hosted) =>
+      _settings.record(_hostedKey).put(_db, {
+        'id': hosted.episodeId,
+        'joinCode': ?hosted.joinCode,
+        'port': ?hosted.port,
+      });
+}
+
+/// The episode this machine hosts, with the join code and port it was
+/// reached at, so a restarted host keeps the address players already have.
+final class HostedEpisode {
+  /// Creates the record.
+  const HostedEpisode({required this.episodeId, this.joinCode, this.port});
+
+  /// The hosted episode.
+  final String episodeId;
+
+  /// The join code players were given, or null before the first listen.
+  final String? joinCode;
+
+  /// The port the host listened on, or null before the first listen.
+  final int? port;
 }
 
 /// Every local database of this machine, opened once at start-up and closed

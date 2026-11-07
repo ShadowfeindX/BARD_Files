@@ -82,7 +82,9 @@ void main() {
       await data.settings.write(AppSettingsStore.appearanceKey, {
         'themeId': 'x',
       });
-      await data.settings.setLastHostedEpisode('lan-1');
+      await data.settings.setLastHostedEpisode(
+        const HostedEpisode(episodeId: 'lan-1', joinCode: 'ABC234', port: 4040),
+      );
       final agent = await data.settings.localAgentId(() => 'agent-a');
       await data.hostSettings.setSnapshotInterval(const Duration(minutes: 2));
       await data.notes.setText('demo', 'mara', 'Lies.');
@@ -93,7 +95,10 @@ void main() {
       expect(await data.settings.read(AppSettingsStore.appearanceKey), {
         'themeId': 'x',
       });
-      expect(await data.settings.lastHostedEpisode(), 'lan-1');
+      final hosted = await data.settings.lastHostedEpisode();
+      expect(hosted?.episodeId, 'lan-1');
+      expect(hosted?.joinCode, 'ABC234');
+      expect(hosted?.port, 4040);
       expect(await data.settings.localAgentId(() => 'agent-b'), agent);
       expect(
         await data.hostSettings.snapshotInterval(),
